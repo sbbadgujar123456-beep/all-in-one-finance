@@ -299,11 +299,68 @@ html[data-theme="light"] .toast{background:rgba(255,255,255,.98);color:#0c1120}
 .spotlight.green::before{background:radial-gradient(circle,rgba(52,211,153,.12),transparent 70%)}
 .spotlight.amber::before{background:radial-gradient(circle,rgba(251,191,36,.12),transparent 70%)}
 
-.plan-box{background:linear-gradient(135deg, rgba(251,191,36,.06), rgba(124,146,255,.04)); border:1px solid rgba(251,191,36,.18)}
-.plan-item{background:var(--glass-2);border:1px solid var(--brd);border-radius:12px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:flex-start;gap:14px}
-.plan-item:last-child{margin-bottom:0}
-.plan-amt{font-size:20px;font-weight:800;color:var(--amber);letter-spacing:-.6px;font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
-.plan-action{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.5}
+/* Net Worth Chart */
+.nw-chart-wrap{width:100%;height:220px;position:relative}
+.nw-chart-wrap svg{width:100%;height:100%;display:block;overflow:visible}
+
+/* Category Breakdown */
+.cat-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
+.cat-row:last-child{margin-bottom:0}
+.cat-bar-track{flex:1;height:28px;border-radius:8px;background:var(--glass-2);overflow:hidden;position:relative}
+.cat-bar-fill{height:100%;border-radius:8px;transition:width .6s cubic-bezier(.4,.2,.2,1);display:flex;align-items:center;padding:0 10px;font-size:11.5px;font-weight:700;color:#fff;min-width:fit-content}
+.cat-name{font-size:12px;font-weight:600;color:var(--txt-2);width:110px;flex-shrink:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cat-amt{font-size:12.5px;font-weight:700;color:var(--txt);width:110px;text-align:right;flex-shrink:0;font-variant-numeric:tabular-nums}
+@media(max-width:640px){
+  .cat-name{width:80px;font-size:11px}
+  .cat-amt{width:90px;font-size:11.5px}
+}
+
+/* Demat Calendar */
+.cal-wrap{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:12px}
+.cal-dow{font-size:10px;font-weight:700;color:var(--muted);text-align:center;padding:6px 0;text-transform:uppercase;letter-spacing:.8px}
+.cal-cell{
+  aspect-ratio:1;
+  border-radius:10px;
+  background:var(--glass-2);
+  border:1px solid var(--brd);
+  padding:6px 8px;
+  display:flex;flex-direction:column;
+  cursor:pointer;
+  transition:all .18s ease;
+  position:relative;
+  min-height:70px;
+  overflow:hidden;
+}
+.cal-cell:hover{border-color:var(--accent);background:var(--glass-3);transform:translateY(-2px)}
+.cal-cell.empty{background:transparent;border-color:transparent;cursor:default;pointer-events:none}
+.cal-cell.today{border-color:var(--accent);box-shadow:inset 0 0 0 1px var(--accent-soft)}
+.cal-cell.has-value{background:var(--accent-soft);border-color:rgba(124,146,255,.3)}
+.cal-day-num{font-size:11px;font-weight:700;color:var(--txt-2)}
+.cal-cell.today .cal-day-num{color:var(--accent)}
+.cal-val{font-size:10.5px;font-weight:700;color:var(--txt);margin-top:auto;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cal-pnl{font-size:9.5px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:1px}
+.cal-pnl.up{color:var(--green)}
+.cal-pnl.down{color:var(--red)}
+@media(max-width:640px){
+  .cal-cell{min-height:56px;padding:4px 5px}
+  .cal-day-num{font-size:10px}
+  .cal-val{font-size:9px}
+  .cal-pnl{font-size:8.5px}
+}
+
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.cal-nav-title{font-size:14px;font-weight:700;letter-spacing:-.3px}
+.cal-month-stats{display:flex;gap:18px;flex-wrap:wrap;margin-top:14px;padding-top:14px;border-top:1px solid var(--brd)}
+.cal-stat{flex:1;min-width:100px}
+.cal-stat-label{font-size:10.5px;font-weight:600;color:var(--muted);letter-spacing:.6px;text-transform:uppercase}
+.cal-stat-val{font-size:16px;font-weight:700;margin-top:5px;letter-spacing:-.4px;font-variant-numeric:tabular-nums}
+
+/* Grouped notifications */
+.group-item{cursor:pointer}
+.group-item .expand-chev{transition:transform .22s ease;display:inline-block}
+.group-item.expanded .expand-chev{transform:rotate(90deg)}
+.group-children{margin-top:8px;padding-left:8px;border-left:2px solid var(--brd);display:flex;flex-direction:column;gap:6px;animation:fadeIn .2s ease}
+.group-child{background:var(--glass-2);border:1px solid var(--brd);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:12px}
 </style>
 </head>
 <body>
@@ -354,6 +411,7 @@ try {
 
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const MONTHS_FULL = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const pad = (n) => String(n).padStart(2, '0');
 const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
@@ -422,12 +480,13 @@ const DEFAULT_DATA = {
   loans: [],
   bills: [],
   inflows: [],
+  netWorthHistory: [],
   meta: { version: 1 }
 };
 
 function normalize(d) {
   const out = Object.assign({}, DEFAULT_DATA, d || {});
-  ['banks','transactions','demats','cards','loans','bills','inflows'].forEach(k => {
+  ['banks','transactions','demats','cards','loans','bills','inflows','netWorthHistory'].forEach(k => {
     if (!Array.isArray(out[k])) out[k] = [];
   });
   out.demats = out.demats.map(x => Object.assign({ history: [] }, x, { history: Array.isArray(x.history) ? x.history : [] }));
@@ -564,7 +623,10 @@ const Ico = {
   cloudOff: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3l18 18"/><path d="M17.5 19a4.5 4.5 0 0 0 .5-9 6 6 0 0 0-3.6-5.4"/><path d="M6.5 19a4.5 4.5 0 0 1-.3-9 6 6 0 0 1 4.8-5.6"/></svg>,
   refresh: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M3 21v-5h5"/></svg>,
   warn: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10.3 3.7 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>,
-  arrowDown: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>
+  chev: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" style={{width:12,height:12}}><path d="M9 6l6 6-6 6"/></svg>,
+  chevLeft: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:14,height:14}}><path d="M15 6l-6 6 6 6"/></svg>,
+  chevRight: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:14,height:14}}><path d="M9 6l6 6-6 6"/></svg>,
+  trend: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>
 };
 
 function CategoryIcon({ kind }) {
@@ -572,387 +634,129 @@ function CategoryIcon({ kind }) {
   return map[kind] || Ico.bill;
 }
 
-function LightRaysBackground({ theme }) {
-  const containerRef = useRef(null);
-  const uniformsRef = useRef(null);
-  const rendererRef = useRef(null);
-  const mouseRef = useRef({ x: 0.5, y: 0.5 });
-  const smoothMouseRef = useRef({ x: 0.5, y: 0.5 });
-  const animationIdRef = useRef(null);
-  const meshRef = useRef(null);
-  const cleanupFunctionRef = useRef(null);
+/* CATEGORY COLORS for charts */
+const CAT_COLORS = {
+  'General': 'linear-gradient(90deg,#7c92ff,#6880ff)',
+  'Salary': 'linear-gradient(90deg,#34d399,#10b981)',
+  'Food': 'linear-gradient(90deg,#fbbf24,#f59e0b)',
+  'Rent': 'linear-gradient(90deg,#f87171,#ef4444)',
+  'Shopping': 'linear-gradient(90deg,#a78bfa,#8b5cf6)',
+  'Travel': 'linear-gradient(90deg,#22d3ee,#06b6d4)',
+  'Bills': 'linear-gradient(90deg,#fb923c,#f97316)',
+  'Credit Card': 'linear-gradient(90deg,#ec4899,#db2777)',
+  'Loan EMI': 'linear-gradient(90deg,#ef4444,#dc2626)',
+  'Transfer': 'linear-gradient(90deg,#64748b,#475569)',
+  'Investment': 'linear-gradient(90deg,#10b981,#059669)',
+  'Medical': 'linear-gradient(90deg,#f472b6,#ec4899)',
+  'Other': 'linear-gradient(90deg,#94a3b8,#64748b)'
+};
+function catColor(c) { return CAT_COLORS[c] || CAT_COLORS['Other']; }
 
-  const lightMode = theme === 'light';
-  const raysOrigin = 'top-center';
-  const raysColor = '#7c92ff';
-  const raysSpeed = 0.8;
-  const lightSpread = 0.6;
-  const rayLength = 2.6;
-  const fadeDistance = 1.0;
-  const saturation = 1.0;
-  const followMouse = true;
-  const mouseInfluence = 0.08;
-  const noiseAmount = 0.0;
-  const distortion = 0.0;
-  const pulsating = false;
-
-  useEffect(() => {
-    let cancelled = false;
-    const ogl = window.ogl;
-    if (!ogl || !containerRef.current) return;
-
-    const { Renderer, Program, Triangle, Mesh } = ogl;
-    if (!Renderer || !Program || !Triangle || !Mesh) return;
-
-    const hexToRgb = hex => {
-      const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
-      return m ? [parseInt(m[1],16)/255, parseInt(m[2],16)/255, parseInt(m[3],16)/255] : [1,1,1];
-    };
-
-    const getAnchorAndDir = (origin, w, h) => {
-      const outside = 0.2;
-      switch (origin) {
-        case 'top-left': return { anchor: [0, -outside*h], dir: [0, 1] };
-        case 'top-right': return { anchor: [w, -outside*h], dir: [0, 1] };
-        case 'left': return { anchor: [-outside*w, 0.5*h], dir: [1, 0] };
-        case 'right': return { anchor: [(1+outside)*w, 0.5*h], dir: [-1, 0] };
-        case 'bottom-left': return { anchor: [0, (1+outside)*h], dir: [0, -1] };
-        case 'bottom-center': return { anchor: [0.5*w, (1+outside)*h], dir: [0, -1] };
-        case 'bottom-right': return { anchor: [w, (1+outside)*h], dir: [0, -1] };
-        default: return { anchor: [0.5*w, -outside*h], dir: [0, 1] };
-      }
-    };
-
-    const vert = `
-attribute vec2 position;
-varying vec2 vUv;
-void main() {
-  vUv = position * 0.5 + 0.5;
-  gl_Position = vec4(position, 0.0, 1.0);
-}`;
-
-    const frag = `precision highp float;
-uniform float iTime;
-uniform vec2 iResolution;
-uniform vec2 rayPos;
-uniform vec2 rayDir;
-uniform vec3 raysColor;
-uniform float raysSpeed;
-uniform float lightSpread;
-uniform float rayLength;
-uniform float pulsating;
-uniform float fadeDistance;
-uniform float saturation;
-uniform vec2 mousePos;
-uniform float mouseInfluence;
-uniform float noiseAmount;
-uniform float distortion;
-uniform float lightMode;
-varying vec2 vUv;
-
-float noise(vec2 st) {
-  return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123);
-}
-
-float rayStrength(vec2 raySource, vec2 rayRefDirection, vec2 coord, float seedA, float seedB, float speed) {
-  vec2 sourceToCoord = coord - raySource;
-  vec2 dirNorm = normalize(sourceToCoord);
-  float cosAngle = dot(dirNorm, rayRefDirection);
-  float distortedAngle = cosAngle + distortion * sin(iTime * 2.0 + length(sourceToCoord) * 0.01) * 0.2;
-  float spreadFactor = pow(max(distortedAngle, 0.0), 1.0 / max(lightSpread, 0.001));
-  float distance = length(sourceToCoord);
-  float maxDistance = iResolution.x * rayLength;
-  float lengthFalloff = clamp((maxDistance - distance) / maxDistance, 0.0, 1.0);
-  float fadeFalloff = clamp((iResolution.x * fadeDistance - distance) / (iResolution.x * fadeDistance), 0.5, 1.0);
-  float pulse = pulsating > 0.5 ? (0.8 + 0.2 * sin(iTime * speed * 3.0)) : 1.0;
-  float baseStrength = clamp(
-    (0.45 + 0.15 * sin(distortedAngle * seedA + iTime * speed)) +
-    (0.3 + 0.2 * cos(-distortedAngle * seedB + iTime * speed)),
-    0.0, 1.0
-  );
-  return baseStrength * lengthFalloff * fadeFalloff * spreadFactor * pulse;
-}
-
-void mainImage(out vec4 fragColor, in vec2 fragCoord) {
-  vec2 coord = vec2(fragCoord.x, iResolution.y - fragCoord.y);
-  vec2 finalRayDir = rayDir;
-  if (mouseInfluence > 0.0) {
-    vec2 mouseScreenPos = mousePos * iResolution.xy;
-    vec2 mouseDirection = normalize(mouseScreenPos - rayPos);
-    finalRayDir = normalize(mix(rayDir, mouseDirection, mouseInfluence));
+/* ---------- Net Worth Chart ---------- */
+function NetWorthChart({ points }) {
+  if (!points || points.length === 0) {
+    return (
+      <div className="empty">
+        <div className="empty-icon">{Ico.trend}</div>
+        <div className="empty-title">Net worth history is starting</div>
+        <div className="empty-sub">Come back tomorrow and your progress will start showing here.</div>
+      </div>
+    );
   }
-  vec4 rays1 = vec4(1.0) * rayStrength(rayPos, finalRayDir, coord, 36.2214, 21.11349, 1.5 * raysSpeed);
-  vec4 rays2 = vec4(1.0) * rayStrength(rayPos, finalRayDir, coord, 22.3991, 18.0234, 1.1 * raysSpeed);
-  fragColor = rays1 * 0.5 + rays2 * 0.4;
-  if (noiseAmount > 0.0) {
-    float n = noise(coord * 0.01 + iTime * 0.1);
-    fragColor.rgb *= (1.0 - noiseAmount + noiseAmount * n);
-  }
-  float brightness = 1.0 - (coord.y / iResolution.y);
-  fragColor.x *= 0.1 + brightness * 0.8;
-  fragColor.y *= 0.3 + brightness * 0.6;
-  fragColor.z *= 0.5 + brightness * 0.5;
-  if (saturation != 1.0) {
-    float gray = dot(fragColor.rgb, vec3(0.299, 0.587, 0.114));
-    fragColor.rgb = mix(vec3(gray), fragColor.rgb, saturation);
-  }
-  fragColor.rgb *= raysColor;
-  if (lightMode > 0.5) {
-    vec3 mapped = vec3(1.0) - exp(-max(fragColor.rgb, vec3(0.0)) * 1.35);
-    float energy = clamp(max(mapped.r, max(mapped.g, mapped.b)), 0.0, 1.0);
-    vec3 hue = mapped / max(energy, 0.0001);
-    vec3 ink = mix(hue * 0.25, hue * 0.72, energy);
-    fragColor = vec4(mix(vec3(1.0), ink, energy), 1.0);
-  }
-}
-
-void main() {
-  vec4 color;
-  mainImage(color, gl_FragCoord.xy);
-  gl_FragColor = color;
-}`;
-
-    const uniforms = {
-      iTime: { value: 0 },
-      iResolution: { value: [1, 1] },
-      rayPos: { value: [0, 0] },
-      rayDir: { value: [0, 1] },
-      raysColor: { value: hexToRgb(raysColor) },
-      raysSpeed: { value: raysSpeed },
-      lightSpread: { value: lightSpread },
-      rayLength: { value: rayLength },
-      pulsating: { value: pulsating ? 1.0 : 0.0 },
-      fadeDistance: { value: fadeDistance },
-      saturation: { value: saturation },
-      mousePos: { value: [0.5, 0.5] },
-      mouseInfluence: { value: mouseInfluence },
-      noiseAmount: { value: noiseAmount },
-      distortion: { value: distortion },
-      lightMode: { value: lightMode ? 1.0 : 0.0 }
-    };
-    uniformsRef.current = uniforms;
-
-    let renderer;
-    try {
-      renderer = new Renderer({ dpr: Math.min(window.devicePixelRatio, 2), alpha: true });
-      rendererRef.current = renderer;
-    } catch (e) {
-      console.warn('WebGL not available for rays background', e);
-      return;
-    }
-
-    const gl = renderer.gl;
-    gl.canvas.style.width = '100%';
-    gl.canvas.style.height = '100%';
-
-    while (containerRef.current.firstChild) {
-      containerRef.current.removeChild(containerRef.current.firstChild);
-    }
-    containerRef.current.appendChild(gl.canvas);
-
-    const geometry = new Triangle(gl);
-    const program = new Program(gl, { vertex: vert, fragment: frag, uniforms });
-    const mesh = new Mesh(gl, { geometry, program });
-    meshRef.current = mesh;
-
-    const updatePlacement = () => {
-      if (!containerRef.current || !renderer || cancelled) return;
-      renderer.dpr = Math.min(window.devicePixelRatio, 2);
-      const { clientWidth: wCSS, clientHeight: hCSS } = containerRef.current;
-      if (wCSS === 0 || hCSS === 0) return;
-      renderer.setSize(wCSS, hCSS);
-      const dpr = renderer.dpr;
-      const w = wCSS * dpr;
-      const h = hCSS * dpr;
-      uniforms.iResolution.value = [w, h];
-      const { anchor, dir } = getAnchorAndDir(raysOrigin, w, h);
-      uniforms.rayPos.value = anchor;
-      uniforms.rayDir.value = dir;
-    };
-
-    const loop = t => {
-      if (cancelled || !rendererRef.current || !uniformsRef.current || !meshRef.current) return;
-      uniforms.iTime.value = t * 0.001;
-      if (followMouse && mouseInfluence > 0.0) {
-        const smoothing = 0.92;
-        smoothMouseRef.current.x = smoothMouseRef.current.x * smoothing + mouseRef.current.x * (1 - smoothing);
-        smoothMouseRef.current.y = smoothMouseRef.current.y * smoothing + mouseRef.current.y * (1 - smoothing);
-        uniforms.mousePos.value = [smoothMouseRef.current.x, smoothMouseRef.current.y];
-      }
-      try {
-        renderer.render({ scene: mesh });
-        animationIdRef.current = requestAnimationFrame(loop);
-      } catch (error) {
-        console.warn('Rays render error', error);
-      }
-    };
-
-    window.addEventListener('resize', updatePlacement);
-    updatePlacement();
-    animationIdRef.current = requestAnimationFrame(loop);
-
-    cleanupFunctionRef.current = () => {
-      if (animationIdRef.current) {
-        cancelAnimationFrame(animationIdRef.current);
-        animationIdRef.current = null;
-      }
-      window.removeEventListener('resize', updatePlacement);
-      if (renderer) {
-        try {
-          const canvas = renderer.gl.canvas;
-          const loseContextExt = renderer.gl.getExtension('WEBGL_lose_context');
-          if (loseContextExt) loseContextExt.loseContext();
-          if (canvas && canvas.parentNode) canvas.parentNode.removeChild(canvas);
-        } catch (error) {}
-      }
-      rendererRef.current = null;
-      uniformsRef.current = null;
-      meshRef.current = null;
-    };
-
-    return () => {
-      cancelled = true;
-      if (cleanupFunctionRef.current) {
-        cleanupFunctionRef.current();
-        cleanupFunctionRef.current = null;
-      }
-    };
-  }, [theme]);
-
-  useEffect(() => {
-    const handleMouseMove = e => {
-      if (!containerRef.current || !rendererRef.current) return;
-      const rect = containerRef.current.getBoundingClientRect();
-      const x = (e.clientX - rect.left) / rect.width;
-      const y = (e.clientY - rect.top) / rect.height;
-      mouseRef.current = { x, y };
-    };
-    if (followMouse) {
-      window.addEventListener('mousemove', handleMouseMove);
-      return () => window.removeEventListener('mousemove', handleMouseMove);
-    }
-  }, [followMouse]);
-
-  return (
-    <div className="rays-bg" aria-hidden="true">
-      <div ref={containerRef} className="rays-container" />
-    </div>
-  );
-}
-
-function SyncBadge({ sync }) {
-  if (!sync) return null;
-  let cls = '', label = '', icon = null, title = '';
-  if (sync.state === 'synced') {
-    cls = 'synced'; label = 'Cloud synced'; icon = Ico.cloud;
-    title = sync.lastSync ? 'Last synced ' + timeAgo(sync.lastSync) : 'All changes saved to cloud';
-  } else if (sync.state === 'syncing') {
-    cls = 'syncing'; label = 'Syncing…';
-    icon = <span className="spin">{Ico.refresh}</span>;
-    title = 'Saving changes to cloud';
-  } else if (sync.state === 'connecting') {
-    cls = 'syncing'; label = 'Connecting…';
-    icon = <span className="spin">{Ico.refresh}</span>;
-    title = 'Connecting to cloud';
-  } else if (sync.state === 'offline') {
-    cls = 'offline'; label = 'Offline'; icon = Ico.cloudOff;
-    title = 'No internet. Changes will sync when you are back online.';
-  } else if (sync.state === 'error') {
-    cls = 'error'; label = 'Sync error'; icon = Ico.warn;
-    title = sync.error || 'Something went wrong';
-  } else {
-    cls = ''; label = 'Local only'; icon = Ico.cloudOff;
-    title = 'Cloud not configured, saving locally';
-  }
-  return (
-    <span className={'sync-badge ' + cls} title={title}>
-      <span className="sync-ico">{icon}</span>
-      <span className="sync-dot"></span>
-      <span>{label}</span>
-    </span>
-  );
-}
-
-function Modal({ open, onClose, title, children }) {
-  if (!open) return null;
-  return (
-    <div className="modal-bg" onClick={onClose}>
-      <div className="modal glass" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-head">
-          <h3>{title}</h3>
-          <button className="icon-btn" onClick={onClose} aria-label="Close">{Ico.close}</button>
+  if (points.length === 1) {
+    const p = points[0];
+    const isPos = p.value >= 0;
+    return (
+      <div>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'baseline', flexWrap: 'wrap', marginBottom: '12px' }}>
+          <div style={{ fontSize: '26px', fontWeight: 800, letterSpacing: '-.9px', color: isPos ? 'var(--green)' : 'var(--red)' }} className="mono">
+            {inr(p.value)}
+          </div>
+          <div className={'pill ' + (isPos ? 'green' : 'red')}><span className="pdot"></span>today</div>
         </div>
-        <div>{children}</div>
+        <div className="glass-soft" style={{ padding: '16px', fontSize: '12.5px', color: 'var(--muted)', lineHeight: 1.55 }}>
+          This is your net worth as of {fmtDate(p.date)}. Keep updating your balances and a beautiful trend line will appear in the coming days.
+        </div>
+      </div>
+    );
+  }
+
+  const W = 800, H = 200, P = 22;
+  const vals = points.map(p => p.value);
+  let min = Math.min.apply(null, vals);
+  let max = Math.max.apply(null, vals);
+  if (min === max) { min = min - Math.max(1, Math.abs(min) * 0.1); max = max + Math.max(1, Math.abs(max) * 0.1); }
+  const padY = (max - min) * 0.12;
+  min -= padY; max += padY;
+  const n = points.length;
+  const x = (i) => P + (i * (W - 2 * P)) / Math.max(1, n - 1);
+  const y = (v) => H - P - ((v - min) / (max - min)) * (H - 2 * P);
+
+  const last = points[n - 1];
+  const first = points[0];
+  const isPositive = last.value >= 0;
+  const lineColor = isPositive ? 'var(--green)' : 'var(--red)';
+  const gradId = isPositive ? 'nwgradGreen' : 'nwgradRed';
+
+  let d = '';
+  points.forEach((p, i) => { d += (i ? ' L' : 'M') + x(i).toFixed(1) + ',' + y(p.value).toFixed(1); });
+  const area = d + ' L' + x(n - 1).toFixed(1) + ',' + (H - P) + ' L' + x(0).toFixed(1) + ',' + (H - P) + ' Z';
+
+  const change = r2(last.value - first.value);
+  const changePct = first.value ? r2((change / Math.abs(first.value)) * 100) : 0;
+
+  // Zero line if crossing
+  const zeroY = (0 >= min && 0 <= max) ? y(0) : null;
+
+  return (
+    <div>
+      <div style={{ display: 'flex', gap: '14px', alignItems: 'baseline', flexWrap: 'wrap', marginBottom: '10px' }}>
+        <div style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-.9px', color: lineColor }} className="mono">
+          {inr(last.value)}
+        </div>
+        <div className={'pill ' + (change >= 0 ? 'green' : 'red')}>
+          <span className="pdot"></span>{change >= 0 ? '▲' : '▼'} {inr(Math.abs(change))} ({changePct >= 0 ? '+' : ''}{changePct}%)
+        </div>
+        <div className="pill blue">Since {fmtDate(first.date)}</div>
+      </div>
+      <div className="nw-chart-wrap">
+        <svg viewBox={'0 0 ' + W + ' ' + H} preserveAspectRatio="none">
+          <defs>
+            <linearGradient id="nwgradGreen" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--green)" stopOpacity="0.35" />
+              <stop offset="100%" stopColor="var(--green)" stopOpacity="0" />
+            </linearGradient>
+            <linearGradient id="nwgradRed" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="var(--red)" stopOpacity="0.32" />
+              <stop offset="100%" stopColor="var(--red)" stopOpacity="0" />
+            </linearGradient>
+          </defs>
+          {[0, 1, 2, 3].map(i => (
+            <line key={i} x1={P} x2={W - P} y1={P + (i * (H - 2 * P)) / 3} y2={P + (i * (H - 2 * P)) / 3}
+              stroke="var(--brd)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
+          ))}
+          {zeroY !== null && (
+            <line x1={P} x2={W - P} y1={zeroY} y2={zeroY}
+              stroke="var(--muted-2)" strokeWidth="1" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" opacity="0.55" />
+          )}
+          <path d={area} fill={'url(#' + gradId + ')'} />
+          <path d={d} fill="none" stroke={lineColor} strokeWidth="2.5"
+            vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
+          {points.map((p, i) => (
+            <circle key={i} cx={x(i)} cy={y(p.value)} r="2.5" fill={lineColor}
+              stroke="var(--bg)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
+          ))}
+        </svg>
+      </div>
+      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--muted)', marginTop: '8px' }}>
+        <span>{fmtDate(first.date)}</span>
+        <span>{fmtDate(last.date)}</span>
       </div>
     </div>
   );
 }
 
-function MoneyInput({ value, onChange, placeholder, autoFocus }) {
-  return (
-    <input
-      className="input"
-      inputMode="decimal"
-      autoFocus={autoFocus}
-      value={value}
-      placeholder={placeholder || '0.00'}
-      onChange={(e) => {
-        let v = e.target.value.replace(/[^\d.]/g, '');
-        const parts = v.split('.');
-        if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
-        if (/^\d*(\.\d{0,2})?$/.test(v)) onChange(v);
-      }}
-    />
-  );
-}
-
-function DayInput({ value, onChange, placeholder }) {
-  return (
-    <input
-      className="input"
-      inputMode="numeric"
-      value={value}
-      placeholder={placeholder || 'DD'}
-      onChange={(e) => {
-        let v = e.target.value.replace(/\D/g, '').slice(0, 2);
-        if (v !== '' && Number(v) > 31) v = '31';
-        onChange(v);
-      }}
-    />
-  );
-}
-
-function formatCardNumber(v, name) {
-  const d = String(v || '').replace(/\D/g, '').slice(0, 16);
-  if (/millenia/i.test(name || '')) {
-    let out = d.slice(0, 4);
-    if (d.length > 4) out += ' ' + d.slice(4, 10);
-    const rest = d.slice(10);
-    for (let i = 0; i < rest.length; i += 4) out += ' ' + rest.slice(i, i + 4);
-    return out.trim();
-  }
-  let out = '';
-  for (let i = 0; i < d.length; i += 4) out += (i ? ' ' : '') + d.slice(i, i + 4);
-  return out;
-}
-
-function formatExpiry(v) {
-  const d = String(v || '').replace(/\D/g, '').slice(0, 4);
-  if (d.length <= 2) return d;
-  return d.slice(0, 2) + '/' + d.slice(2);
-}
-
-function maskNumber(num) {
-  const d = String(num || '').replace(/\D/g, '');
-  if (!d) return '•••• •••• •••• ••••';
-  return '•••• •••• •••• ' + d.slice(-4);
-}
-
-function Toast({ msg }) {
-  if (!msg) return null;
-  return <div className="toast">{msg}</div>;
-}
-
+/* ---------- Existing LineChart (Demat) ---------- */
 function LineChart({ points }) {
   if (!points || points.length === 0) {
     return (
@@ -1179,6 +983,119 @@ function EmptyState({ icon, title, sub, action }) {
   );
 }
 
+function SyncBadge({ sync }) {
+  if (!sync) return null;
+  let cls = '', label = '', icon = null, title = '';
+  if (sync.state === 'synced') {
+    cls = 'synced'; label = 'Cloud synced'; icon = Ico.cloud;
+    title = sync.lastSync ? 'Last synced ' + timeAgo(sync.lastSync) : 'All changes saved to cloud';
+  } else if (sync.state === 'syncing') {
+    cls = 'syncing'; label = 'Syncing…';
+    icon = <span className="spin">{Ico.refresh}</span>;
+    title = 'Saving changes to cloud';
+  } else if (sync.state === 'connecting') {
+    cls = 'syncing'; label = 'Connecting…';
+    icon = <span className="spin">{Ico.refresh}</span>;
+    title = 'Connecting to cloud';
+  } else if (sync.state === 'offline') {
+    cls = 'offline'; label = 'Offline'; icon = Ico.cloudOff;
+    title = 'No internet. Changes will sync when you are back online.';
+  } else if (sync.state === 'error') {
+    cls = 'error'; label = 'Sync error'; icon = Ico.warn;
+    title = sync.error || 'Something went wrong';
+  } else {
+    cls = ''; label = 'Local only'; icon = Ico.cloudOff;
+    title = 'Cloud not configured, saving locally';
+  }
+  return (
+    <span className={'sync-badge ' + cls} title={title}>
+      <span className="sync-ico">{icon}</span>
+      <span className="sync-dot"></span>
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function Modal({ open, onClose, title, children }) {
+  if (!open) return null;
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal glass" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-head">
+          <h3>{title}</h3>
+          <button className="icon-btn" onClick={onClose} aria-label="Close">{Ico.close}</button>
+        </div>
+        <div>{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function MoneyInput({ value, onChange, placeholder, autoFocus }) {
+  return (
+    <input
+      className="input"
+      inputMode="decimal"
+      autoFocus={autoFocus}
+      value={value}
+      placeholder={placeholder || '0.00'}
+      onChange={(e) => {
+        let v = e.target.value.replace(/[^\d.]/g, '');
+        const parts = v.split('.');
+        if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
+        if (/^\d*(\.\d{0,2})?$/.test(v)) onChange(v);
+      }}
+    />
+  );
+}
+
+function DayInput({ value, onChange, placeholder }) {
+  return (
+    <input
+      className="input"
+      inputMode="numeric"
+      value={value}
+      placeholder={placeholder || 'DD'}
+      onChange={(e) => {
+        let v = e.target.value.replace(/\D/g, '').slice(0, 2);
+        if (v !== '' && Number(v) > 31) v = '31';
+        onChange(v);
+      }}
+    />
+  );
+}
+
+function formatCardNumber(v, name) {
+  const d = String(v || '').replace(/\D/g, '').slice(0, 16);
+  if (/millenia/i.test(name || '')) {
+    let out = d.slice(0, 4);
+    if (d.length > 4) out += ' ' + d.slice(4, 10);
+    const rest = d.slice(10);
+    for (let i = 0; i < rest.length; i += 4) out += ' ' + rest.slice(i, i + 4);
+    return out.trim();
+  }
+  let out = '';
+  for (let i = 0; i < d.length; i += 4) out += (i ? ' ' : '') + d.slice(i, i + 4);
+  return out;
+}
+
+function formatExpiry(v) {
+  const d = String(v || '').replace(/\D/g, '').slice(0, 4);
+  if (d.length <= 2) return d;
+  return d.slice(0, 2) + '/' + d.slice(2);
+}
+
+function maskNumber(num) {
+  const d = String(num || '').replace(/\D/g, '');
+  if (!d) return '•••• •••• •••• ••••';
+  return '•••• •••• •••• ' + d.slice(-4);
+}
+
+function Toast({ msg }) {
+  if (!msg) return null;
+  return <div className="toast">{msg}</div>;
+}
+
 function App() {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem('fv_auth') === '1');
   const [theme, setTheme] = useState(() => localStorage.getItem('fv_theme') || 'dark');
@@ -1204,6 +1121,38 @@ function App() {
       return next;
     });
   }, [setData]);
+
+  const currentNetWorth = useMemo(() => {
+    if (!data) return 0;
+    const bankTotal = data.banks.reduce((s, b) => s + (Number(b.balance) || 0), 0);
+    const dematTotal = data.demats.reduce((s, d) => s + (Number(d.balance) || 0), 0);
+    const cardDebt = data.cards.reduce((s, c) => s + (Number(c.outstanding) || 0), 0);
+    const loanDebt = data.loans.reduce((s, l) => s + (Number(l.remaining) || 0), 0);
+    return r2(bankTotal + dematTotal - cardDebt - loanDebt);
+  }, [data]);
+
+  const nwRecordRef = useRef({ date: null, value: null });
+
+  useEffect(() => {
+    if (!data) return;
+    const today = toISO(new Date());
+    const hist = data.netWorthHistory || [];
+    const todayEntry = hist.find(h => h.date === today);
+
+    if (todayEntry && Math.abs(todayEntry.value - currentNetWorth) < 0.005) {
+      nwRecordRef.current = { date: today, value: currentNetWorth };
+      return;
+    }
+    if (nwRecordRef.current.date === today && Math.abs(nwRecordRef.current.value - currentNetWorth) < 0.005) return;
+
+    nwRecordRef.current = { date: today, value: currentNetWorth };
+    mut(d => {
+      d.netWorthHistory = (d.netWorthHistory || []).filter(h => h.date !== today);
+      d.netWorthHistory.push({ date: today, value: currentNetWorth });
+      d.netWorthHistory.sort((a, b) => a.date.localeCompare(b.date));
+      if (d.netWorthHistory.length > 180) d.netWorthHistory = d.netWorthHistory.slice(-180);
+    });
+  }, [currentNetWorth, data]);
 
   const toggleTheme = () => setTheme(t => (t === 'dark' ? 'light' : 'dark'));
 
@@ -1306,6 +1255,7 @@ function Home({ data, mut, showToast, go, sync }) {
   const [withdrawHint, setWithdrawHint] = useState(null);
   const [withdrawHintAmt, setWithdrawHintAmt] = useState('');
   const [withdrawHintBank, setWithdrawHintBank] = useState(data.banks[0] ? data.banks[0].id : '');
+  const [expandedGroups, setExpandedGroups] = useState({});
 
   const loanItems = useMemo(() => data.loans.map(l => {
     const due = nextDueDate(l.dueDay || 5, l.paidCycles);
@@ -1331,11 +1281,32 @@ function Home({ data, mut, showToast, go, sync }) {
     return [].concat(loanItems, cardItems, billItems, inflowItems).sort((a, b) => a.due - b.due);
   }, [loanItems, cardItems, billItems, inflowItems]);
 
-  // Plan Ahead: dues within next 5 days that need demat funding
+  // Group by same due date
+  const groupedFeed = useMemo(() => {
+    const map = {};
+    feed.forEach(item => {
+      const key = toISO(item.due);
+      if (!map[key]) map[key] = { key, due: item.due, days: item.days, items: [] };
+      map[key].items.push(item);
+    });
+    return Object.values(map).sort((a, b) => a.due - b.due);
+  }, [feed]);
+
+  // Net worth chart points
+  const nwPoints = useMemo(() => {
+    const hist = (data.netWorthHistory || []).slice().sort((a, b) => a.date.localeCompare(b.date));
+    if (hist.length === 0) return [{ date: toISO(new Date()), value: netWorth }];
+    const last = hist[hist.length - 1];
+    const today = toISO(new Date());
+    if (last.date !== today) hist.push({ date: today, value: netWorth });
+    else hist[hist.length - 1] = { date: today, value: netWorth };
+    return hist;
+  }, [data.netWorthHistory, netWorth]);
+
+  // Plan Ahead
   const planAhead = useMemo(() => {
     const today = startOfToday();
     const cutoff = new Date(today); cutoff.setDate(cutoff.getDate() + 5);
-
     const dues = [];
     data.loans.forEach(l => {
       const due = nextDueDate(l.dueDay || 5, l.paidCycles);
@@ -1355,17 +1326,12 @@ function Home({ data, mut, showToast, go, sync }) {
         dues.push({ kind: 'bill', name: b.name, amount: r2(b.amount), due, days: daysUntil(due) });
       }
     });
-
     if (dues.length === 0) return [];
     dues.sort((a, b) => a.due - b.due);
-
-    // Simulate cumulative: bank balance preserved as buffer, withdrawals add on top
     let runningBank = bankTotal;
     const usedInflowKeys = {};
     const result = [];
-
     dues.forEach(d => {
-      // Inflows arriving before or on this due date (not yet counted)
       let inflowSum = 0;
       data.inflows.forEach(f => {
         const iDue = nextDueDate(f.day || 1, f.receivedCycles);
@@ -1377,35 +1343,17 @@ function Home({ data, mut, showToast, go, sync }) {
           }
         }
       });
-
       const available = r2(runningBank + inflowSum);
       const needs = available < d.amount;
-
       if (needs) {
-        // Withdraw enough so existing bank is preserved as buffer
         const withdraw = r2(Math.max(0, d.amount - inflowSum));
-        result.push({
-          ...d,
-          needsWithdraw: true,
-          withdraw,
-          bankBefore: r2(runningBank),
-          inflowsBefore: r2(inflowSum),
-          available,
-        });
+        result.push({ ...d, needsWithdraw: true, withdraw, bankBefore: r2(runningBank), inflowsBefore: r2(inflowSum), available });
         runningBank = r2(runningBank + withdraw + inflowSum - d.amount);
       } else {
-        result.push({
-          ...d,
-          needsWithdraw: false,
-          withdraw: 0,
-          bankBefore: r2(runningBank),
-          inflowsBefore: r2(inflowSum),
-          available,
-        });
+        result.push({ ...d, needsWithdraw: false, withdraw: 0, bankBefore: r2(runningBank), inflowsBefore: r2(inflowSum), available });
         runningBank = r2(available - d.amount);
       }
     });
-
     return result;
   }, [data, bankTotal]);
 
@@ -1424,6 +1372,12 @@ function Home({ data, mut, showToast, go, sync }) {
       else if (item.kind === 'inflow') { const t = d.inflows.find(x => x.id === item.id); t.receivedCycles = (t.receivedCycles || []).concat([cycle]); }
     });
     showToast('Marked done for this month');
+  };
+
+  const markGroupDone = (group) => {
+    const nonInflows = group.items.filter(i => i.kind !== 'inflow');
+    if (nonInflows.length === 0) return;
+    nonInflows.forEach(item => markDone(item));
   };
 
   const openPay = (item) => {
@@ -1450,10 +1404,7 @@ function Home({ data, mut, showToast, go, sync }) {
       });
       if (item.kind === 'card') {
         const c = d.cards.find(x => x.id === item.id);
-        if (c) {
-          c.outstanding = r2(Math.max(0, c.outstanding - amt));
-          c.paidCycles = (c.paidCycles || []).concat([cycle]);
-        }
+        if (c) { c.outstanding = r2(Math.max(0, c.outstanding - amt)); c.paidCycles = (c.paidCycles || []).concat([cycle]); }
       } else if (item.kind === 'loan') {
         const l = d.loans.find(x => x.id === item.id);
         if (l) {
@@ -1496,7 +1447,6 @@ function Home({ data, mut, showToast, go, sync }) {
     const amt = r2(withdrawHintAmt);
     if (!amt || amt <= 0) { showToast('Enter a valid amount'); return; }
     const a0 = withdrawHint;
-    // Find first demat with enough balance, else use first
     let pickDemat = data.demats.find(x => Number(x.balance) >= amt);
     if (!pickDemat) pickDemat = data.demats[0];
     if (!pickDemat) { showToast('Add a demat account first'); return; }
@@ -1549,6 +1499,78 @@ function Home({ data, mut, showToast, go, sync }) {
     );
   };
 
+  const renderGroup = (group) => {
+    if (group.items.length === 1) return renderItem(group.items[0]);
+    const isExpanded = !!expandedGroups[group.key];
+    const total = r2(group.items.reduce((s, i) => s + (Number(i.amount) || 0), 0));
+    const allInflows = group.items.every(i => i.kind === 'inflow');
+    const kinds = Array.from(new Set(group.items.map(i => i.kind)));
+    const firstIco = allInflows ? Ico.down : (kinds.includes('loan') ? Ico.loan : kinds.includes('card') ? Ico.card : Ico.bill);
+    const colorClass = allInflows ? 'green' : group.days <= 3 ? 'red' : group.days <= 7 ? 'amber' : 'blue';
+
+    return (
+      <div key={group.key} className={'item group-item' + (isExpanded ? ' expanded' : '')} onClick={() => setExpandedGroups(e => ({ ...e, [group.key]: !e[group.key] }))}>
+        <div className="item-ico" style={{ color: allInflows ? 'var(--green)' : 'inherit' }}>{firstIco}</div>
+        <div className="item-body">
+          <div className="item-name" style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+            <span className="expand-chev" style={{ color: 'var(--muted)' }}>{Ico.chev}</span>
+            <span>{group.items.length} items due {fmtDate(group.due)}</span>
+          </div>
+          <div className="item-meta">
+            <span className={'pill ' + colorClass}>
+              <span className="pdot"></span>{allInflows ? 'receiving ' + relDays(group.days) : 'due ' + relDays(group.days)}
+            </span>
+            <span className="pill">Click to {isExpanded ? 'collapse' : 'expand'}</span>
+          </div>
+        </div>
+        <div style={{ textAlign: 'right' }} onClick={e => e.stopPropagation()}>
+          <div className="item-amt" style={{ color: allInflows ? 'var(--green)' : 'inherit' }}>
+            {allInflows ? '+' : ''}{inr(total)}
+          </div>
+          <div className="item-actions" style={{ marginTop: '7px', justifyContent: 'flex-end' }}>
+            {!allInflows && (
+              <button className="btn btn-sm" onClick={(e) => { e.stopPropagation(); markGroupDone(group); }}>Mark all done</button>
+            )}
+          </div>
+        </div>
+        {isExpanded && (
+          <div className="group-children" style={{ flexBasis: '100%' }} onClick={e => e.stopPropagation()}>
+            {group.items.map(item => {
+              const isIn = item.kind === 'inflow';
+              const I = CategoryIcon({ kind: item.kind });
+              return (
+                <div className="group-child" key={item.kind + item.id}>
+                  <div className="item-ico" style={{ width: 30, height: 30, color: isIn ? 'var(--green)' : 'inherit' }}>{I}</div>
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div className="item-name">{item.name}</div>
+                    <div className="item-meta" style={{ marginTop: 3 }}>
+                      <span className="pill" style={{ fontSize: '10px' }}>
+                        {item.kind === 'loan' ? 'Loan EMI' : item.kind === 'card' ? 'Credit Card' : item.kind === 'bill' ? 'Bill' : 'Inflow'}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="item-amt" style={{ fontSize: '13px', color: isIn ? 'var(--green)' : 'inherit' }}>
+                    {isIn ? '+' : ''}{inr(item.amount)}
+                  </div>
+                  <div className="item-actions">
+                    {isIn ? (
+                      <button className="btn btn-sm btn-primary" onClick={() => setInflowTarget(item)}>Received?</button>
+                    ) : (
+                      <React.Fragment>
+                        <button className="btn btn-sm btn-primary" onClick={() => openPay(item)}>Pay</button>
+                        <button className="btn btn-sm" onClick={() => markDone(item)}>Done</button>
+                      </React.Fragment>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+    );
+  };
+
   const planNeedingWithdraw = planAhead.filter(p => p.needsWithdraw);
 
   return (
@@ -1573,9 +1595,17 @@ function Home({ data, mut, showToast, go, sync }) {
         </div>
         <div className="kpi glass">
           <div className="kpi-head"><span className="kpi-dot amber"></span><span className="kpi-label">Net Worth</span></div>
-          <div className="kpi-val">{inr(netWorth)}</div>
+          <div className="kpi-val" style={{ color: netWorth >= 0 ? 'var(--green)' : 'var(--red)' }}>{inr(netWorth)}</div>
           <div className="kpi-note">Assets {inr(assets)} − Debts {inr(liabilities)}</div>
         </div>
+      </div>
+
+      <div className="section-head">
+        <div className="section-title"><span className="dot"></span>Net Worth Progress</div>
+        <span className="pill blue">{nwPoints.length} snapshot{nwPoints.length !== 1 ? 's' : ''}</span>
+      </div>
+      <div className="glass" style={{ padding: '20px' }}>
+        <NetWorthChart points={nwPoints} />
       </div>
 
       {planNeedingWithdraw.length > 0 ? (
@@ -1602,9 +1632,7 @@ function Home({ data, mut, showToast, go, sync }) {
                     </div>
                     <div style={{ textAlign: 'right' }}>
                       <div className="plan-amt">{inr(p.withdraw)}</div>
-                      <div style={{ fontSize: '10.5px', color: 'var(--muted)', marginTop: '3px', letterSpacing: '.3px', textTransform: 'uppercase', fontWeight: 600 }}>
-                        withdraw from demat
-                      </div>
+                      <div style={{ fontSize: '10.5px', color: 'var(--muted)', marginTop: '3px', letterSpacing: '.3px', textTransform: 'uppercase', fontWeight: 600 }}>withdraw from demat</div>
                     </div>
                   </div>
                   <div className="plan-action">
@@ -1635,8 +1663,7 @@ function Home({ data, mut, showToast, go, sync }) {
           <div className="glass" style={{ padding: '14px' }}>
             <div style={{ padding: '6px 4px', fontSize: '13px', color: 'var(--muted)', lineHeight: 1.6 }}>
               You have upcoming dues in the next 5 days but your bank balance covers them.
-              {planAhead.length} item{planAhead.length !== 1 ? 's' : ''} due · total {inr(r2(planAhead.reduce((s, p) => s + p.amount, 0)))}.
-              No demat withdrawal needed right now.
+              {planAhead.length} item{planAhead.length !== 1 ? 's' : ''} due · total {inr(r2(planAhead.reduce((s, p) => s + p.amount, 0)))}. No demat withdrawal needed right now.
             </div>
           </div>
         </React.Fragment>
@@ -1644,7 +1671,7 @@ function Home({ data, mut, showToast, go, sync }) {
 
       <div className="section-head">
         <div className="section-title"><span className="dot"></span>Notifications — everything coming up</div>
-        <span className="pill blue">{feed.length} item{feed.length !== 1 ? 's' : ''}</span>
+        <span className="pill blue">{feed.length} item{feed.length !== 1 ? 's' : ''} · {groupedFeed.length} group{groupedFeed.length !== 1 ? 's' : ''}</span>
       </div>
       <div className="glass" style={{ padding: '14px' }}>
         {feed.length === 0 ? (
@@ -1654,7 +1681,7 @@ function Home({ data, mut, showToast, go, sync }) {
             sub="Add loans, credit cards or bills and they will show up here sorted by due date."
           />
         ) : (
-          <div className="list">{feed.map(renderItem)}</div>
+          <div className="list">{groupedFeed.map(renderGroup)}</div>
         )}
       </div>
 
@@ -1864,6 +1891,22 @@ function Banks({ data, mut, showToast, sync }) {
     return months;
   }, [data.transactions]);
 
+  // Category breakdown (all-time, out only)
+  const catBreakdown = useMemo(() => {
+    const totals = {};
+    let overall = 0;
+    data.transactions.forEach(t => {
+      if (t.dir !== 'out') return;
+      const c = t.category || 'Other';
+      const amt = Number(t.amount) || 0;
+      totals[c] = r2((totals[c] || 0) + amt);
+      overall += amt;
+    });
+    const arr = Object.keys(totals).map(k => ({ name: k, amount: totals[k], pct: overall > 0 ? r2((totals[k] / overall) * 100) : 0 }));
+    arr.sort((a, b) => b.amount - a.amount);
+    return { items: arr, overall: r2(overall) };
+  }, [data.transactions]);
+
   const saveBank = (name, balance, id) => {
     mut(d => {
       if (id) {
@@ -1966,6 +2009,28 @@ function Banks({ data, mut, showToast, sync }) {
           </div>
         ))}
       </div>
+
+      {catBreakdown.items.length > 0 && (
+        <React.Fragment>
+          <div className="section-head">
+            <div className="section-title"><span className="dot"></span>Where Your Money Goes — by category</div>
+            <span className="pill">Total spent {inr(catBreakdown.overall)}</span>
+          </div>
+          <div className="glass" style={{ padding: '20px' }}>
+            {catBreakdown.items.map((c, i) => (
+              <div className="cat-row" key={c.name}>
+                <div className="cat-name" title={c.name}>{c.name}</div>
+                <div className="cat-bar-track">
+                  <div className="cat-bar-fill" style={{ width: Math.max(4, c.pct) + '%', background: catColor(c.name) }}>
+                    {c.pct >= 8 ? c.pct + '%' : ''}
+                  </div>
+                </div>
+                <div className="cat-amt">{inr(c.amount)}</div>
+              </div>
+            ))}
+          </div>
+        </React.Fragment>
+      )}
 
       <div className="section-head">
         <div className="section-title"><span className="dot"></span>Transaction Log</div>
@@ -2955,6 +3020,162 @@ function InflowFormModal({ open, onClose, inflow, onSave }) {
   );
 }
 
+/* ---------- Demat Calendar ---------- */
+function DematCalendar({ account, onSetValue, onClearValue }) {
+  const today = startOfToday();
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const [editDate, setEditDate] = useState(null);
+  const [editVal, setEditVal] = useState('');
+
+  const history = useMemo(() => {
+    const map = {};
+    (account.history || []).forEach(h => { map[h.date] = Number(h.value) || 0; });
+    return map;
+  }, [account.history]);
+
+  const firstDay = new Date(viewYear, viewMonth, 1);
+  const startDow = firstDay.getDay();
+  const dim = daysInMonth(viewYear, viewMonth);
+
+  const cells = [];
+  for (let i = 0; i < startDow; i++) cells.push({ empty: true, key: 'e' + i });
+  for (let d = 1; d <= dim; d++) {
+    const iso = viewYear + '-' + pad(viewMonth + 1) + '-' + pad(d);
+    const val = history[iso];
+    const cellDate = new Date(viewYear, viewMonth, d);
+    // Find previous entry's value before this date
+    let prevVal = null;
+    let prevDateStr = null;
+    const sortedKeys = Object.keys(history).sort();
+    for (let k = 0; k < sortedKeys.length; k++) {
+      if (sortedKeys[k] < iso) { prevVal = history[sortedKeys[k]]; prevDateStr = sortedKeys[k]; }
+      else break;
+    }
+    const pnl = (val !== undefined && prevVal !== null) ? r2(val - prevVal) : null;
+    cells.push({
+      empty: false, key: iso, day: d, iso, val: val !== undefined ? val : null,
+      pnl, isToday: iso === toISO(today), prevDateStr
+    });
+  }
+  // pad to full weeks
+  while (cells.length % 7 !== 0) cells.push({ empty: true, key: 'pe' + cells.length });
+
+  const monthLabel = MONTHS_FULL[viewMonth] + ' ' + viewYear;
+
+  // Month stats
+  const monthEntries = (account.history || []).filter(h => h.date.startsWith(viewYear + '-' + pad(viewMonth + 1)));
+  let monthStart = null, monthEnd = null;
+  if (monthEntries.length) {
+    const sorted = monthEntries.slice().sort((a, b) => a.date.localeCompare(b.date));
+    monthStart = Number(sorted[0].value);
+    monthEnd = Number(sorted[sorted.length - 1].value);
+  }
+  const monthPnl = (monthStart !== null && monthEnd !== null) ? r2(monthEnd - monthStart) : null;
+
+  const prevMonth = () => {
+    if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
+    else setViewMonth(m => m - 1);
+  };
+  const nextMonth = () => {
+    if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
+    else setViewMonth(m => m + 1);
+  };
+
+  const openEdit = (cell) => {
+    if (cell.empty) return;
+    setEditDate(cell.iso);
+    setEditVal(cell.val !== null ? String(cell.val) : '');
+  };
+
+  const saveEdit = () => {
+    if (!editDate) return;
+    if (editVal === '' || editVal === null) {
+      onClearValue(editDate);
+    } else {
+      onSetValue(editDate, r2(editVal));
+    }
+    setEditDate(null);
+  };
+
+  const clearEdit = () => {
+    if (!editDate) return;
+    onClearValue(editDate);
+    setEditDate(null);
+  };
+
+  return (
+    <div>
+      <div className="cal-nav">
+        <button className="icon-btn" onClick={prevMonth} aria-label="Previous month">{Ico.chevLeft}</button>
+        <div className="cal-nav-title">{monthLabel}</div>
+        <button className="icon-btn" onClick={nextMonth} aria-label="Next month">{Ico.chevRight}</button>
+      </div>
+      <div className="cal-wrap">
+        {DOW.map(d => <div className="cal-dow" key={d}>{d}</div>)}
+        {cells.map(c => c.empty ? (
+          <div key={c.key} className="cal-cell empty"></div>
+        ) : (
+          <div key={c.key}
+            className={'cal-cell' + (c.isToday ? ' today' : '') + (c.val !== null ? ' has-value' : '')}
+            onClick={() => openEdit(c)}
+            title={c.val !== null ? inr(c.val) : 'Click to set value'}>
+            <div className="cal-day-num">{c.day}</div>
+            {c.val !== null && (
+              <React.Fragment>
+                <div className="cal-val">{inr(c.val)}</div>
+                {c.pnl !== null && Math.abs(c.pnl) > 0.005 && (
+                  <div className={'cal-pnl ' + (c.pnl >= 0 ? 'up' : 'down')}>
+                    {c.pnl >= 0 ? '+' : ''}{money(c.pnl)}
+                  </div>
+                )}
+              </React.Fragment>
+            )}
+          </div>
+        ))}
+      </div>
+
+      <div className="cal-month-stats">
+        <div className="cal-stat">
+          <div className="cal-stat-label">Month start</div>
+          <div className="cal-stat-val" style={{ color: monthStart !== null ? 'var(--txt)' : 'var(--muted)' }}>
+            {monthStart !== null ? inr(monthStart) : '—'}
+          </div>
+        </div>
+        <div className="cal-stat">
+          <div className="cal-stat-label">Month end</div>
+          <div className="cal-stat-val" style={{ color: monthEnd !== null ? 'var(--txt)' : 'var(--muted)' }}>
+            {monthEnd !== null ? inr(monthEnd) : '—'}
+          </div>
+        </div>
+        <div className="cal-stat">
+          <div className="cal-stat-label">Month P&L</div>
+          <div className="cal-stat-val" style={{ color: monthPnl === null ? 'var(--muted)' : (monthPnl >= 0 ? 'var(--green)' : 'var(--red)') }}>
+            {monthPnl !== null ? (monthPnl >= 0 ? '+' : '') + money(monthPnl) : '—'}
+          </div>
+        </div>
+      </div>
+
+      <Modal open={!!editDate} onClose={() => setEditDate(null)} title={editDate ? 'Demat value on ' + fmtDate(editDate) : ''}>
+        <div className="field">
+          <label className="label">Capital / Value (₹)</label>
+          <MoneyInput value={editVal} onChange={setEditVal} autoFocus />
+        </div>
+        <div style={{ fontSize: '11.5px', color: 'var(--muted)', marginBottom: '14px', lineHeight: 1.5 }}>
+          Enter the total demat value on this date. P&L for the day will be calculated from the previous entry.
+        </div>
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button className="btn" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setEditDate(null)}>Cancel</button>
+          {editDate && history[editDate] !== undefined && (
+            <button className="btn btn-danger" style={{ justifyContent: 'center' }} onClick={clearEdit}>Clear</button>
+          )}
+          <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={saveEdit}>Save</button>
+        </div>
+      </Modal>
+    </div>
+  );
+}
+
 function Demat({ data, mut, showToast, sync }) {
   const [formOpen, setFormOpen] = useState(false);
   const [edit, setEdit] = useState(null);
@@ -2964,9 +3185,16 @@ function Demat({ data, mut, showToast, sync }) {
   const [withdrawAmt, setWithdrawAmt] = useState('');
   const [withdrawBank, setWithdrawBank] = useState(data.banks[0] ? data.banks[0].id : '');
   const [selected, setSelected] = useState('all');
+  const [calAccountId, setCalAccountId] = useState(data.demats[0] ? data.demats[0].id : '');
   const [confirmDel, setConfirmDel] = useState(null);
 
   const total = data.demats.reduce((s, d) => s + (Number(d.balance) || 0), 0);
+
+  useEffect(() => {
+    if (data.demats.length && !data.demats.find(d => d.id === calAccountId)) {
+      setCalAccountId(data.demats[0].id);
+    }
+  }, [data.demats]);
 
   const chartPoints = useMemo(() => {
     const accounts = selected === 'all' ? data.demats : data.demats.filter(d => d.id === selected);
@@ -2988,6 +3216,35 @@ function Demat({ data, mut, showToast, sync }) {
       return { date: dt, value: r2(sum) };
     });
   }, [data.demats, selected]);
+
+  const calAccount = data.demats.find(d => d.id === calAccountId) || data.demats[0];
+
+  const setCalValue = (date, value) => {
+    if (!calAccount) return;
+    mut(d => {
+      const a = d.demats.find(x => x.id === calAccount.id);
+      if (!a) return;
+      a.history = (a.history || []).filter(h => h.date !== date);
+      a.history.push({ date, value });
+      a.history.sort((x, y) => x.date.localeCompare(y.date));
+      // If date is today, update current balance too
+      if (date === toISO(new Date())) a.balance = value;
+      // If date is the latest date, update current balance
+      const latest = a.history[a.history.length - 1];
+      if (latest && latest.date === date) a.balance = value;
+    });
+    showToast('Saved for ' + fmtDate(date));
+  };
+
+  const clearCalValue = (date) => {
+    if (!calAccount) return;
+    mut(d => {
+      const a = d.demats.find(x => x.id === calAccount.id);
+      if (!a) return;
+      a.history = (a.history || []).filter(h => h.date !== date);
+    });
+    showToast('Cleared entry');
+  };
 
   const saveAccount = (name, balance, id) => {
     mut(d => {
@@ -3047,6 +3304,24 @@ function Demat({ data, mut, showToast, sync }) {
         </div>
         <LineChart points={chartPoints} />
       </div>
+
+      {calAccount && (
+        <React.Fragment>
+          <div className="section-head">
+            <div className="section-title"><span className="dot"></span>Daily P&L Calendar</div>
+            <select className="select" style={{ maxWidth: '230px' }} value={calAccountId} onChange={(e) => setCalAccountId(e.target.value)}>
+              {data.demats.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+            </select>
+          </div>
+          <div className="glass" style={{ padding: '20px', marginBottom: '18px' }}>
+            <DematCalendar
+              account={calAccount}
+              onSetValue={setCalValue}
+              onClearValue={clearCalValue}
+            />
+          </div>
+        </React.Fragment>
+      )}
 
       <div className="grid g2">
         {data.demats.map(a => (
