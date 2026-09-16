@@ -557,8 +557,7 @@ const Ico = {
   cloud: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 .5-9 6 6 0 0 0-11.6-1.5A4.5 4.5 0 0 0 6.5 19z"/></svg>,
   cloudOff: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3l18 18"/><path d="M17.5 19a4.5 4.5 0 0 0 .5-9 6 6 0 0 0-3.6-5.4"/><path d="M6.5 19a4.5 4.5 0 0 1-.3-9 6 6 0 0 1 4.8-5.6"/></svg>,
   refresh: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M3 21v-5h5"/></svg>,
-  warn: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10.3 3.7 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>,
-  reset: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{width:12,height:12}}><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M3 21v-5h5"/></svg>
+  warn: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10.3 3.7 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
 };
 
 function CategoryIcon({ kind }) {
@@ -2398,48 +2397,57 @@ function Loans({ data, mut, showToast, sync }) {
 function LoanModal({ open, onClose, loan, onSave }) {
   const [name, setName] = useState('');
   const [emi, setEmi] = useState('');
-  const [remaining, setRemaining] = useState('');
   const [principal, setPrincipal] = useState('');
   const [rate, setRate] = useState('');
   const [monthsLeft, setMonthsLeft] = useState('');
   const [foreclosure, setForeclosure] = useState('');
   const [dueDay, setDueDay] = useState('');
-  const [autoRemaining, setAutoRemaining] = useState(true);
-
-  const calcRemaining = (emiVal, rateVal, monthsVal) => {
-    const e = Number(emiVal) || 0;
-    const n = Number(monthsVal) || 0;
-    const r = (Number(rateVal) || 0) / 100 / 12;
-    if (e <= 0 || n <= 0) return '';
-    let val;
-    if (r === 0) val = e * n;
-    else val = e * (1 - Math.pow(1 + r, -n)) / r;
-    return String(r2(val));
-  };
 
   useEffect(() => {
     if (open) {
       setName(loan ? loan.name : '');
       setEmi(loan ? String(loan.emi || '') : '');
-      setRemaining(loan ? String(loan.remaining || '') : '');
       setPrincipal(loan ? String(loan.principal || '') : '');
       setRate(loan ? String(loan.rate || '') : '');
       setMonthsLeft(loan ? String(loan.monthsLeft || '') : '');
       setForeclosure(loan ? String(loan.foreclosureAmount || '') : '');
       setDueDay(loan ? String(loan.dueDay || '') : '');
-      setAutoRemaining(!loan);
     }
   }, [open, loan]);
 
-  useEffect(() => {
-    if (!open || !autoRemaining) return;
-    const calc = calcRemaining(emi, rate, monthsLeft);
-    if (calc !== '' && calc !== remaining) setRemaining(calc);
-  }, [emi, rate, monthsLeft, autoRemaining, open]);
-
   if (!open) return null;
 
-  const remainingOverridden = !autoRemaining && remaining !== '';
+  const calcRemaining = (emiVal, rateVal, monthsVal) => {
+    const e = Number(emiVal) || 0;
+    const n = Number(monthsVal) || 0;
+    const r = (Number(rateVal) || 0) / 100 / 12;
+    if (e <= 0 || n <= 0) return 0;
+    if (r === 0) return r2(e * n);
+    return r2(e * (1 - Math.pow(1 + r, -n)) / r);
+  };
+
+  const submit = () => {
+    let remaining;
+    if (loan && Number(loan.remaining) > 0) {
+      const unchanged =
+        Number(loan.emi) === Number(emi) &&
+        Number(loan.rate) === Number(rate) &&
+        Number(loan.monthsLeft) === Number(monthsLeft);
+      remaining = unchanged ? loan.remaining : calcRemaining(emi, rate, monthsLeft);
+    } else {
+      remaining = calcRemaining(emi, rate, monthsLeft);
+    }
+    onSave({
+      name: name.trim() || 'Loan',
+      emi: r2(emi),
+      remaining: r2(remaining),
+      principal: r2(principal) || r2(remaining),
+      rate: r2(rate),
+      monthsLeft: Number(monthsLeft) || 0,
+      foreclosureAmount: r2(foreclosure),
+      dueDay: Math.min(31, Math.max(1, Number(dueDay) || 5))
+    }, loan ? loan.id : null);
+  };
 
   return (
     <Modal open={open} onClose={onClose} title={loan ? 'Edit Loan' : 'Add Loan'}>
@@ -2471,24 +2479,6 @@ function LoanModal({ open, onClose, loan, onSave }) {
         </div>
       </div>
       <div className="field">
-        <label className="label" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>Amount Remaining</span>
-          {remainingOverridden ? (
-            <button type="button"
-              onClick={() => setAutoRemaining(true)}
-              style={{ background: 'none', border: 'none', color: 'var(--accent)', fontSize: '10.5px', fontWeight: 600, cursor: 'pointer', padding: 0, letterSpacing: '.3px', display: 'inline-flex', alignItems: 'center', gap: '4px', textTransform: 'none' }}>
-              {Ico.reset} Reset to auto
-            </button>
-          ) : null}
-        </label>
-        <MoneyInput value={remaining} onChange={(v) => { setRemaining(v); setAutoRemaining(false); }} />
-        <div style={{ fontSize: '10.5px', color: remainingOverridden ? 'var(--amber)' : 'var(--muted)', marginTop: '5px', lineHeight: 1.4 }}>
-          {remainingOverridden
-            ? 'Manually entered. Click "Reset to auto" to calculate from EMI, rate and months left.'
-            : 'Auto-calculated from EMI × months left (with interest). Type to override.'}
-        </div>
-      </div>
-      <div className="field">
         <label className="label">Original Loan Amount</label>
         <MoneyInput value={principal} onChange={setPrincipal} />
       </div>
@@ -2496,17 +2486,7 @@ function LoanModal({ open, onClose, loan, onSave }) {
         <label className="label">Foreclosure Amount (if you close it today)</label>
         <MoneyInput value={foreclosure} onChange={setForeclosure} />
       </div>
-      <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }}
-        onClick={() => onSave({
-          name: name.trim() || 'Loan',
-          emi: r2(emi),
-          remaining: r2(remaining),
-          principal: r2(principal) || r2(remaining),
-          rate: r2(rate),
-          monthsLeft: Number(monthsLeft) || 0,
-          foreclosureAmount: r2(foreclosure),
-          dueDay: Math.min(31, Math.max(1, Number(dueDay) || 5))
-        }, loan ? loan.id : null)}>
+      <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={submit}>
         {loan ? 'Save Changes' : 'Add Loan'}
       </button>
     </Modal>
