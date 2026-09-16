@@ -586,7 +586,6 @@ const CAT_COLORS = {
 };
 function catColor(c) { return CAT_COLORS[c] || CAT_COLORS['Other']; }
 
-/* Sort helpers */
 function sortByDueDate(items, getDayKey, defaultDay) {
   return items.slice().sort((a, b) => {
     const da = nextDueDate(a[getDayKey] || defaultDay, a.paidCycles);
@@ -1189,7 +1188,6 @@ function Home({ data, mut, showToast, go, sync }) {
   const [withdrawHintBank, setWithdrawHintBank] = useState(data.banks[0] ? data.banks[0].id : '');
   const [expandedGroups, setExpandedGroups] = useState({});
 
-  // All sorted by due date
   const loanItems = useMemo(() => data.loans.map(l => { const due = nextDueDate(l.dueDay || 5, l.paidCycles); return { kind: 'loan', ref: l, id: l.id, name: l.name, amount: r2(l.emi), due, days: daysUntil(due) }; }).sort((a, b) => a.due - b.due), [data.loans]);
   const cardItems = useMemo(() => data.cards.map(c => { const due = nextDueDate(c.dueDay || 10, c.paidCycles); return { kind: 'card', ref: c, id: c.id, name: c.name, amount: r2(c.outstanding), due, days: daysUntil(due) }; }).sort((a, b) => a.due - b.due), [data.cards]);
   const billItems = useMemo(() => data.bills.map(b => { const due = nextDueDate(b.dueDay || 1, b.paidCycles); return { kind: 'bill', ref: b, id: b.id, name: b.name, amount: r2(b.amount), due, days: daysUntil(due) }; }).sort((a, b) => a.due - b.due), [data.bills]);
@@ -2003,7 +2001,6 @@ function Cards({ data, mut, showToast, sync }) {
   const [confirmDel, setConfirmDel] = useState(null);
   const totalOut = data.cards.reduce((s, c) => s + (Number(c.outstanding) || 0), 0);
 
-  // Sorted by due date
   const sortedCards = useMemo(() => sortByDueDate(data.cards, 'dueDay', 10), [data.cards]);
 
   const save = (payload, id) => {
@@ -2213,7 +2210,6 @@ function Loans({ data, mut, showToast, sync }) {
   const total = data.loans.reduce((s, l) => s + (Number(l.remaining) || 0), 0);
   const totalEmi = data.loans.reduce((s, l) => s + (Number(l.emi) || 0), 0);
 
-  // Sorted by due date
   const sortedLoans = useMemo(() => sortByDueDate(data.loans, 'dueDay', 5), [data.loans]);
 
   const save = (payload, id) => {
@@ -2377,13 +2373,10 @@ function LoanModal({ open, onClose, loan, onSave }) {
   }, [open, loan]);
   if (!open) return null;
 
-  const calcRemaining = (emiVal, rateVal, monthsVal) => {
+  const simpleRemaining = (emiVal, monthsVal) => {
     const e = Number(emiVal) || 0;
     const n = Number(monthsVal) || 0;
-    const r = (Number(rateVal) || 0) / 100 / 12;
-    if (e <= 0 || n <= 0) return 0;
-    if (r === 0) return r2(e * n);
-    return r2(e * (1 - Math.pow(1 + r, -n)) / r);
+    return r2(e * n);
   };
 
   const submit = () => {
@@ -2391,15 +2384,18 @@ function LoanModal({ open, onClose, loan, onSave }) {
     if (loan && Number(loan.remaining) > 0) {
       const unchanged =
         Number(loan.emi) === Number(emi) &&
-        Number(loan.rate) === Number(rate) &&
         Number(loan.monthsLeft) === Number(monthsLeft);
-      remaining = unchanged ? loan.remaining : calcRemaining(emi, rate, monthsLeft);
-    } else remaining = calcRemaining(emi, rate, monthsLeft);
+      remaining = unchanged ? loan.remaining : simpleRemaining(emi, monthsLeft);
+    } else {
+      remaining = simpleRemaining(emi, monthsLeft);
+    }
     onSave({
       name: name.trim() || 'Loan',
-      emi: r2(emi), remaining: r2(remaining),
+      emi: r2(emi),
+      remaining: r2(remaining),
       principal: r2(principal) || r2(remaining),
-      rate: r2(rate), monthsLeft: Number(monthsLeft) || 0,
+      rate: r2(rate),
+      monthsLeft: Number(monthsLeft) || 0,
       foreclosureAmount: r2(foreclosure),
       dueDay: Math.min(31, Math.max(1, Number(dueDay) || 5))
     }, loan ? loan.id : null);
@@ -2442,7 +2438,6 @@ function Bills({ data, mut, showToast, sync }) {
 
   const totalBills = data.bills.reduce((s, b) => s + (Number(b.amount) || 0), 0);
 
-  // Sorted by due date
   const sortedBills = useMemo(() => sortByDueDate(data.bills, 'dueDay', 1), [data.bills]);
   const sortedInflows = useMemo(() => {
     return data.inflows.slice().sort((a, b) => {
