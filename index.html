@@ -299,11 +299,9 @@ html[data-theme="light"] .toast{background:rgba(255,255,255,.98);color:#0c1120}
 .spotlight.green::before{background:radial-gradient(circle,rgba(52,211,153,.12),transparent 70%)}
 .spotlight.amber::before{background:radial-gradient(circle,rgba(251,191,36,.12),transparent 70%)}
 
-/* Net Worth Chart */
 .nw-chart-wrap{width:100%;height:220px;position:relative}
 .nw-chart-wrap svg{width:100%;height:100%;display:block;overflow:visible}
 
-/* Category Breakdown */
 .cat-row{display:flex;align-items:center;gap:12px;margin-bottom:12px}
 .cat-row:last-child{margin-bottom:0}
 .cat-bar-track{flex:1;height:28px;border-radius:8px;background:var(--glass-2);overflow:hidden;position:relative}
@@ -315,7 +313,6 @@ html[data-theme="light"] .toast{background:rgba(255,255,255,.98);color:#0c1120}
   .cat-amt{width:90px;font-size:11.5px}
 }
 
-/* Demat Calendar */
 .cal-wrap{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:12px}
 .cal-dow{font-size:10px;font-weight:700;color:var(--muted);text-align:center;padding:6px 0;text-transform:uppercase;letter-spacing:.8px}
 .cal-cell{
@@ -355,22 +352,26 @@ html[data-theme="light"] .toast{background:rgba(255,255,255,.98);color:#0c1120}
 .cal-stat-label{font-size:10.5px;font-weight:600;color:var(--muted);letter-spacing:.6px;text-transform:uppercase}
 .cal-stat-val{font-size:16px;font-weight:700;margin-top:5px;letter-spacing:-.4px;font-variant-numeric:tabular-nums}
 
-/* Grouped notifications */
 .group-item{cursor:pointer}
 .group-item .expand-chev{transition:transform .22s ease;display:inline-block}
 .group-item.expanded .expand-chev{transform:rotate(90deg)}
 .group-children{margin-top:8px;padding-left:8px;border-left:2px solid var(--brd);display:flex;flex-direction:column;gap:6px;animation:fadeIn .2s ease}
 .group-child{background:var(--glass-2);border:1px solid var(--brd);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:12px}
+
+.plan-box{background:linear-gradient(135deg, rgba(251,191,36,.06), rgba(124,146,255,.04)); border:1px solid rgba(251,191,36,.18)}
+.plan-item{background:var(--glass-2);border:1px solid var(--brd);border-radius:12px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:flex-start;gap:14px}
+.plan-item:last-child{margin-bottom:0}
+.plan-amt{font-size:20px;font-weight:800;color:var(--amber);letter-spacing:-.6px;font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+.plan-action{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.5}
 </style>
 </head>
 <body>
 <div class="bg-base"></div>
-<div id="rays-root"></div>
 <div id="root">
   <div class="boot">
     <div class="boot-inner">
       <div class="boot-logo">FV</div>
-      <div>Starting FinVault…</div>
+      <div>Starting ShubhVault…</div>
     </div>
   </div>
 </div>
@@ -401,9 +402,7 @@ try {
     db = firebase.firestore();
     try {
       db.enablePersistence({ synchronizeTabs: true }).catch(function (err) {
-        if (err && err.code !== 'failed-precondition' && err.code !== 'unimplemented') {
-          console.warn('Persistence unavailable', err);
-        }
+        if (err && err.code !== 'failed-precondition' && err.code !== 'unimplemented') console.warn('Persistence unavailable', err);
       });
     } catch (e) {}
   }
@@ -416,46 +415,18 @@ const pad = (n) => String(n).padStart(2, '0');
 const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 
-function money(n) {
-  return (Number(n) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-}
+function money(n) { return (Number(n) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
 function inr(n) { return '₹' + money(n); }
-
-function parseISO(s) {
-  if (!s) return new Date();
-  const p = String(s).split('-').map(Number);
-  return new Date(p[0], (p[1] || 1) - 1, p[2] || 1);
-}
+function parseISO(s) { if (!s) return new Date(); const p = String(s).split('-').map(Number); return new Date(p[0], (p[1] || 1) - 1, p[2] || 1); }
 function toISO(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
-function fmtDate(v) {
-  const d = v instanceof Date ? v : parseISO(v);
-  if (isNaN(d.getTime())) return '—';
-  return pad(d.getDate()) + '-' + MONTHS[d.getMonth()] + '-' + d.getFullYear();
-}
-function fmtDateLong(v) {
-  const d = v instanceof Date ? v : parseISO(v);
-  return pad(d.getDate()) + ' ' + MONTHS_FULL[d.getMonth()] + ' ' + d.getFullYear();
-}
+function fmtDate(v) { const d = v instanceof Date ? v : parseISO(v); if (isNaN(d.getTime())) return '—'; return pad(d.getDate()) + '-' + MONTHS[d.getMonth()] + '-' + d.getFullYear(); }
+function fmtDateLong(v) { const d = v instanceof Date ? v : parseISO(v); return pad(d.getDate()) + ' ' + MONTHS_FULL[d.getMonth()] + ' ' + d.getFullYear(); }
 function startOfToday() { const d = new Date(); d.setHours(0,0,0,0); return d; }
 function daysInMonth(y, m) { return new Date(y, m + 1, 0).getDate(); }
 function monthKey(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1); }
 function daysUntil(d) { return Math.round((d - startOfToday()) / 86400000); }
-function relDays(n) {
-  if (n < 0) return Math.abs(n) + ' days ago';
-  if (n === 0) return 'today';
-  if (n === 1) return 'in 1 day';
-  return 'in ' + n + ' days';
-}
-function timeAgo(ts) {
-  const s = Math.round((Date.now() - ts) / 1000);
-  if (s < 5) return 'just now';
-  if (s < 60) return s + 's ago';
-  const m = Math.round(s / 60);
-  if (m < 60) return m + 'm ago';
-  const h = Math.round(m / 60);
-  if (h < 24) return h + 'h ago';
-  return fmtDate(new Date(ts));
-}
+function relDays(n) { if (n < 0) return Math.abs(n) + ' days ago'; if (n === 0) return 'today'; if (n === 1) return 'in 1 day'; return 'in ' + n + ' days'; }
+function timeAgo(ts) { const s = Math.round((Date.now() - ts) / 1000); if (s < 5) return 'just now'; if (s < 60) return s + 's ago'; const m = Math.round(s / 60); if (m < 60) return m + 'm ago'; const h = Math.round(m / 60); if (h < 24) return h + 'h ago'; return fmtDate(new Date(ts)); }
 
 function nextDueDate(dueDay, paidCycles) {
   const today = startOfToday();
@@ -465,10 +436,7 @@ function nextDueDate(dueDay, paidCycles) {
   let cand = new Date(y, m, Math.min(dd, daysInMonth(y, m)));
   if (cand < today) { m++; cand = new Date(y, m, Math.min(dd, daysInMonth(y, m))); }
   let guard = 0;
-  while ((paidCycles || []).indexOf(monthKey(cand)) !== -1 && guard++ < 60) {
-    m++;
-    cand = new Date(y, m, Math.min(dd, daysInMonth(y, m)));
-  }
+  while ((paidCycles || []).indexOf(monthKey(cand)) !== -1 && guard++ < 60) { m++; cand = new Date(y, m, Math.min(dd, daysInMonth(y, m))); }
   return cand;
 }
 
@@ -476,19 +444,14 @@ const DEFAULT_DATA = {
   banks: [{ id: 'b1', name: 'Main Bank', balance: 0 }],
   transactions: [],
   demats: [{ id: 'd1', name: 'My Demat', balance: 0, history: [] }],
-  cards: [],
-  loans: [],
-  bills: [],
-  inflows: [],
+  cards: [], loans: [], bills: [], inflows: [],
   netWorthHistory: [],
   meta: { version: 1 }
 };
 
 function normalize(d) {
   const out = Object.assign({}, DEFAULT_DATA, d || {});
-  ['banks','transactions','demats','cards','loans','bills','inflows','netWorthHistory'].forEach(k => {
-    if (!Array.isArray(out[k])) out[k] = [];
-  });
+  ['banks','transactions','demats','cards','loans','bills','inflows','netWorthHistory'].forEach(k => { if (!Array.isArray(out[k])) out[k] = []; });
   out.demats = out.demats.map(x => Object.assign({ history: [] }, x, { history: Array.isArray(x.history) ? x.history : [] }));
   out.cards = out.cards.map(x => Object.assign({ paidCycles: [] }, x));
   out.loans = out.loans.map(x => Object.assign({ paidCycles: [] }, x));
@@ -501,50 +464,33 @@ function normalize(d) {
 
 function useStore() {
   const [data, setData] = useState(null);
-  const [sync, setSync] = useState({
-    state: db ? 'connecting' : 'local',
-    lastSync: null,
-    fromCache: false,
-    error: null
-  });
+  const [sync, setSync] = useState({ state: db ? 'connecting' : 'local', lastSync: null, fromCache: false, error: null });
   const lastRef = useRef('');
   const timerRef = useRef(null);
 
   useEffect(() => {
     if (!db) {
       let d = DEFAULT_DATA;
-      try {
-        const raw = localStorage.getItem('finvault_data');
-        if (raw) d = JSON.parse(raw);
-      } catch (e) {}
+      try { const raw = localStorage.getItem('ShubhVault_data'); if (raw) d = JSON.parse(raw); } catch (e) {}
       const n = normalize(d);
       lastRef.current = JSON.stringify(n);
       setData(n);
       setSync({ state: 'local', lastSync: Date.now(), fromCache: false, error: null });
       return;
     }
-
     let mounted = true;
-    const ref = db.collection('finvault').doc('main');
-
+    const ref = db.collection('ShubhVault').doc('main');
     const unsub = ref.onSnapshot({ includeMetadataChanges: true }, (snap) => {
       if (!mounted) return;
       const meta = snap.metadata || {};
       if (snap.exists) {
         const n = normalize(snap.data());
-        if (meta.hasPendingWrites) {
-          setSync(s => ({ ...s, state: 'syncing', fromCache: !!meta.fromCache }));
-        } else if (meta.fromCache) {
-          setSync(s => ({ ...s, state: navigator.onLine ? 'syncing' : 'offline', fromCache: true }));
-        } else {
-          setSync({ state: 'synced', lastSync: Date.now(), fromCache: false, error: null });
-        }
+        if (meta.hasPendingWrites) setSync(s => ({ ...s, state: 'syncing', fromCache: !!meta.fromCache }));
+        else if (meta.fromCache) setSync(s => ({ ...s, state: navigator.onLine ? 'syncing' : 'offline', fromCache: true }));
+        else setSync({ state: 'synced', lastSync: Date.now(), fromCache: false, error: null });
         if (!meta.hasPendingWrites || !lastRef.current) {
           const str = JSON.stringify(n);
-          if (str !== lastRef.current) {
-            lastRef.current = str;
-            setData(n);
-          }
+          if (str !== lastRef.current) { lastRef.current = str; setData(n); }
         }
       } else {
         const n = normalize(DEFAULT_DATA);
@@ -555,13 +501,8 @@ function useStore() {
     }, (err) => {
       if (!mounted) return;
       setSync(s => ({ ...s, state: 'error', error: err && err.message ? err.message : 'Sync error' }));
-      if (!lastRef.current) {
-        const n = normalize(DEFAULT_DATA);
-        lastRef.current = JSON.stringify(n);
-        setData(n);
-      }
+      if (!lastRef.current) { const n = normalize(DEFAULT_DATA); lastRef.current = JSON.stringify(n); setData(n); }
     });
-
     return () => { mounted = false; unsub(); };
   }, []);
 
@@ -574,14 +515,11 @@ function useStore() {
     setSync(prev => prev.state === 'local' ? prev : ({ ...prev, state: 'syncing' }));
     timerRef.current = setTimeout(() => {
       if (db) {
-        db.collection('finvault').doc('main').set(data)
+        db.collection('ShubhVault').doc('main').set(data)
           .then(() => setSync(s => ({ ...s, state: 'synced', lastSync: Date.now(), error: null })))
           .catch(err => setSync(s => ({ ...s, state: 'error', error: err && err.message ? err.message : 'Write failed' })));
       } else {
-        try {
-          localStorage.setItem('finvault_data', str);
-          setSync(s2 => ({ ...s2, state: 'local', lastSync: Date.now() }));
-        } catch (e) {}
+        try { localStorage.setItem('ShubhVault_data', str); setSync(s2 => ({ ...s2, state: 'local', lastSync: Date.now() })); } catch (e) {}
       }
     }, 400);
   }, [data]);
@@ -593,10 +531,7 @@ function useStore() {
     window.addEventListener('online', goOnline);
     window.addEventListener('offline', goOffline);
     if (!navigator.onLine) setSync(s => ({ ...s, state: 'offline' }));
-    return () => {
-      window.removeEventListener('online', goOnline);
-      window.removeEventListener('offline', goOffline);
-    };
+    return () => { window.removeEventListener('online', goOnline); window.removeEventListener('offline', goOffline); };
   }, []);
 
   return [data, setData, sync];
@@ -634,7 +569,6 @@ function CategoryIcon({ kind }) {
   return map[kind] || Ico.bill;
 }
 
-/* CATEGORY COLORS for charts */
 const CAT_COLORS = {
   'General': 'linear-gradient(90deg,#7c92ff,#6880ff)',
   'Salary': 'linear-gradient(90deg,#34d399,#10b981)',
@@ -652,7 +586,241 @@ const CAT_COLORS = {
 };
 function catColor(c) { return CAT_COLORS[c] || CAT_COLORS['Other']; }
 
-/* ---------- Net Worth Chart ---------- */
+/* ---------- LightRays WebGL Background (safe: returns null if ogl missing) ---------- */
+function LightRaysBackground({ theme }) {
+  const containerRef = useRef(null);
+  const cleanupRef = useRef(null);
+  const mouseRef = useRef({ x: 0.5, y: 0.5 });
+  const smoothRef = useRef({ x: 0.5, y: 0.5 });
+
+  useEffect(() => {
+    const ogl = window.ogl;
+    if (!ogl || !containerRef.current) return;
+    const { Renderer, Program, Triangle, Mesh } = ogl;
+    if (!Renderer || !Program || !Triangle || !Mesh) return;
+
+    const lightMode = theme === 'light';
+    const raysOrigin = 'top-center';
+    const raysColor = '#7c92ff';
+    const raysSpeed = 0.8;
+    const lightSpread = 0.6;
+    const rayLength = 2.6;
+    const fadeDistance = 1.0;
+    const saturation = 1.0;
+    const followMouse = true;
+    const mouseInfluence = 0.08;
+    const noiseAmount = 0.0;
+    const distortion = 0.0;
+    const pulsating = false;
+
+    const hexToRgb = hex => {
+      const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      return m ? [parseInt(m[1],16)/255, parseInt(m[2],16)/255, parseInt(m[3],16)/255] : [1,1,1];
+    };
+    const getAnchorAndDir = (origin, w, h) => {
+      const outside = 0.2;
+      switch (origin) {
+        case 'top-left': return { anchor: [0, -outside*h], dir: [0, 1] };
+        case 'top-right': return { anchor: [w, -outside*h], dir: [0, 1] };
+        case 'left': return { anchor: [-outside*w, 0.5*h], dir: [1, 0] };
+        case 'right': return { anchor: [(1+outside)*w, 0.5*h], dir: [-1, 0] };
+        case 'bottom-left': return { anchor: [0, (1+outside)*h], dir: [0, -1] };
+        case 'bottom-center': return { anchor: [0.5*w, (1+outside)*h], dir: [0, -1] };
+        case 'bottom-right': return { anchor: [w, (1+outside)*h], dir: [0, -1] };
+        default: return { anchor: [0.5*w, -outside*h], dir: [0, 1] };
+      }
+    };
+
+    const vert = `attribute vec2 position; varying vec2 vUv; void main() { vUv = position * 0.5 + 0.5; gl_Position = vec4(position, 0.0, 1.0); }`;
+    const frag = `precision highp float;
+uniform float iTime; uniform vec2 iResolution; uniform vec2 rayPos; uniform vec2 rayDir; uniform vec3 raysColor;
+uniform float raysSpeed; uniform float lightSpread; uniform float rayLength; uniform float pulsating; uniform float fadeDistance;
+uniform float saturation; uniform vec2 mousePos; uniform float mouseInfluence; uniform float noiseAmount; uniform float distortion; uniform float lightMode;
+varying vec2 vUv;
+float noise(vec2 st) { return fract(sin(dot(st.xy, vec2(12.9898,78.233))) * 43758.5453123); }
+float rayStrength(vec2 raySource, vec2 rayRefDirection, vec2 coord, float seedA, float seedB, float speed) {
+  vec2 sourceToCoord = coord - raySource;
+  vec2 dirNorm = normalize(sourceToCoord);
+  float cosAngle = dot(dirNorm, rayRefDirection);
+  float distortedAngle = cosAngle + distortion * sin(iTime * 2.0 + length(sourceToCoord) * 0.01) * 0.2;
+  float spreadFactor = pow(max(distortedAngle, 0.0), 1.0 / max(lightSpread, 0.001));
+  float distance = length(sourceToCoord);
+  float maxDistance = iResolution.x * rayLength;
+  float lengthFalloff = clamp((maxDistance - distance) / maxDistance, 0.0, 1.0);
+  float fadeFalloff = clamp((iResolution.x * fadeDistance - distance) / (iResolution.x * fadeDistance), 0.5, 1.0);
+  float pulse = pulsating > 0.5 ? (0.8 + 0.2 * sin(iTime * speed * 3.0)) : 1.0;
+  float baseStrength = clamp((0.45 + 0.15 * sin(distortedAngle * seedA + iTime * speed)) + (0.3 + 0.2 * cos(-distortedAngle * seedB + iTime * speed)), 0.0, 1.0);
+  return baseStrength * lengthFalloff * fadeFalloff * spreadFactor * pulse;
+}
+void mainImage(out vec4 fragColor, in vec2 fragCoord) {
+  vec2 coord = vec2(fragCoord.x, iResolution.y - fragCoord.y);
+  vec2 finalRayDir = rayDir;
+  if (mouseInfluence > 0.0) {
+    vec2 mouseScreenPos = mousePos * iResolution.xy;
+    vec2 mouseDirection = normalize(mouseScreenPos - rayPos);
+    finalRayDir = normalize(mix(rayDir, mouseDirection, mouseInfluence));
+  }
+  vec4 rays1 = vec4(1.0) * rayStrength(rayPos, finalRayDir, coord, 36.2214, 21.11349, 1.5 * raysSpeed);
+  vec4 rays2 = vec4(1.0) * rayStrength(rayPos, finalRayDir, coord, 22.3991, 18.0234, 1.1 * raysSpeed);
+  fragColor = rays1 * 0.5 + rays2 * 0.4;
+  if (noiseAmount > 0.0) { float n = noise(coord * 0.01 + iTime * 0.1); fragColor.rgb *= (1.0 - noiseAmount + noiseAmount * n); }
+  float brightness = 1.0 - (coord.y / iResolution.y);
+  fragColor.x *= 0.1 + brightness * 0.8; fragColor.y *= 0.3 + brightness * 0.6; fragColor.z *= 0.5 + brightness * 0.5;
+  if (saturation != 1.0) { float gray = dot(fragColor.rgb, vec3(0.299, 0.587, 0.114)); fragColor.rgb = mix(vec3(gray), fragColor.rgb, saturation); }
+  fragColor.rgb *= raysColor;
+  if (lightMode > 0.5) { vec3 mapped = vec3(1.0) - exp(-max(fragColor.rgb, vec3(0.0)) * 1.35); float energy = clamp(max(mapped.r, max(mapped.g, mapped.b)), 0.0, 1.0); vec3 hue = mapped / max(energy, 0.0001); vec3 ink = mix(hue * 0.25, hue * 0.72, energy); fragColor = vec4(mix(vec3(1.0), ink, energy), 1.0); }
+}
+void main() { vec4 color; mainImage(color, gl_FragCoord.xy); gl_FragColor = color; }`;
+
+    const uniforms = {
+      iTime: { value: 0 }, iResolution: { value: [1, 1] }, rayPos: { value: [0, 0] }, rayDir: { value: [0, 1] },
+      raysColor: { value: hexToRgb(raysColor) }, raysSpeed: { value: raysSpeed }, lightSpread: { value: lightSpread },
+      rayLength: { value: rayLength }, pulsating: { value: 0 }, fadeDistance: { value: fadeDistance },
+      saturation: { value: saturation }, mousePos: { value: [0.5, 0.5] }, mouseInfluence: { value: mouseInfluence },
+      noiseAmount: { value: noiseAmount }, distortion: { value: distortion }, lightMode: { value: lightMode ? 1 : 0 }
+    };
+
+    let renderer;
+    try { renderer = new Renderer({ dpr: Math.min(window.devicePixelRatio, 2), alpha: true }); } catch (e) { return; }
+    const gl = renderer.gl;
+    gl.canvas.style.width = '100%';
+    gl.canvas.style.height = '100%';
+    while (containerRef.current.firstChild) containerRef.current.removeChild(containerRef.current.firstChild);
+    containerRef.current.appendChild(gl.canvas);
+
+    const geometry = new Triangle(gl);
+    const program = new Program(gl, { vertex: vert, fragment: frag, uniforms });
+    const mesh = new Mesh(gl, { geometry, program });
+
+    const updatePlacement = () => {
+      if (!containerRef.current || !renderer) return;
+      renderer.dpr = Math.min(window.devicePixelRatio, 2);
+      const { clientWidth: wCSS, clientHeight: hCSS } = containerRef.current;
+      if (wCSS === 0 || hCSS === 0) return;
+      renderer.setSize(wCSS, hCSS);
+      const dpr = renderer.dpr;
+      const w = wCSS * dpr, h = hCSS * dpr;
+      uniforms.iResolution.value = [w, h];
+      const { anchor, dir } = getAnchorAndDir(raysOrigin, w, h);
+      uniforms.rayPos.value = anchor;
+      uniforms.rayDir.value = dir;
+    };
+
+    let raf = null;
+    const loop = t => {
+      uniforms.iTime.value = t * 0.001;
+      if (followMouse) {
+        const smoothing = 0.92;
+        smoothRef.current.x = smoothRef.current.x * smoothing + mouseRef.current.x * (1 - smoothing);
+        smoothRef.current.y = smoothRef.current.y * smoothing + mouseRef.current.y * (1 - smoothing);
+        uniforms.mousePos.value = [smoothRef.current.x, smoothRef.current.y];
+      }
+      try { renderer.render({ scene: mesh }); raf = requestAnimationFrame(loop); } catch (e) {}
+    };
+
+    const onMouse = e => {
+      if (!containerRef.current) return;
+      const rect = containerRef.current.getBoundingClientRect();
+      mouseRef.current = { x: (e.clientX - rect.left) / rect.width, y: (e.clientY - rect.top) / rect.height };
+    };
+
+    window.addEventListener('resize', updatePlacement);
+    window.addEventListener('mousemove', onMouse);
+    updatePlacement();
+    raf = requestAnimationFrame(loop);
+
+    cleanupRef.current = () => {
+      if (raf) cancelAnimationFrame(raf);
+      window.removeEventListener('resize', updatePlacement);
+      window.removeEventListener('mousemove', onMouse);
+      try {
+        const canvas = renderer.gl.canvas;
+        const loseContextExt = renderer.gl.getExtension('WEBGL_lose_context');
+        if (loseContextExt) loseContextExt.loseContext();
+        if (canvas && canvas.parentNode) canvas.parentNode.removeChild(canvas);
+      } catch (e) {}
+    };
+
+    return () => { if (cleanupRef.current) { cleanupRef.current(); cleanupRef.current = null; } };
+  }, [theme]);
+
+  return (
+    <div className="rays-bg" aria-hidden="true">
+      <div ref={containerRef} className="rays-container" />
+    </div>
+  );
+}
+
+function SyncBadge({ sync }) {
+  if (!sync) return null;
+  let cls = '', label = '', icon = null, title = '';
+  if (sync.state === 'synced') { cls = 'synced'; label = 'Cloud synced'; icon = Ico.cloud; title = sync.lastSync ? 'Last synced ' + timeAgo(sync.lastSync) : 'All changes saved'; }
+  else if (sync.state === 'syncing') { cls = 'syncing'; label = 'Syncing…'; icon = <span className="spin">{Ico.refresh}</span>; title = 'Saving changes'; }
+  else if (sync.state === 'connecting') { cls = 'syncing'; label = 'Connecting…'; icon = <span className="spin">{Ico.refresh}</span>; title = 'Connecting'; }
+  else if (sync.state === 'offline') { cls = 'offline'; label = 'Offline'; icon = Ico.cloudOff; title = 'No internet. Will sync later.'; }
+  else if (sync.state === 'error') { cls = 'error'; label = 'Sync error'; icon = Ico.warn; title = sync.error || 'Something went wrong'; }
+  else { cls = ''; label = 'Local only'; icon = Ico.cloudOff; title = 'Cloud not configured'; }
+  return (
+    <span className={'sync-badge ' + cls} title={title}>
+      <span className="sync-ico">{icon}</span>
+      <span className="sync-dot"></span>
+      <span>{label}</span>
+    </span>
+  );
+}
+
+function Modal({ open, onClose, title, children }) {
+  if (!open) return null;
+  return (
+    <div className="modal-bg" onClick={onClose}>
+      <div className="modal glass" onClick={(e) => e.stopPropagation()}>
+        <div className="modal-head">
+          <h3>{title}</h3>
+          <button className="icon-btn" onClick={onClose} aria-label="Close">{Ico.close}</button>
+        </div>
+        <div>{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function MoneyInput({ value, onChange, placeholder, autoFocus }) {
+  return (
+    <input className="input" inputMode="decimal" autoFocus={autoFocus} value={value} placeholder={placeholder || '0.00'}
+      onChange={(e) => {
+        let v = e.target.value.replace(/[^\d.]/g, '');
+        const parts = v.split('.');
+        if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
+        if (/^\d*(\.\d{0,2})?$/.test(v)) onChange(v);
+      }} />
+  );
+}
+
+function DayInput({ value, onChange, placeholder }) {
+  return (
+    <input className="input" inputMode="numeric" value={value} placeholder={placeholder || 'DD'}
+      onChange={(e) => { let v = e.target.value.replace(/\D/g, '').slice(0, 2); if (v !== '' && Number(v) > 31) v = '31'; onChange(v); }} />
+  );
+}
+
+function formatCardNumber(v, name) {
+  const d = String(v || '').replace(/\D/g, '').slice(0, 16);
+  if (/millenia/i.test(name || '')) {
+    let out = d.slice(0, 4);
+    if (d.length > 4) out += ' ' + d.slice(4, 10);
+    const rest = d.slice(10);
+    for (let i = 0; i < rest.length; i += 4) out += ' ' + rest.slice(i, i + 4);
+    return out.trim();
+  }
+  let out = '';
+  for (let i = 0; i < d.length; i += 4) out += (i ? ' ' : '') + d.slice(i, i + 4);
+  return out;
+}
+function formatExpiry(v) { const d = String(v || '').replace(/\D/g, '').slice(0, 4); if (d.length <= 2) return d; return d.slice(0, 2) + '/' + d.slice(2); }
+function maskNumber(num) { const d = String(num || '').replace(/\D/g, ''); if (!d) return '•••• •••• •••• ••••'; return '•••• •••• •••• ' + d.slice(-4); }
+
+function Toast({ msg }) { if (!msg) return null; return <div className="toast">{msg}</div>; }
+
 function NetWorthChart({ points }) {
   if (!points || points.length === 0) {
     return (
@@ -669,9 +837,7 @@ function NetWorthChart({ points }) {
     return (
       <div>
         <div style={{ display: 'flex', gap: '12px', alignItems: 'baseline', flexWrap: 'wrap', marginBottom: '12px' }}>
-          <div style={{ fontSize: '26px', fontWeight: 800, letterSpacing: '-.9px', color: isPos ? 'var(--green)' : 'var(--red)' }} className="mono">
-            {inr(p.value)}
-          </div>
+          <div style={{ fontSize: '26px', fontWeight: 800, letterSpacing: '-.9px', color: isPos ? 'var(--green)' : 'var(--red)' }} className="mono">{inr(p.value)}</div>
           <div className={'pill ' + (isPos ? 'green' : 'red')}><span className="pdot"></span>today</div>
         </div>
         <div className="glass-soft" style={{ padding: '16px', fontSize: '12.5px', color: 'var(--muted)', lineHeight: 1.55 }}>
@@ -680,7 +846,6 @@ function NetWorthChart({ points }) {
       </div>
     );
   }
-
   const W = 800, H = 200, P = 22;
   const vals = points.map(p => p.value);
   let min = Math.min.apply(null, vals);
@@ -691,32 +856,22 @@ function NetWorthChart({ points }) {
   const n = points.length;
   const x = (i) => P + (i * (W - 2 * P)) / Math.max(1, n - 1);
   const y = (v) => H - P - ((v - min) / (max - min)) * (H - 2 * P);
-
   const last = points[n - 1];
   const first = points[0];
   const isPositive = last.value >= 0;
   const lineColor = isPositive ? 'var(--green)' : 'var(--red)';
   const gradId = isPositive ? 'nwgradGreen' : 'nwgradRed';
-
   let d = '';
   points.forEach((p, i) => { d += (i ? ' L' : 'M') + x(i).toFixed(1) + ',' + y(p.value).toFixed(1); });
   const area = d + ' L' + x(n - 1).toFixed(1) + ',' + (H - P) + ' L' + x(0).toFixed(1) + ',' + (H - P) + ' Z';
-
   const change = r2(last.value - first.value);
   const changePct = first.value ? r2((change / Math.abs(first.value)) * 100) : 0;
-
-  // Zero line if crossing
   const zeroY = (0 >= min && 0 <= max) ? y(0) : null;
-
   return (
     <div>
       <div style={{ display: 'flex', gap: '14px', alignItems: 'baseline', flexWrap: 'wrap', marginBottom: '10px' }}>
-        <div style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-.9px', color: lineColor }} className="mono">
-          {inr(last.value)}
-        </div>
-        <div className={'pill ' + (change >= 0 ? 'green' : 'red')}>
-          <span className="pdot"></span>{change >= 0 ? '▲' : '▼'} {inr(Math.abs(change))} ({changePct >= 0 ? '+' : ''}{changePct}%)
-        </div>
+        <div style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-.9px', color: lineColor }} className="mono">{inr(last.value)}</div>
+        <div className={'pill ' + (change >= 0 ? 'green' : 'red')}><span className="pdot"></span>{change >= 0 ? '▲' : '▼'} {inr(Math.abs(change))} ({changePct >= 0 ? '+' : ''}{changePct}%)</div>
         <div className="pill blue">Since {fmtDate(first.date)}</div>
       </div>
       <div className="nw-chart-wrap">
@@ -735,17 +890,10 @@ function NetWorthChart({ points }) {
             <line key={i} x1={P} x2={W - P} y1={P + (i * (H - 2 * P)) / 3} y2={P + (i * (H - 2 * P)) / 3}
               stroke="var(--brd)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
           ))}
-          {zeroY !== null && (
-            <line x1={P} x2={W - P} y1={zeroY} y2={zeroY}
-              stroke="var(--muted-2)" strokeWidth="1" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" opacity="0.55" />
-          )}
+          {zeroY !== null && (<line x1={P} x2={W - P} y1={zeroY} y2={zeroY} stroke="var(--muted-2)" strokeWidth="1" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" opacity="0.55" />)}
           <path d={area} fill={'url(#' + gradId + ')'} />
-          <path d={d} fill="none" stroke={lineColor} strokeWidth="2.5"
-            vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
-          {points.map((p, i) => (
-            <circle key={i} cx={x(i)} cy={y(p.value)} r="2.5" fill={lineColor}
-              stroke="var(--bg)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />
-          ))}
+          <path d={d} fill="none" stroke={lineColor} strokeWidth="2.5" vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
+          {points.map((p, i) => (<circle key={i} cx={x(i)} cy={y(p.value)} r="2.5" fill={lineColor} stroke="var(--bg)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />))}
         </svg>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--muted)', marginTop: '8px' }}>
@@ -756,7 +904,6 @@ function NetWorthChart({ points }) {
   );
 }
 
-/* ---------- Existing LineChart (Demat) ---------- */
 function LineChart({ points }) {
   if (!points || points.length === 0) {
     return (
@@ -788,9 +935,7 @@ function LineChart({ points }) {
     <div>
       <div style={{ display: 'flex', gap: '12px', alignItems: 'baseline', flexWrap: 'wrap', marginBottom: '8px' }}>
         <div style={{ fontSize: '22px', fontWeight: 700, letterSpacing: '-0.7px' }} className="mono">{inr(last.value)}</div>
-        <div className={'pill ' + (change >= 0 ? 'green' : 'red')}>
-          <span className="pdot"></span>{change >= 0 ? '+' : ''}{inr(Math.abs(change))} ({changePct}%)
-        </div>
+        <div className={'pill ' + (change >= 0 ? 'green' : 'red')}><span className="pdot"></span>{change >= 0 ? '+' : ''}{inr(Math.abs(change))} ({changePct}%)</div>
         <div className="pill blue">{fmtDate(last.date)}</div>
       </div>
       <div className="chart-wrap">
@@ -806,12 +951,8 @@ function LineChart({ points }) {
               stroke="var(--brd)" strokeWidth="1" vectorEffect="non-scaling-stroke" />
           ))}
           <path d={area} fill="url(#gradchart)" />
-          <path d={d} fill="none" stroke="var(--accent)" strokeWidth="2"
-            vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
-          {points.map((p, i) => (
-            <circle key={i} cx={x(i)} cy={y(p.value)} r="3" fill="var(--accent)"
-              stroke="var(--bg)" strokeWidth="2" vectorEffect="non-scaling-stroke" />
-          ))}
+          <path d={d} fill="none" stroke="var(--accent)" strokeWidth="2" vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
+          {points.map((p, i) => (<circle key={i} cx={x(i)} cy={y(p.value)} r="3" fill="var(--accent)" stroke="var(--bg)" strokeWidth="2" vectorEffect="non-scaling-stroke" />))}
         </svg>
       </div>
       <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--muted)', marginTop: '8px' }}>
@@ -838,64 +979,35 @@ function FlipCard({ card, onEdit, onDelete, onPay, onMarkDone }) {
             </div>
             <div className="cc-num">{maskNumber(card.number)}</div>
             <div className="cc-row">
-              <div>
-                <div className="cc-lbl">Card Holder</div>
-                <div className="cc-val">SHUBHAM</div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div className="cc-lbl">Expires</div>
-                <div className="cc-val">{card.expiry || '--/--'}</div>
-              </div>
+              <div><div className="cc-lbl">Card Holder</div><div className="cc-val">SHUBHAM</div></div>
+              <div style={{ textAlign: 'right' }}><div className="cc-lbl">Expires</div><div className="cc-val">{card.expiry || '--/--'}</div></div>
             </div>
           </div>
           <div className="flip-face flip-back">
             <div style={{ position: 'relative', zIndex: 1 }}>
               <div className="cc-lbl" style={{ marginBottom: '6px' }}>Card Number</div>
-              <div className="cc-num" style={{ fontSize: '14px', letterSpacing: '1.4px' }}>
-                {formatCardNumber(card.number, card.name) || '—'}
-              </div>
+              <div className="cc-num" style={{ fontSize: '14px', letterSpacing: '1.4px' }}>{formatCardNumber(card.number, card.name) || '—'}</div>
             </div>
             <div className="cc-row">
-              <div>
-                <div className="cc-lbl">CVV</div>
-                <div className="cc-val">{card.cvv || '•••'}</div>
-              </div>
-              <div>
-                <div className="cc-lbl">Expiry</div>
-                <div className="cc-val">{card.expiry || '--/--'}</div>
-              </div>
-              <div style={{ textAlign: 'right' }}>
-                <div className="cc-lbl">Due Day</div>
-                <div className="cc-val">{pad(card.dueDay || 10)}</div>
-              </div>
+              <div><div className="cc-lbl">CVV</div><div className="cc-val">{card.cvv || '•••'}</div></div>
+              <div><div className="cc-lbl">Expiry</div><div className="cc-val">{card.expiry || '--/--'}</div></div>
+              <div style={{ textAlign: 'right' }}><div className="cc-lbl">Due Day</div><div className="cc-val">{pad(card.dueDay || 10)}</div></div>
             </div>
-            <div style={{ fontSize: '10px', color: 'rgba(255,255,255,.45)', position: 'relative', zIndex: 1, letterSpacing: '.3px' }}>
-              Tap to flip back
-            </div>
+            <div style={{ fontSize: '10px', color: 'rgba(255,255,255,.45)', position: 'relative', zIndex: 1, letterSpacing: '.3px' }}>Tap to flip back</div>
           </div>
         </div>
       </div>
       <div className="glass" style={{ padding: '14px 16px', borderRadius: '14px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '10px' }}>
-          <div>
-            <div className="kpi-label">Outstanding</div>
-            <div style={{ fontSize: '18px', fontWeight: 700, marginTop: '5px', letterSpacing: '-.4px' }} className="mono">{inr(card.outstanding)}</div>
-          </div>
-          <div style={{ textAlign: 'right' }}>
-            <div className="kpi-label">Due</div>
-            <div className={'pill ' + (dd <= 3 ? 'red' : dd <= 7 ? 'amber' : 'blue')} style={{ marginTop: '5px' }}>
-              <span className="pdot"></span>{relDays(dd)}
-            </div>
-          </div>
+          <div><div className="kpi-label">Outstanding</div><div style={{ fontSize: '18px', fontWeight: 700, marginTop: '5px', letterSpacing: '-.4px' }} className="mono">{inr(card.outstanding)}</div></div>
+          <div style={{ textAlign: 'right' }}><div className="kpi-label">Due</div><div className={'pill ' + (dd <= 3 ? 'red' : dd <= 7 ? 'amber' : 'blue')} style={{ marginTop: '5px' }}><span className="pdot"></span>{relDays(dd)}</div></div>
         </div>
         {card.limit ? (
           <div>
             <div style={{ height: '4px', borderRadius: '10px', background: 'var(--glass-3)', overflow: 'hidden' }}>
               <div style={{ height: '100%', width: pct + '%', borderRadius: '10px', background: 'linear-gradient(90deg,var(--accent),var(--accent-2))', transition: 'width .5s' }}></div>
             </div>
-            <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '6px' }}>
-              {pct}% of {inr(card.limit)} used · {fmtDate(due)}
-            </div>
+            <div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '6px' }}>{pct}% of {inr(card.limit)} used · {fmtDate(due)}</div>
           </div>
         ) : null}
         <div className="item-actions" style={{ marginTop: '12px' }}>
@@ -914,41 +1026,25 @@ function Login({ onOk, theme, toggleTheme }) {
   const [p, setP] = useState('');
   const [err, setErr] = useState('');
   const [shake, setShake] = useState(false);
-
   const submit = (e) => {
     e.preventDefault();
-    if (u.trim() === CRED.u && p === CRED.p) {
-      sessionStorage.setItem('fv_auth', '1');
-      onOk();
-    } else {
-      setErr('Wrong username or password');
-      setShake(true);
-      setTimeout(() => setShake(false), 450);
-    }
+    if (u.trim() === CRED.u && p === CRED.p) { sessionStorage.setItem('fv_auth', '1'); onOk(); }
+    else { setErr('Wrong username or password'); setShake(true); setTimeout(() => setShake(false), 450); }
   };
-
   return (
     <div className="login-wrap">
       <form className={'login-card glass' + (shake ? ' shake' : '')} onSubmit={submit}>
         <div className="login-logo">FV</div>
-        <div className="login-title">FinVault</div>
+        <div className="login-title">ShubhVault</div>
         <div className="login-sub">Your private money command centre</div>
-        <div className="field">
-          <label className="label">Username</label>
-          <input className="input" value={u} onChange={(e) => setU(e.target.value)} autoComplete="off" placeholder="Enter username" />
-        </div>
-        <div className="field">
-          <label className="label">Password</label>
-          <input className="input" type="password" value={p} onChange={(e) => setP(e.target.value)} autoComplete="off" placeholder="Enter password" />
-        </div>
-        <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '6px', padding: '11px' }} type="submit">
-          Unlock Vault
-        </button>
+        <div className="field"><label className="label">Username</label>
+          <input className="input" value={u} onChange={(e) => setU(e.target.value)} autoComplete="off" placeholder="Enter username" /></div>
+        <div className="field"><label className="label">Password</label>
+          <input className="input" type="password" value={p} onChange={(e) => setP(e.target.value)} autoComplete="off" placeholder="Enter password" /></div>
+        <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '6px', padding: '11px' }} type="submit">Unlock Vault</button>
         {err ? <div className="err">{err}</div> : null}
         <div style={{ textAlign: 'center', marginTop: '18px' }}>
-          <button type="button" className="btn btn-ghost btn-sm" onClick={toggleTheme}>
-            {theme === 'dark' ? '☀️ Light mode' : '🌙 Dark mode'}
-          </button>
+          <button type="button" className="btn btn-ghost btn-sm" onClick={toggleTheme}>{theme === 'dark' ? '☀️ Light mode' : '🌙 Dark mode'}</button>
         </div>
       </form>
     </div>
@@ -958,14 +1054,8 @@ function Login({ onOk, theme, toggleTheme }) {
 function PageHead({ title, sub, children, sync }) {
   return (
     <div className="topbar">
-      <div>
-        <div className="page-title">{title}</div>
-        {sub ? <div className="page-sub">{sub}</div> : null}
-      </div>
-      <div className="top-actions">
-        <SyncBadge sync={sync} />
-        {children}
-      </div>
+      <div><div className="page-title">{title}</div>{sub ? <div className="page-sub">{sub}</div> : null}</div>
+      <div className="top-actions"><SyncBadge sync={sync} />{children}</div>
     </div>
   );
 }
@@ -974,126 +1064,10 @@ function EmptyState({ icon, title, sub, action }) {
   return (
     <div className="empty">
       <div className="empty-icon">{icon}</div>
-      <div>
-        <div className="empty-title">{title}</div>
-        {sub ? <div className="empty-sub" style={{ marginTop: '6px' }}>{sub}</div> : null}
-      </div>
+      <div><div className="empty-title">{title}</div>{sub ? <div className="empty-sub" style={{ marginTop: '6px' }}>{sub}</div> : null}</div>
       {action ? action : null}
     </div>
   );
-}
-
-function SyncBadge({ sync }) {
-  if (!sync) return null;
-  let cls = '', label = '', icon = null, title = '';
-  if (sync.state === 'synced') {
-    cls = 'synced'; label = 'Cloud synced'; icon = Ico.cloud;
-    title = sync.lastSync ? 'Last synced ' + timeAgo(sync.lastSync) : 'All changes saved to cloud';
-  } else if (sync.state === 'syncing') {
-    cls = 'syncing'; label = 'Syncing…';
-    icon = <span className="spin">{Ico.refresh}</span>;
-    title = 'Saving changes to cloud';
-  } else if (sync.state === 'connecting') {
-    cls = 'syncing'; label = 'Connecting…';
-    icon = <span className="spin">{Ico.refresh}</span>;
-    title = 'Connecting to cloud';
-  } else if (sync.state === 'offline') {
-    cls = 'offline'; label = 'Offline'; icon = Ico.cloudOff;
-    title = 'No internet. Changes will sync when you are back online.';
-  } else if (sync.state === 'error') {
-    cls = 'error'; label = 'Sync error'; icon = Ico.warn;
-    title = sync.error || 'Something went wrong';
-  } else {
-    cls = ''; label = 'Local only'; icon = Ico.cloudOff;
-    title = 'Cloud not configured, saving locally';
-  }
-  return (
-    <span className={'sync-badge ' + cls} title={title}>
-      <span className="sync-ico">{icon}</span>
-      <span className="sync-dot"></span>
-      <span>{label}</span>
-    </span>
-  );
-}
-
-function Modal({ open, onClose, title, children }) {
-  if (!open) return null;
-  return (
-    <div className="modal-bg" onClick={onClose}>
-      <div className="modal glass" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-head">
-          <h3>{title}</h3>
-          <button className="icon-btn" onClick={onClose} aria-label="Close">{Ico.close}</button>
-        </div>
-        <div>{children}</div>
-      </div>
-    </div>
-  );
-}
-
-function MoneyInput({ value, onChange, placeholder, autoFocus }) {
-  return (
-    <input
-      className="input"
-      inputMode="decimal"
-      autoFocus={autoFocus}
-      value={value}
-      placeholder={placeholder || '0.00'}
-      onChange={(e) => {
-        let v = e.target.value.replace(/[^\d.]/g, '');
-        const parts = v.split('.');
-        if (parts.length > 2) v = parts[0] + '.' + parts.slice(1).join('');
-        if (/^\d*(\.\d{0,2})?$/.test(v)) onChange(v);
-      }}
-    />
-  );
-}
-
-function DayInput({ value, onChange, placeholder }) {
-  return (
-    <input
-      className="input"
-      inputMode="numeric"
-      value={value}
-      placeholder={placeholder || 'DD'}
-      onChange={(e) => {
-        let v = e.target.value.replace(/\D/g, '').slice(0, 2);
-        if (v !== '' && Number(v) > 31) v = '31';
-        onChange(v);
-      }}
-    />
-  );
-}
-
-function formatCardNumber(v, name) {
-  const d = String(v || '').replace(/\D/g, '').slice(0, 16);
-  if (/millenia/i.test(name || '')) {
-    let out = d.slice(0, 4);
-    if (d.length > 4) out += ' ' + d.slice(4, 10);
-    const rest = d.slice(10);
-    for (let i = 0; i < rest.length; i += 4) out += ' ' + rest.slice(i, i + 4);
-    return out.trim();
-  }
-  let out = '';
-  for (let i = 0; i < d.length; i += 4) out += (i ? ' ' : '') + d.slice(i, i + 4);
-  return out;
-}
-
-function formatExpiry(v) {
-  const d = String(v || '').replace(/\D/g, '').slice(0, 4);
-  if (d.length <= 2) return d;
-  return d.slice(0, 2) + '/' + d.slice(2);
-}
-
-function maskNumber(num) {
-  const d = String(num || '').replace(/\D/g, '');
-  if (!d) return '•••• •••• •••• ••••';
-  return '•••• •••• •••• ' + d.slice(-4);
-}
-
-function Toast({ msg }) {
-  if (!msg) return null;
-  return <div className="toast">{msg}</div>;
 }
 
 function App() {
@@ -1108,19 +1082,9 @@ function App() {
     localStorage.setItem('fv_theme', theme);
   }, [theme]);
 
-  const showToast = useCallback((m) => {
-    setToast(m);
-    setTimeout(() => setToast(''), 2600);
-  }, []);
-
-  const mut = useCallback((fn) => {
-    setData(prev => {
-      if (!prev) return prev;
-      const next = JSON.parse(JSON.stringify(prev));
-      fn(next);
-      return next;
-    });
-  }, [setData]);
+  const showToast = useCallback((m) => { setToast(m); setTimeout(() => setToast(''), 2600); }, []);
+  const mut = useCallback((fn) => { setData(prev => { if (!prev) return prev; const next = JSON.parse(JSON.stringify(prev)); fn(next); return next; }); }, [setData]);
+  const toggleTheme = () => setTheme(t => (t === 'dark' ? 'light' : 'dark'));
 
   const currentNetWorth = useMemo(() => {
     if (!data) return 0;
@@ -1138,13 +1102,11 @@ function App() {
     const today = toISO(new Date());
     const hist = data.netWorthHistory || [];
     const todayEntry = hist.find(h => h.date === today);
-
     if (todayEntry && Math.abs(todayEntry.value - currentNetWorth) < 0.005) {
       nwRecordRef.current = { date: today, value: currentNetWorth };
       return;
     }
     if (nwRecordRef.current.date === today && Math.abs(nwRecordRef.current.value - currentNetWorth) < 0.005) return;
-
     nwRecordRef.current = { date: today, value: currentNetWorth };
     mut(d => {
       d.netWorthHistory = (d.netWorthHistory || []).filter(h => h.date !== today);
@@ -1152,24 +1114,10 @@ function App() {
       d.netWorthHistory.sort((a, b) => a.date.localeCompare(b.date));
       if (d.netWorthHistory.length > 180) d.netWorthHistory = d.netWorthHistory.slice(-180);
     });
-  }, [currentNetWorth, data]);
+  }, [currentNetWorth, data, mut]);
 
-  const toggleTheme = () => setTheme(t => (t === 'dark' ? 'light' : 'dark'));
-
-  if (!authed) {
-    return <Login onOk={() => setAuthed(true)} theme={theme} toggleTheme={toggleTheme} />;
-  }
-
-  if (!data) {
-    return (
-      <div className="boot">
-        <div className="boot-inner">
-          <div className="boot-logo">FV</div>
-          <div>Loading your vault…</div>
-        </div>
-      </div>
-    );
-  }
+  if (!authed) return <Login onOk={() => setAuthed(true)} theme={theme} toggleTheme={toggleTheme} />;
+  if (!data) return <div className="boot"><div className="boot-inner"><div className="boot-logo">FV</div><div>Loading your vault…</div></div></div>;
 
   const props = { data, mut, showToast, go: setPage, theme, toggleTheme, sync };
 
@@ -1184,57 +1132,52 @@ function App() {
   ];
 
   return (
-    <div className="app">
-      <aside className="sidebar">
-        <div className="brand">
-          <div className="brand-logo">FV</div>
-          <div>
-            <div className="brand-name">FinVault</div>
-            <div className="brand-sub">MONEY TRACKER</div>
+    <React.Fragment>
+      <LightRaysBackground theme={theme} />
+      <div className="app">
+        <aside className="sidebar">
+          <div className="brand">
+            <div className="brand-logo">FV</div>
+            <div><div className="brand-name">ShubhVault</div><div className="brand-sub">MONEY TRACKER</div></div>
           </div>
-        </div>
-        {NAV.map(n => (
-          <button key={n.id} className={'nav-item' + (page === n.id ? ' active' : '')} onClick={() => setPage(n.id)}>
-            <span className="nav-ico">{n.icon}</span>
-            <span>{n.label}</span>
-          </button>
-        ))}
-        <div className="side-foot">
-          <div style={{ padding: '10px 12px 6px' }}>
-            <SyncBadge sync={sync} />
+          {NAV.map(n => (
+            <button key={n.id} className={'nav-item' + (page === n.id ? ' active' : '')} onClick={() => setPage(n.id)}>
+              <span className="nav-ico">{n.icon}</span><span>{n.label}</span>
+            </button>
+          ))}
+          <div className="side-foot">
+            <div style={{ padding: '10px 12px 6px' }}><SyncBadge sync={sync} /></div>
+            <button className="nav-item" onClick={toggleTheme}>
+              <span className="nav-ico">{theme === 'dark' ? Ico.sun : Ico.moon}</span>
+              <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
+            </button>
+            <button className="nav-item" onClick={() => { sessionStorage.removeItem('fv_auth'); setAuthed(false); }}>
+              <span className="nav-ico">{Ico.logout}</span><span>Log Out</span>
+            </button>
           </div>
-          <button className="nav-item" onClick={toggleTheme}>
-            <span className="nav-ico">{theme === 'dark' ? Ico.sun : Ico.moon}</span>
-            <span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span>
-          </button>
-          <button className="nav-item" onClick={() => { sessionStorage.removeItem('fv_auth'); setAuthed(false); }}>
-            <span className="nav-ico">{Ico.logout}</span>
-            <span>Log Out</span>
-          </button>
-        </div>
-      </aside>
+        </aside>
 
-      <main className="main">
-        {page === 'home' && <Home {...props} />}
-        {page === 'banks' && <Banks {...props} />}
-        {page === 'cards' && <Cards {...props} />}
-        {page === 'loans' && <Loans {...props} />}
-        {page === 'bills' && <Bills {...props} />}
-        {page === 'demat' && <Demat {...props} />}
-        {page === 'ai' && <AiBrain {...props} />}
-      </main>
+        <main className="main">
+          {page === 'home' && <Home {...props} />}
+          {page === 'banks' && <Banks {...props} />}
+          {page === 'cards' && <Cards {...props} />}
+          {page === 'loans' && <Loans {...props} />}
+          {page === 'bills' && <Bills {...props} />}
+          {page === 'demat' && <Demat {...props} />}
+          {page === 'ai' && <AiBrain {...props} />}
+        </main>
 
-      <nav className="mobile-nav">
-        {NAV.map(n => (
-          <button key={n.id} className={'mnav' + (page === n.id ? ' active' : '')} onClick={() => setPage(n.id)}>
-            {n.icon}
-            <span>{n.label}</span>
-          </button>
-        ))}
-      </nav>
+        <nav className="mobile-nav">
+          {NAV.map(n => (
+            <button key={n.id} className={'mnav' + (page === n.id ? ' active' : '')} onClick={() => setPage(n.id)}>
+              {n.icon}<span>{n.label}</span>
+            </button>
+          ))}
+        </nav>
 
-      <Toast msg={toast} />
-    </div>
+        <Toast msg={toast} />
+      </div>
+    </React.Fragment>
   );
 }
 
@@ -1257,31 +1200,13 @@ function Home({ data, mut, showToast, go, sync }) {
   const [withdrawHintBank, setWithdrawHintBank] = useState(data.banks[0] ? data.banks[0].id : '');
   const [expandedGroups, setExpandedGroups] = useState({});
 
-  const loanItems = useMemo(() => data.loans.map(l => {
-    const due = nextDueDate(l.dueDay || 5, l.paidCycles);
-    return { kind: 'loan', ref: l, id: l.id, name: l.name, amount: r2(l.emi), due, days: daysUntil(due) };
-  }).sort((a, b) => a.due - b.due), [data.loans]);
+  const loanItems = useMemo(() => data.loans.map(l => { const due = nextDueDate(l.dueDay || 5, l.paidCycles); return { kind: 'loan', ref: l, id: l.id, name: l.name, amount: r2(l.emi), due, days: daysUntil(due) }; }).sort((a, b) => a.due - b.due), [data.loans]);
+  const cardItems = useMemo(() => data.cards.map(c => { const due = nextDueDate(c.dueDay || 10, c.paidCycles); return { kind: 'card', ref: c, id: c.id, name: c.name, amount: r2(c.outstanding), due, days: daysUntil(due) }; }).sort((a, b) => a.due - b.due), [data.cards]);
+  const billItems = useMemo(() => data.bills.map(b => { const due = nextDueDate(b.dueDay || 1, b.paidCycles); return { kind: 'bill', ref: b, id: b.id, name: b.name, amount: r2(b.amount), due, days: daysUntil(due) }; }).sort((a, b) => a.due - b.due), [data.bills]);
+  const inflowItems = useMemo(() => data.inflows.map(f => { const due = nextDueDate(f.day || 1, f.receivedCycles); return { kind: 'inflow', ref: f, id: f.id, name: f.name, amount: r2(f.amount), due, days: daysUntil(due) }; }).sort((a, b) => a.due - b.due), [data.inflows]);
 
-  const cardItems = useMemo(() => data.cards.map(c => {
-    const due = nextDueDate(c.dueDay || 10, c.paidCycles);
-    return { kind: 'card', ref: c, id: c.id, name: c.name, amount: r2(c.outstanding), due, days: daysUntil(due) };
-  }).sort((a, b) => a.due - b.due), [data.cards]);
+  const feed = useMemo(() => [].concat(loanItems, cardItems, billItems, inflowItems).sort((a, b) => a.due - b.due), [loanItems, cardItems, billItems, inflowItems]);
 
-  const billItems = useMemo(() => data.bills.map(b => {
-    const due = nextDueDate(b.dueDay || 1, b.paidCycles);
-    return { kind: 'bill', ref: b, id: b.id, name: b.name, amount: r2(b.amount), due, days: daysUntil(due) };
-  }).sort((a, b) => a.due - b.due), [data.bills]);
-
-  const inflowItems = useMemo(() => data.inflows.map(f => {
-    const due = nextDueDate(f.day || 1, f.receivedCycles);
-    return { kind: 'inflow', ref: f, id: f.id, name: f.name, amount: r2(f.amount), due, days: daysUntil(due) };
-  }).sort((a, b) => a.due - b.due), [data.inflows]);
-
-  const feed = useMemo(() => {
-    return [].concat(loanItems, cardItems, billItems, inflowItems).sort((a, b) => a.due - b.due);
-  }, [loanItems, cardItems, billItems, inflowItems]);
-
-  // Group by same due date
   const groupedFeed = useMemo(() => {
     const map = {};
     feed.forEach(item => {
@@ -1292,7 +1217,6 @@ function Home({ data, mut, showToast, go, sync }) {
     return Object.values(map).sort((a, b) => a.due - b.due);
   }, [feed]);
 
-  // Net worth chart points
   const nwPoints = useMemo(() => {
     const hist = (data.netWorthHistory || []).slice().sort((a, b) => a.date.localeCompare(b.date));
     if (hist.length === 0) return [{ date: toISO(new Date()), value: netWorth }];
@@ -1303,29 +1227,13 @@ function Home({ data, mut, showToast, go, sync }) {
     return hist;
   }, [data.netWorthHistory, netWorth]);
 
-  // Plan Ahead
   const planAhead = useMemo(() => {
     const today = startOfToday();
     const cutoff = new Date(today); cutoff.setDate(cutoff.getDate() + 5);
     const dues = [];
-    data.loans.forEach(l => {
-      const due = nextDueDate(l.dueDay || 5, l.paidCycles);
-      if (due >= today && due <= cutoff && Number(l.emi) > 0) {
-        dues.push({ kind: 'loan', name: l.name, amount: r2(l.emi), due, days: daysUntil(due) });
-      }
-    });
-    data.cards.forEach(c => {
-      const due = nextDueDate(c.dueDay || 10, c.paidCycles);
-      if (due >= today && due <= cutoff && Number(c.outstanding) > 0) {
-        dues.push({ kind: 'card', name: c.name, amount: r2(c.outstanding), due, days: daysUntil(due) });
-      }
-    });
-    data.bills.forEach(b => {
-      const due = nextDueDate(b.dueDay || 1, b.paidCycles);
-      if (due >= today && due <= cutoff && Number(b.amount) > 0) {
-        dues.push({ kind: 'bill', name: b.name, amount: r2(b.amount), due, days: daysUntil(due) });
-      }
-    });
+    data.loans.forEach(l => { const due = nextDueDate(l.dueDay || 5, l.paidCycles); if (due >= today && due <= cutoff && Number(l.emi) > 0) dues.push({ kind: 'loan', name: l.name, amount: r2(l.emi), due, days: daysUntil(due) }); });
+    data.cards.forEach(c => { const due = nextDueDate(c.dueDay || 10, c.paidCycles); if (due >= today && due <= cutoff && Number(c.outstanding) > 0) dues.push({ kind: 'card', name: c.name, amount: r2(c.outstanding), due, days: daysUntil(due) }); });
+    data.bills.forEach(b => { const due = nextDueDate(b.dueDay || 1, b.paidCycles); if (due >= today && due <= cutoff && Number(b.amount) > 0) dues.push({ kind: 'bill', name: b.name, amount: r2(b.amount), due, days: daysUntil(due) }); });
     if (dues.length === 0) return [];
     dues.sort((a, b) => a.due - b.due);
     let runningBank = bankTotal;
@@ -1337,10 +1245,7 @@ function Home({ data, mut, showToast, go, sync }) {
         const iDue = nextDueDate(f.day || 1, f.receivedCycles);
         if (iDue <= d.due) {
           const key = f.id + '|' + toISO(iDue);
-          if (!usedInflowKeys[key]) {
-            inflowSum += Number(f.amount) || 0;
-            usedInflowKeys[key] = true;
-          }
+          if (!usedInflowKeys[key]) { inflowSum += Number(f.amount) || 0; usedInflowKeys[key] = true; }
         }
       });
       const available = r2(runningBank + inflowSum);
@@ -1375,17 +1280,10 @@ function Home({ data, mut, showToast, go, sync }) {
   };
 
   const markGroupDone = (group) => {
-    const nonInflows = group.items.filter(i => i.kind !== 'inflow');
-    if (nonInflows.length === 0) return;
-    nonInflows.forEach(item => markDone(item));
+    group.items.filter(i => i.kind !== 'inflow').forEach(item => markDone(item));
   };
 
-  const openPay = (item) => {
-    setPayTarget(item);
-    setPayMode('full');
-    setPayAmount(String(item.amount));
-    setPayBank(data.banks[0] ? data.banks[0].id : '');
-  };
+  const openPay = (item) => { setPayTarget(item); setPayMode('full'); setPayAmount(String(item.amount)); setPayBank(data.banks[0] ? data.banks[0].id : ''); };
 
   const doPay = () => {
     if (!payTarget) return;
@@ -1396,26 +1294,10 @@ function Home({ data, mut, showToast, go, sync }) {
     mut(d => {
       const bank = d.banks.find(b => b.id === payBank);
       if (bank) bank.balance = r2(bank.balance - amt);
-      d.transactions.push({
-        id: uid(), bankId: payBank, amount: amt, dir: 'out',
-        note: item.name + ' payment',
-        category: item.kind === 'card' ? 'Credit Card' : item.kind === 'loan' ? 'Loan EMI' : 'Bills',
-        date: toISO(new Date()), affectsBalance: true, ts: Date.now()
-      });
-      if (item.kind === 'card') {
-        const c = d.cards.find(x => x.id === item.id);
-        if (c) { c.outstanding = r2(Math.max(0, c.outstanding - amt)); c.paidCycles = (c.paidCycles || []).concat([cycle]); }
-      } else if (item.kind === 'loan') {
-        const l = d.loans.find(x => x.id === item.id);
-        if (l) {
-          l.remaining = r2(Math.max(0, l.remaining - amt));
-          l.monthsLeft = Math.max(0, (Number(l.monthsLeft) || 1) - 1);
-          l.paidCycles = (l.paidCycles || []).concat([cycle]);
-        }
-      } else if (item.kind === 'bill') {
-        const b = d.bills.find(x => x.id === item.id);
-        if (b) b.paidCycles = (b.paidCycles || []).concat([cycle]);
-      }
+      d.transactions.push({ id: uid(), bankId: payBank, amount: amt, dir: 'out', note: item.name + ' payment', category: item.kind === 'card' ? 'Credit Card' : item.kind === 'loan' ? 'Loan EMI' : 'Bills', date: toISO(new Date()), affectsBalance: true, ts: Date.now() });
+      if (item.kind === 'card') { const c = d.cards.find(x => x.id === item.id); if (c) { c.outstanding = r2(Math.max(0, c.outstanding - amt)); c.paidCycles = (c.paidCycles || []).concat([cycle]); } }
+      else if (item.kind === 'loan') { const l = d.loans.find(x => x.id === item.id); if (l) { l.remaining = r2(Math.max(0, l.remaining - amt)); l.monthsLeft = Math.max(0, (Number(l.monthsLeft) || 1) - 1); l.paidCycles = (l.paidCycles || []).concat([cycle]); } }
+      else if (item.kind === 'bill') { const b = d.bills.find(x => x.id === item.id); if (b) b.paidCycles = (b.paidCycles || []).concat([cycle]); }
     });
     setPayTarget(null);
     showToast('Payment recorded');
@@ -1428,15 +1310,9 @@ function Home({ data, mut, showToast, go, sync }) {
     mut(d => {
       const bank = d.banks.find(b => b.id === bankId);
       if (bank) bank.balance = r2(bank.balance + amt);
-      d.transactions.push({
-        id: uid(), bankId, amount: amt, dir: 'in', note: f.name + ' received',
-        category: 'Salary', date: toISO(new Date()), affectsBalance: true, ts: Date.now()
-      });
+      d.transactions.push({ id: uid(), bankId, amount: amt, dir: 'in', note: f.name + ' received', category: 'Salary', date: toISO(new Date()), affectsBalance: true, ts: Date.now() });
       const inf = d.inflows.find(x => x.id === f.id);
-      if (inf) {
-        inf.receivedCycles = (inf.receivedCycles || []).concat([cycle]);
-        if (adjust) inf.amount = amt;
-      }
+      if (inf) { inf.receivedCycles = (inf.receivedCycles || []).concat([cycle]); if (adjust) inf.amount = amt; }
     });
     setInflowTarget(null);
     showToast('Money added to your bank');
@@ -1481,13 +1357,9 @@ function Home({ data, mut, showToast, go, sync }) {
           </div>
         </div>
         <div style={{ textAlign: 'right' }}>
-          <div className="item-amt" style={{ color: isIn ? 'var(--green)' : 'inherit' }}>
-            {isIn ? '+' : ''}{inr(item.amount)}
-          </div>
+          <div className="item-amt" style={{ color: isIn ? 'var(--green)' : 'inherit' }}>{isIn ? '+' : ''}{inr(item.amount)}</div>
           <div className="item-actions" style={{ marginTop: '7px', justifyContent: 'flex-end' }}>
-            {isIn ? (
-              <button className="btn btn-sm btn-primary" onClick={() => setInflowTarget(item)}>Received?</button>
-            ) : (
+            {isIn ? (<button className="btn btn-sm btn-primary" onClick={() => setInflowTarget(item)}>Received?</button>) : (
               <React.Fragment>
                 <button className="btn btn-sm btn-primary" onClick={() => openPay(item)}>Pay</button>
                 <button className="btn btn-sm" onClick={() => markDone(item)}>Done</button>
@@ -1517,20 +1389,14 @@ function Home({ data, mut, showToast, go, sync }) {
             <span>{group.items.length} items due {fmtDate(group.due)}</span>
           </div>
           <div className="item-meta">
-            <span className={'pill ' + colorClass}>
-              <span className="pdot"></span>{allInflows ? 'receiving ' + relDays(group.days) : 'due ' + relDays(group.days)}
-            </span>
+            <span className={'pill ' + colorClass}><span className="pdot"></span>{allInflows ? 'receiving ' + relDays(group.days) : 'due ' + relDays(group.days)}</span>
             <span className="pill">Click to {isExpanded ? 'collapse' : 'expand'}</span>
           </div>
         </div>
         <div style={{ textAlign: 'right' }} onClick={e => e.stopPropagation()}>
-          <div className="item-amt" style={{ color: allInflows ? 'var(--green)' : 'inherit' }}>
-            {allInflows ? '+' : ''}{inr(total)}
-          </div>
+          <div className="item-amt" style={{ color: allInflows ? 'var(--green)' : 'inherit' }}>{allInflows ? '+' : ''}{inr(total)}</div>
           <div className="item-actions" style={{ marginTop: '7px', justifyContent: 'flex-end' }}>
-            {!allInflows && (
-              <button className="btn btn-sm" onClick={(e) => { e.stopPropagation(); markGroupDone(group); }}>Mark all done</button>
-            )}
+            {!allInflows && (<button className="btn btn-sm" onClick={(e) => { e.stopPropagation(); markGroupDone(group); }}>Mark all done</button>)}
           </div>
         </div>
         {isExpanded && (
@@ -1549,13 +1415,9 @@ function Home({ data, mut, showToast, go, sync }) {
                       </span>
                     </div>
                   </div>
-                  <div className="item-amt" style={{ fontSize: '13px', color: isIn ? 'var(--green)' : 'inherit' }}>
-                    {isIn ? '+' : ''}{inr(item.amount)}
-                  </div>
+                  <div className="item-amt" style={{ fontSize: '13px', color: isIn ? 'var(--green)' : 'inherit' }}>{isIn ? '+' : ''}{inr(item.amount)}</div>
                   <div className="item-actions">
-                    {isIn ? (
-                      <button className="btn btn-sm btn-primary" onClick={() => setInflowTarget(item)}>Received?</button>
-                    ) : (
+                    {isIn ? (<button className="btn btn-sm btn-primary" onClick={() => setInflowTarget(item)}>Received?</button>) : (
                       <React.Fragment>
                         <button className="btn btn-sm btn-primary" onClick={() => openPay(item)}>Pay</button>
                         <button className="btn btn-sm" onClick={() => markDone(item)}>Done</button>
@@ -1623,9 +1485,7 @@ function Home({ data, mut, showToast, go, sync }) {
                     <div>
                       <div className="item-name">{p.name}</div>
                       <div className="item-meta">
-                        <span className={'pill ' + (p.days <= 2 ? 'red' : p.days <= 4 ? 'amber' : 'blue')}>
-                          <span className="pdot"></span>due {relDays(p.days)}
-                        </span>
+                        <span className={'pill ' + (p.days <= 2 ? 'red' : p.days <= 4 ? 'amber' : 'blue')}><span className="pdot"></span>due {relDays(p.days)}</span>
                         <span>{fmtDate(p.due)}</span>
                         <span className="pill">due amount {inr(p.amount)}</span>
                       </div>
@@ -1641,13 +1501,7 @@ function Home({ data, mut, showToast, go, sync }) {
                     {' '}· after withdrawal + payment, your bank keeps <b style={{ color: 'var(--txt-2)' }}>{inr(p.bankBefore)}</b> as buffer
                   </div>
                   <div style={{ marginTop: '10px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-                    <button className="btn btn-sm btn-primary" onClick={() => {
-                      setWithdrawHint(p);
-                      setWithdrawHintAmt(String(p.withdraw));
-                      setWithdrawHintBank(data.banks[0] ? data.banks[0].id : '');
-                    }}>
-                      Move {inr(p.withdraw)} now
-                    </button>
+                    <button className="btn btn-sm btn-primary" onClick={() => { setWithdrawHint(p); setWithdrawHintAmt(String(p.withdraw)); setWithdrawHintBank(data.banks[0] ? data.banks[0].id : ''); }}>Move {inr(p.withdraw)} now</button>
                   </div>
                 </div>
               </div>
@@ -1675,11 +1529,7 @@ function Home({ data, mut, showToast, go, sync }) {
       </div>
       <div className="glass" style={{ padding: '14px' }}>
         {feed.length === 0 ? (
-          <EmptyState
-            icon={Ico.inbox}
-            title="Nothing coming up"
-            sub="Add loans, credit cards or bills and they will show up here sorted by due date."
-          />
+          <EmptyState icon={Ico.inbox} title="Nothing coming up" sub="Add loans, credit cards or bills and they will show up here sorted by due date." />
         ) : (
           <div className="list">{groupedFeed.map(renderGroup)}</div>
         )}
@@ -1691,15 +1541,8 @@ function Home({ data, mut, showToast, go, sync }) {
       </div>
       <div className="glass" style={{ padding: '14px' }}>
         {loanItems.length === 0 ? (
-          <EmptyState
-            icon={Ico.loan}
-            title="No loans added yet"
-            sub="Track EMIs, remaining months and payoff progress."
-            action={<button className="btn btn-sm btn-primary" onClick={() => go('loans')}>Add your first loan</button>}
-          />
-        ) : (
-          <div className="list">{loanItems.map(renderItem)}</div>
-        )}
+          <EmptyState icon={Ico.loan} title="No loans added yet" sub="Track EMIs, remaining months and payoff progress." action={<button className="btn btn-sm btn-primary" onClick={() => go('loans')}>Add your first loan</button>} />
+        ) : (<div className="list">{loanItems.map(renderItem)}</div>)}
       </div>
 
       <div className="section-head">
@@ -1708,25 +1551,14 @@ function Home({ data, mut, showToast, go, sync }) {
       </div>
       <div className="glass" style={{ padding: '14px' }}>
         {cardItems.length === 0 ? (
-          <EmptyState
-            icon={Ico.card}
-            title="No credit cards added yet"
-            sub="Add your cards to keep an eye on bills and due dates."
-            action={<button className="btn btn-sm btn-primary" onClick={() => go('cards')}>Add your first card</button>}
-          />
-        ) : (
-          <div className="list">{cardItems.map(renderItem)}</div>
-        )}
+          <EmptyState icon={Ico.card} title="No credit cards added yet" sub="Add your cards to keep an eye on bills and due dates." action={<button className="btn btn-sm btn-primary" onClick={() => go('cards')}>Add your first card</button>} />
+        ) : (<div className="list">{cardItems.map(renderItem)}</div>)}
       </div>
 
       {billItems.length > 0 && (
         <React.Fragment>
-          <div className="section-head">
-            <div className="section-title"><span className="dot"></span>Other Bills &amp; Subscriptions</div>
-          </div>
-          <div className="glass" style={{ padding: '14px' }}>
-            <div className="list">{billItems.map(renderItem)}</div>
-          </div>
+          <div className="section-head"><div className="section-title"><span className="dot"></span>Other Bills &amp; Subscriptions</div></div>
+          <div className="glass" style={{ padding: '14px' }}><div className="list">{billItems.map(renderItem)}</div></div>
         </React.Fragment>
       )}
 
@@ -1736,15 +1568,8 @@ function Home({ data, mut, showToast, go, sync }) {
       </div>
       <div className="glass" style={{ padding: '14px' }}>
         {inflowItems.length === 0 ? (
-          <EmptyState
-            icon={Ico.down}
-            title="No incoming payments yet"
-            sub="Add your salary or any expected payments so you get a reminder on the day."
-            action={<button className="btn btn-sm btn-primary" onClick={() => go('bills')}>Add income</button>}
-          />
-        ) : (
-          <div className="list">{inflowItems.map(renderItem)}</div>
-        )}
+          <EmptyState icon={Ico.down} title="No incoming payments yet" sub="Add your salary or any expected payments so you get a reminder on the day." action={<button className="btn btn-sm btn-primary" onClick={() => go('bills')}>Add income</button>} />
+        ) : (<div className="list">{inflowItems.map(renderItem)}</div>)}
       </div>
 
       <div className="section-head">
@@ -1763,9 +1588,7 @@ function Home({ data, mut, showToast, go, sync }) {
       </div>
       <div className="glass" style={{ padding: '14px 18px', marginTop: '14px', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
         <div className="kpi-label">Net this month</div>
-        <div style={{ fontSize: '17px', fontWeight: 700, letterSpacing: '-.4px', color: r2(mIn - mOut) >= 0 ? 'var(--green)' : 'var(--red)' }} className="mono">
-          {inr(r2(mIn - mOut))}
-        </div>
+        <div style={{ fontSize: '17px', fontWeight: 700, letterSpacing: '-.4px', color: r2(mIn - mOut) >= 0 ? 'var(--green)' : 'var(--red)' }} className="mono">{inr(r2(mIn - mOut))}</div>
       </div>
 
       <Modal open={!!payTarget} onClose={() => setPayTarget(null)} title={payTarget ? 'Pay ' + payTarget.name : ''}>
@@ -1807,19 +1630,14 @@ function Home({ data, mut, showToast, go, sync }) {
                 Due {fmtDate(withdrawHint.due)} · Due amount {inr(withdrawHint.amount)} · Bank currently {inr(withdrawHint.bankBefore)}
               </div>
             </div>
-            <div className="field">
-              <label className="label">Amount to withdraw</label>
-              <MoneyInput value={withdrawHintAmt} onChange={setWithdrawHintAmt} />
-            </div>
+            <div className="field"><label className="label">Amount to withdraw</label><MoneyInput value={withdrawHintAmt} onChange={setWithdrawHintAmt} /></div>
             <div className="field">
               <label className="label">Add to which bank?</label>
               <select className="select" value={withdrawHintBank} onChange={(e) => setWithdrawHintBank(e.target.value)}>
                 {data.banks.map(b => <option key={b.id} value={b.id}>{b.name} — {inr(b.balance)}</option>)}
               </select>
             </div>
-            <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={executeWithdraw}>
-              Move {inr(withdrawHintAmt || 0)} to bank
-            </button>
+            <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={executeWithdraw}>Move {inr(withdrawHintAmt || 0)} to bank</button>
           </div>
         )}
       </Modal>
@@ -1831,9 +1649,7 @@ function InflowModal({ target, data, onClose, onConfirm }) {
   const [amt, setAmt] = useState('');
   const [bank, setBank] = useState(data.banks[0] ? data.banks[0].id : '');
   const [adjust, setAdjust] = useState(false);
-  useEffect(() => {
-    if (target) { setAmt(String(target.amount)); setAdjust(false); setBank(data.banks[0] ? data.banks[0].id : ''); }
-  }, [target]);
+  useEffect(() => { if (target) { setAmt(String(target.amount)); setAdjust(false); setBank(data.banks[0] ? data.banks[0].id : ''); } }, [target]);
   if (!target) return null;
   return (
     <Modal open={!!target} onClose={onClose} title={'Did you receive ' + target.name + '?'}>
@@ -1842,10 +1658,7 @@ function InflowModal({ target, data, onClose, onConfirm }) {
         <div style={{ fontSize: '20px', fontWeight: 700, marginTop: '5px', letterSpacing: '-.4px' }} className="mono">{inr(target.amount)}</div>
         <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '5px' }}>Expected {fmtDate(target.due)}</div>
       </div>
-      <div className="field">
-        <label className="label">How much did you actually get?</label>
-        <MoneyInput value={amt} onChange={setAmt} />
-      </div>
+      <div className="field"><label className="label">How much did you actually get?</label><MoneyInput value={amt} onChange={setAmt} /></div>
       <div className="switch" onClick={() => setAdjust(a => !a)}>
         <div className={'switch-track' + (adjust ? ' on' : '')}><div className="switch-knob"></div></div>
         <div className="switch-lbl">Update the expected amount to this new value for future months</div>
@@ -1856,8 +1669,7 @@ function InflowModal({ target, data, onClose, onConfirm }) {
           {data.banks.map(b => <option key={b.id} value={b.id}>{b.name} — {inr(b.balance)}</option>)}
         </select>
       </div>
-      <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }}
-        onClick={() => onConfirm(amt, bank, adjust)}>Yes, I received it</button>
+      <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={() => onConfirm(amt, bank, adjust)}>Yes, I received it</button>
     </Modal>
   );
 }
@@ -1891,7 +1703,6 @@ function Banks({ data, mut, showToast, sync }) {
     return months;
   }, [data.transactions]);
 
-  // Category breakdown (all-time, out only)
   const catBreakdown = useMemo(() => {
     const totals = {};
     let overall = 0;
@@ -1909,24 +1720,16 @@ function Banks({ data, mut, showToast, sync }) {
 
   const saveBank = (name, balance, id) => {
     mut(d => {
-      if (id) {
-        const b = d.banks.find(x => x.id === id);
-        if (b) { b.name = name; b.balance = r2(balance); }
-      } else {
-        d.banks.push({ id: uid(), name, balance: r2(balance) });
-      }
+      if (id) { const b = d.banks.find(x => x.id === id); if (b) { b.name = name; b.balance = r2(balance); } }
+      else d.banks.push({ id: uid(), name, balance: r2(balance) });
     });
     setBankOpen(false); setEditBank(null);
     showToast(id ? 'Bank updated' : 'Bank added');
   };
 
   const deleteBank = (id) => {
-    mut(d => {
-      d.banks = d.banks.filter(b => b.id !== id);
-      d.transactions = d.transactions.filter(t => t.bankId !== id);
-    });
-    setConfirmDel(null);
-    showToast('Bank removed');
+    mut(d => { d.banks = d.banks.filter(b => b.id !== id); d.transactions = d.transactions.filter(t => t.bankId !== id); });
+    setConfirmDel(null); showToast('Bank removed');
   };
 
   const saveTx = (payload, id) => {
@@ -2017,7 +1820,7 @@ function Banks({ data, mut, showToast, sync }) {
             <span className="pill">Total spent {inr(catBreakdown.overall)}</span>
           </div>
           <div className="glass" style={{ padding: '20px' }}>
-            {catBreakdown.items.map((c, i) => (
+            {catBreakdown.items.map((c) => (
               <div className="cat-row" key={c.name}>
                 <div className="cat-name" title={c.name}>{c.name}</div>
                 <div className="cat-bar-track">
@@ -2039,12 +1842,7 @@ function Banks({ data, mut, showToast, sync }) {
 
       {grouped.length === 0 ? (
         <div className="glass">
-          <EmptyState
-            icon={Ico.inbox}
-            title="No transactions yet"
-            sub="Add your first transaction to start keeping a record."
-            action={<button className="btn btn-sm btn-primary" onClick={() => { setEditTx(null); setTxOpen(true); }}>Add transaction</button>}
-          />
+          <EmptyState icon={Ico.inbox} title="No transactions yet" sub="Add your first transaction to start keeping a record." action={<button className="btn btn-sm btn-primary" onClick={() => { setEditTx(null); setTxOpen(true); }}>Add transaction</button>} />
         </div>
       ) : (
         grouped.map(m => (
@@ -2067,9 +1865,7 @@ function Banks({ data, mut, showToast, sync }) {
                           {!t.affectsBalance ? <span className="pill amber">balance not changed</span> : null}
                         </div>
                       </div>
-                      <div className="item-amt" style={{ color: t.dir === 'in' ? 'var(--green)' : 'var(--red)' }}>
-                        {t.dir === 'in' ? '+' : '−'}{inr(t.amount)}
-                      </div>
+                      <div className="item-amt" style={{ color: t.dir === 'in' ? 'var(--green)' : 'var(--red)' }}>{t.dir === 'in' ? '+' : '−'}{inr(t.amount)}</div>
                       <div className="item-actions">
                         <button className="btn btn-sm" onClick={() => { setEditTx(t); setTxOpen(true); }}>Edit</button>
                         <button className="btn btn-sm btn-danger" onClick={() => deleteTx(t.id)}>Delete</button>
@@ -2113,26 +1909,16 @@ function TxModal({ open, onClose, banks, tx, onSave }) {
     if (open) {
       if (tx) {
         setBankId(tx.bankId || (banks[0] ? banks[0].id : ''));
-        setDir(tx.dir);
-        setAmount(String(tx.amount));
-        setNote(tx.note || '');
-        setCategory(tx.category || 'General');
-        setDate(tx.date);
-        setAffects(tx.affectsBalance !== false);
+        setDir(tx.dir); setAmount(String(tx.amount)); setNote(tx.note || '');
+        setCategory(tx.category || 'General'); setDate(tx.date); setAffects(tx.affectsBalance !== false);
       } else {
-        setBankId(banks[0] ? banks[0].id : '');
-        setDir('out');
-        setAmount('');
-        setNote('');
-        setCategory('General');
-        setDate(toISO(new Date()));
-        setAffects(true);
+        setBankId(banks[0] ? banks[0].id : ''); setDir('out'); setAmount(''); setNote('');
+        setCategory('General'); setDate(toISO(new Date())); setAffects(true);
       }
     }
   }, [open, tx]);
 
   if (!open) return null;
-
   const submit = () => {
     const amt = r2(amount);
     if (!amt || amt <= 0) return;
@@ -2149,14 +1935,8 @@ function TxModal({ open, onClose, banks, tx, onSave }) {
         </div>
       </div>
       <div className="row2">
-        <div className="field">
-          <label className="label">Amount</label>
-          <MoneyInput value={amount} onChange={setAmount} autoFocus />
-        </div>
-        <div className="field">
-          <label className="label">Date</label>
-          <input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} />
-        </div>
+        <div className="field"><label className="label">Amount</label><MoneyInput value={amount} onChange={setAmount} autoFocus /></div>
+        <div className="field"><label className="label">Date</label><input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
       </div>
       <div className="field">
         <label className="label">Bank</label>
@@ -2164,10 +1944,7 @@ function TxModal({ open, onClose, banks, tx, onSave }) {
           {banks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
         </select>
       </div>
-      <div className="field">
-        <label className="label">Note</label>
-        <input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="What was this for?" />
-      </div>
+      <div className="field"><label className="label">Note</label><input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="What was this for?" /></div>
       <div className="field">
         <label className="label">Category</label>
         <select className="select" value={category} onChange={(e) => setCategory(e.target.value)}>
@@ -2178,9 +1955,7 @@ function TxModal({ open, onClose, banks, tx, onSave }) {
         <div className={'switch-track' + (affects ? ' on' : '')}><div className="switch-knob"></div></div>
         <div className="switch-lbl">Adjust bank balance with this transaction</div>
       </div>
-      <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '10px', padding: '11px' }} onClick={submit}>
-        {tx ? 'Save Changes' : 'Add Transaction'}
-      </button>
+      <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '10px', padding: '11px' }} onClick={submit}>{tx ? 'Save Changes' : 'Add Transaction'}</button>
     </Modal>
   );
 }
@@ -2188,24 +1963,14 @@ function TxModal({ open, onClose, banks, tx, onSave }) {
 function BankModal({ open, onClose, bank, onSave }) {
   const [name, setName] = useState('');
   const [balance, setBalance] = useState('');
-  useEffect(() => {
-    if (open) { setName(bank ? bank.name : ''); setBalance(bank ? String(bank.balance) : ''); }
-  }, [open, bank]);
+  useEffect(() => { if (open) { setName(bank ? bank.name : ''); setBalance(bank ? String(bank.balance) : ''); } }, [open, bank]);
   if (!open) return null;
   return (
     <Modal open={open} onClose={onClose} title={bank ? 'Edit Bank' : 'Add Bank'}>
-      <div className="field">
-        <label className="label">Bank Name</label>
-        <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. HDFC Bank" />
-      </div>
-      <div className="field">
-        <label className="label">Balance</label>
-        <MoneyInput value={balance} onChange={setBalance} />
-      </div>
+      <div className="field"><label className="label">Bank Name</label><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. HDFC Bank" /></div>
+      <div className="field"><label className="label">Balance</label><MoneyInput value={balance} onChange={setBalance} /></div>
       <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }}
-        onClick={() => { if (name.trim()) onSave(name.trim(), balance, bank ? bank.id : null); }}>
-        {bank ? 'Save' : 'Add Bank'}
-      </button>
+        onClick={() => { if (name.trim()) onSave(name.trim(), balance, bank ? bank.id : null); }}>{bank ? 'Save' : 'Add Bank'}</button>
     </Modal>
   );
 }
@@ -2214,24 +1979,14 @@ function TransferModal({ open, onClose, banks, onTransfer }) {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [amount, setAmount] = useState('');
-  useEffect(() => {
-    if (open) {
-      setFrom(banks[0] ? banks[0].id : '');
-      setTo(banks[1] ? banks[1].id : '');
-      setAmount('');
-    }
-  }, [open]);
+  useEffect(() => { if (open) { setFrom(banks[0] ? banks[0].id : ''); setTo(banks[1] ? banks[1].id : ''); setAmount(''); } }, [open]);
   if (!open) return null;
   const receivers = banks.filter(b => b.id !== from);
   return (
     <Modal open={open} onClose={onClose} title="Transfer Between Banks">
       <div className="field">
         <label className="label">From</label>
-        <select className="select" value={from} onChange={(e) => {
-          const v = e.target.value;
-          setFrom(v);
-          if (v === to) { const alt = banks.find(b => b.id !== v); setTo(alt ? alt.id : ''); }
-        }}>
+        <select className="select" value={from} onChange={(e) => { const v = e.target.value; setFrom(v); if (v === to) { const alt = banks.find(b => b.id !== v); setTo(alt ? alt.id : ''); } }}>
           {banks.map(b => <option key={b.id} value={b.id}>{b.name} — {inr(b.balance)}</option>)}
         </select>
       </div>
@@ -2241,13 +1996,8 @@ function TransferModal({ open, onClose, banks, onTransfer }) {
           {receivers.length === 0 ? <option value="">Add another bank first</option> : receivers.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}
         </select>
       </div>
-      <div className="field">
-        <label className="label">Amount</label>
-        <MoneyInput value={amount} onChange={setAmount} />
-      </div>
-      <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={() => onTransfer(from, to, amount)}>
-        Transfer Now
-      </button>
+      <div className="field"><label className="label">Amount</label><MoneyInput value={amount} onChange={setAmount} /></div>
+      <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={() => onTransfer(from, to, amount)}>Transfer Now</button>
     </Modal>
   );
 }
@@ -2261,7 +2011,6 @@ function Cards({ data, mut, showToast, sync }) {
   const [adjustTarget, setAdjustTarget] = useState(null);
   const [adjustVal, setAdjustVal] = useState('');
   const [confirmDel, setConfirmDel] = useState(null);
-
   const totalOut = data.cards.reduce((s, c) => s + (Number(c.outstanding) || 0), 0);
 
   const save = (payload, id) => {
@@ -2289,20 +2038,15 @@ function Cards({ data, mut, showToast, sync }) {
       if (bank) bank.balance = r2(bank.balance - amt);
       d.transactions.push({ id: uid(), bankId: payBank, amount: amt, dir: 'out', note: c0.name + ' bill payment', category: 'Credit Card', date: toISO(new Date()), affectsBalance: true, ts: Date.now() });
       const c = d.cards.find(x => x.id === c0.id);
-      if (c) {
-        c.outstanding = r2(Math.max(0, c.outstanding - amt));
-        c.paidCycles = (c.paidCycles || []).concat([cycle]);
-      }
+      if (c) { c.outstanding = r2(Math.max(0, c.outstanding - amt)); c.paidCycles = (c.paidCycles || []).concat([cycle]); }
     });
-    setPayTarget(null);
-    showToast('Bill paid');
+    setPayTarget(null); showToast('Bill paid');
   };
 
   const saveAdjust = () => {
     const v = r2(adjustVal);
     mut(d => { const c = d.cards.find(x => x.id === adjustTarget.id); if (c) c.outstanding = v; });
-    setAdjustTarget(null);
-    showToast('Outstanding updated');
+    setAdjustTarget(null); showToast('Outstanding updated');
   };
 
   return (
@@ -2313,42 +2057,29 @@ function Cards({ data, mut, showToast, sync }) {
 
       {data.cards.length === 0 ? (
         <div className="glass">
-          <EmptyState
-            icon={Ico.card}
-            title="No credit cards yet"
-            sub="Add a card to track bills, due dates and outstanding."
-            action={<button className="btn btn-sm btn-primary" onClick={() => { setEdit(null); setFormOpen(true); }}>Add your first card</button>}
-          />
+          <EmptyState icon={Ico.card} title="No credit cards yet" sub="Add a card to track bills, due dates and outstanding." action={<button className="btn btn-sm btn-primary" onClick={() => { setEdit(null); setFormOpen(true); }}>Add your first card</button>} />
         </div>
       ) : (
         <div className="grid g2">
           {data.cards.map(c => (
-            <FlipCard
-              key={c.id}
-              card={c}
+            <FlipCard key={c.id} card={c}
               onEdit={() => { setEdit(c); setFormOpen(true); }}
               onDelete={() => setConfirmDel(c)}
               onMarkDone={() => markDone(c)}
-              onPay={() => { setPayTarget(c); setPayAmount(String(c.outstanding)); setPayBank(data.banks[0] ? data.banks[0].id : ''); }}
-            />
+              onPay={() => { setPayTarget(c); setPayAmount(String(c.outstanding)); setPayBank(data.banks[0] ? data.banks[0].id : ''); }} />
           ))}
         </div>
       )}
 
       {data.cards.length > 0 && (
         <React.Fragment>
-          <div className="section-head">
-            <div className="section-title"><span className="dot"></span>Adjust Outstanding</div>
-          </div>
+          <div className="section-head"><div className="section-title"><span className="dot"></span>Adjust Outstanding</div></div>
           <div className="glass" style={{ padding: '14px' }}>
             <div className="list">
               {data.cards.map(c => (
                 <div className="item" key={c.id}>
                   <div className="item-ico">{Ico.card}</div>
-                  <div className="item-body">
-                    <div className="item-name">{c.name}</div>
-                    <div className="item-meta"><span>Current outstanding {inr(c.outstanding)}</span></div>
-                  </div>
+                  <div className="item-body"><div className="item-name">{c.name}</div><div className="item-meta"><span>Current outstanding {inr(c.outstanding)}</span></div></div>
                   <button className="btn btn-sm" onClick={() => { setAdjustTarget(c); setAdjustVal(String(c.outstanding)); }}>Adjust</button>
                 </div>
               ))}
@@ -2386,10 +2117,7 @@ function Cards({ data, mut, showToast, sync }) {
       </Modal>
 
       <Modal open={!!adjustTarget} onClose={() => setAdjustTarget(null)} title="Adjust Outstanding">
-        <div className="field">
-          <label className="label">Correct outstanding amount</label>
-          <MoneyInput value={adjustVal} onChange={setAdjustVal} />
-        </div>
+        <div className="field"><label className="label">Correct outstanding amount</label><MoneyInput value={adjustVal} onChange={setAdjustVal} /></div>
         <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={saveAdjust}>Save</button>
       </Modal>
 
@@ -2427,7 +2155,6 @@ function CardModal({ open, onClose, card, onSave }) {
       setDueDay(card ? String(card.dueDay || '') : '');
     }
   }, [open, card]);
-
   if (!open) return null;
 
   return (
@@ -2457,27 +2184,16 @@ function CardModal({ open, onClose, card, onSave }) {
         </div>
       </div>
       <div className="row2">
-        <div className="field">
-          <label className="label">Credit Limit</label>
-          <MoneyInput value={limit} onChange={setLimit} />
-        </div>
-        <div className="field">
-          <label className="label">Outstanding</label>
-          <MoneyInput value={outstanding} onChange={setOutstanding} />
-        </div>
+        <div className="field"><label className="label">Credit Limit</label><MoneyInput value={limit} onChange={setLimit} /></div>
+        <div className="field"><label className="label">Outstanding</label><MoneyInput value={outstanding} onChange={setOutstanding} /></div>
       </div>
-      <div className="field">
-        <label className="label">Bill Due Day (1-31)</label>
-        <DayInput value={dueDay} onChange={setDueDay} />
-      </div>
+      <div className="field"><label className="label">Bill Due Day (1-31)</label><DayInput value={dueDay} onChange={setDueDay} /></div>
       <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }}
         onClick={() => onSave({
           name: name.trim() || 'Credit Card',
           number: number.replace(/\D/g, ''),
-          cvv: cvv,
-          expiry: expiry,
-          limit: r2(limit),
-          outstanding: r2(outstanding),
+          cvv, expiry,
+          limit: r2(limit), outstanding: r2(outstanding),
           dueDay: Math.min(31, Math.max(1, Number(dueDay) || 10))
         }, card ? card.id : null)}>
         {card ? 'Save Changes' : 'Add Card'}
@@ -2522,18 +2238,11 @@ function Loans({ data, mut, showToast, sync }) {
     mut(d => {
       const bank = d.banks.find(b => b.id === payBank);
       if (bank) bank.balance = r2(bank.balance - amt);
-      d.transactions.push({
-        id: uid(), bankId: payBank, amount: amt, dir: 'out',
-        note: isForeclose ? l0.name + ' loan foreclosure' : l0.name + ' payment',
-        category: 'Loan EMI', date: toISO(new Date()), affectsBalance: true, ts: Date.now()
-      });
+      d.transactions.push({ id: uid(), bankId: payBank, amount: amt, dir: 'out', note: isForeclose ? l0.name + ' loan foreclosure' : l0.name + ' payment', category: 'Loan EMI', date: toISO(new Date()), affectsBalance: true, ts: Date.now() });
       const l = d.loans.find(x => x.id === l0.id);
       if (!l) return;
       if (isForeclose) { l.remaining = 0; l.monthsLeft = 0; l.foreclosureAmount = 0; }
-      else {
-        l.remaining = r2(Math.max(0, l.remaining - amt));
-        if (payMode === 'emi') l.monthsLeft = Math.max(0, (Number(l.monthsLeft) || 1) - 1);
-      }
+      else { l.remaining = r2(Math.max(0, l.remaining - amt)); if (payMode === 'emi') l.monthsLeft = Math.max(0, (Number(l.monthsLeft) || 1) - 1); }
       l.paidCycles = (l.paidCycles || []).concat([cycle]);
     });
     setPayTarget(null);
@@ -2548,12 +2257,7 @@ function Loans({ data, mut, showToast, sync }) {
 
       {data.loans.length === 0 ? (
         <div className="glass">
-          <EmptyState
-            icon={Ico.loan}
-            title="No loans yet"
-            sub="Add a loan to track EMIs, months left, interest and payoff progress."
-            action={<button className="btn btn-sm btn-primary" onClick={() => { setEdit(null); setFormOpen(true); }}>Add your first loan</button>}
-          />
+          <EmptyState icon={Ico.loan} title="No loans yet" sub="Add a loan to track EMIs, months left, interest and payoff progress." action={<button className="btn btn-sm btn-primary" onClick={() => { setEdit(null); setFormOpen(true); }}>Add your first loan</button>} />
         </div>
       ) : (
         <div className="list">
@@ -2567,9 +2271,7 @@ function Loans({ data, mut, showToast, sync }) {
                 <div className="item-body" style={{ minWidth: '220px' }}>
                   <div className="item-name">{l.name}</div>
                   <div className="item-meta">
-                    <span className={'pill ' + (dd <= 3 ? 'red' : dd <= 7 ? 'amber' : 'blue')}>
-                      <span className="pdot"></span>EMI due {relDays(dd)}
-                    </span>
+                    <span className={'pill ' + (dd <= 3 ? 'red' : dd <= 7 ? 'amber' : 'blue')}><span className="pdot"></span>EMI due {relDays(dd)}</span>
                     <span className="pill">{l.monthsLeft || 0} months left</span>
                     <span className="pill amber">{l.rate}% interest</span>
                     <span>{fmtDate(due)}</span>
@@ -2586,9 +2288,7 @@ function Loans({ data, mut, showToast, sync }) {
                 <div style={{ textAlign: 'right' }}>
                   <div className="item-amt">{inr(l.remaining)}</div>
                   <div style={{ fontSize: '11.5px', color: 'var(--muted)', marginTop: '3px' }}>EMI {inr(l.emi)}</div>
-                  {l.foreclosureAmount ? (
-                    <div style={{ fontSize: '11.5px', color: 'var(--amber)', marginTop: '3px' }}>Foreclose at {inr(l.foreclosureAmount)}</div>
-                  ) : null}
+                  {l.foreclosureAmount ? (<div style={{ fontSize: '11.5px', color: 'var(--amber)', marginTop: '3px' }}>Foreclose at {inr(l.foreclosureAmount)}</div>) : null}
                 </div>
                 <div className="item-actions">
                   <button className="btn btn-sm btn-primary" onClick={() => { setPayTarget(l); setPayMode('emi'); setPayAmount(String(l.emi)); setPayBank(data.banks[0] ? data.banks[0].id : ''); }}>Pay</button>
@@ -2609,14 +2309,8 @@ function Loans({ data, mut, showToast, sync }) {
           <div>
             <div className="glass-soft" style={{ padding: '13px 15px', marginBottom: '16px' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-                <div>
-                  <div className="kpi-label">Remaining</div>
-                  <div style={{ fontSize: '18px', fontWeight: 700, marginTop: '5px', letterSpacing: '-.4px' }} className="mono">{inr(payTarget.remaining)}</div>
-                </div>
-                <div style={{ textAlign: 'right' }}>
-                  <div className="kpi-label">EMI</div>
-                  <div style={{ fontSize: '18px', fontWeight: 700, marginTop: '5px', letterSpacing: '-.4px' }} className="mono">{inr(payTarget.emi)}</div>
-                </div>
+                <div><div className="kpi-label">Remaining</div><div style={{ fontSize: '18px', fontWeight: 700, marginTop: '5px', letterSpacing: '-.4px' }} className="mono">{inr(payTarget.remaining)}</div></div>
+                <div style={{ textAlign: 'right' }}><div className="kpi-label">EMI</div><div style={{ fontSize: '18px', fontWeight: 700, marginTop: '5px', letterSpacing: '-.4px' }} className="mono">{inr(payTarget.emi)}</div></div>
               </div>
               <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '10px', lineHeight: 1.5 }}>
                 {payTarget.monthsLeft || 0} months left · {payTarget.rate}% interest
@@ -2628,15 +2322,10 @@ function Loans({ data, mut, showToast, sync }) {
               <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
                 <button className={'btn btn-sm' + (payMode === 'emi' ? ' btn-primary' : '')} onClick={() => { setPayMode('emi'); setPayAmount(String(payTarget.emi)); }}>Pay EMI</button>
                 <button className={'btn btn-sm' + (payMode === 'partial' ? ' btn-primary' : '')} onClick={() => { setPayMode('partial'); setPayAmount(''); }}>Partial Payment</button>
-                {payTarget.foreclosureAmount ? (
-                  <button className={'btn btn-sm' + (payMode === 'foreclose' ? ' btn-primary' : '')} onClick={() => { setPayMode('foreclose'); setPayAmount(String(payTarget.foreclosureAmount)); }}>Foreclose Loan</button>
-                ) : null}
+                {payTarget.foreclosureAmount ? (<button className={'btn btn-sm' + (payMode === 'foreclose' ? ' btn-primary' : '')} onClick={() => { setPayMode('foreclose'); setPayAmount(String(payTarget.foreclosureAmount)); }}>Foreclose Loan</button>) : null}
               </div>
             </div>
-            <div className="field">
-              <label className="label">Amount</label>
-              <MoneyInput value={payAmount} onChange={setPayAmount} />
-            </div>
+            <div className="field"><label className="label">Amount</label><MoneyInput value={payAmount} onChange={setPayAmount} /></div>
             <div className="field">
               <label className="label">Pay from</label>
               <select className="select" value={payBank} onChange={(e) => setPayBank(e.target.value)}>
@@ -2684,7 +2373,6 @@ function LoanModal({ open, onClose, loan, onSave }) {
       setDueDay(loan ? String(loan.dueDay || '') : '');
     }
   }, [open, loan]);
-
   if (!open) return null;
 
   const calcRemaining = (emiVal, rateVal, monthsVal) => {
@@ -2704,16 +2392,12 @@ function LoanModal({ open, onClose, loan, onSave }) {
         Number(loan.rate) === Number(rate) &&
         Number(loan.monthsLeft) === Number(monthsLeft);
       remaining = unchanged ? loan.remaining : calcRemaining(emi, rate, monthsLeft);
-    } else {
-      remaining = calcRemaining(emi, rate, monthsLeft);
-    }
+    } else remaining = calcRemaining(emi, rate, monthsLeft);
     onSave({
       name: name.trim() || 'Loan',
-      emi: r2(emi),
-      remaining: r2(remaining),
+      emi: r2(emi), remaining: r2(remaining),
       principal: r2(principal) || r2(remaining),
-      rate: r2(rate),
-      monthsLeft: Number(monthsLeft) || 0,
+      rate: r2(rate), monthsLeft: Number(monthsLeft) || 0,
       foreclosureAmount: r2(foreclosure),
       dueDay: Math.min(31, Math.max(1, Number(dueDay) || 5))
     }, loan ? loan.id : null);
@@ -2721,15 +2405,9 @@ function LoanModal({ open, onClose, loan, onSave }) {
 
   return (
     <Modal open={open} onClose={onClose} title={loan ? 'Edit Loan' : 'Add Loan'}>
-      <div className="field">
-        <label className="label">Loan Name</label>
-        <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Home Loan, Car Loan" />
-      </div>
+      <div className="field"><label className="label">Loan Name</label><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Home Loan, Car Loan" /></div>
       <div className="row2">
-        <div className="field">
-          <label className="label">EMI Amount</label>
-          <MoneyInput value={emi} onChange={setEmi} />
-        </div>
+        <div className="field"><label className="label">EMI Amount</label><MoneyInput value={emi} onChange={setEmi} /></div>
         <div className="field">
           <label className="label">Interest Rate (%)</label>
           <input className="input" inputMode="decimal" value={rate}
@@ -2738,27 +2416,14 @@ function LoanModal({ open, onClose, loan, onSave }) {
         </div>
       </div>
       <div className="row2">
-        <div className="field">
-          <label className="label">Months Left</label>
-          <input className="input" inputMode="numeric" value={monthsLeft}
-            onChange={(e) => setMonthsLeft(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="24" />
+        <div className="field"><label className="label">Months Left</label>
+          <input className="input" inputMode="numeric" value={monthsLeft} onChange={(e) => setMonthsLeft(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="24" />
         </div>
-        <div className="field">
-          <label className="label">EMI Due Day (1-31)</label>
-          <DayInput value={dueDay} onChange={setDueDay} />
-        </div>
+        <div className="field"><label className="label">EMI Due Day (1-31)</label><DayInput value={dueDay} onChange={setDueDay} /></div>
       </div>
-      <div className="field">
-        <label className="label">Original Loan Amount</label>
-        <MoneyInput value={principal} onChange={setPrincipal} />
-      </div>
-      <div className="field">
-        <label className="label">Foreclosure Amount (if you close it today)</label>
-        <MoneyInput value={foreclosure} onChange={setForeclosure} />
-      </div>
-      <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={submit}>
-        {loan ? 'Save Changes' : 'Add Loan'}
-      </button>
+      <div className="field"><label className="label">Original Loan Amount</label><MoneyInput value={principal} onChange={setPrincipal} /></div>
+      <div className="field"><label className="label">Foreclosure Amount (if you close it today)</label><MoneyInput value={foreclosure} onChange={setForeclosure} /></div>
+      <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={submit}>{loan ? 'Save Changes' : 'Add Loan'}</button>
     </Modal>
   );
 }
@@ -2811,8 +2476,7 @@ function Bills({ data, mut, showToast, sync }) {
       const b = d.bills.find(x => x.id === b0.id);
       if (b) b.paidCycles = (b.paidCycles || []).concat([cycle]);
     });
-    setPayTarget(null);
-    showToast('Payment recorded');
+    setPayTarget(null); showToast('Payment recorded');
   };
 
   return (
@@ -2822,18 +2486,9 @@ function Bills({ data, mut, showToast, sync }) {
         <button className="btn btn-sm btn-primary" onClick={() => { setEdit(null); setFormOpen(true); }}>+ Add Bill</button>
       </PageHead>
 
-      <div className="section-head">
-        <div className="section-title"><span className="dot"></span>Recurring Bills</div>
-      </div>
+      <div className="section-head"><div className="section-title"><span className="dot"></span>Recurring Bills</div></div>
       {data.bills.length === 0 ? (
-        <div className="glass">
-          <EmptyState
-            icon={Ico.bill}
-            title="No bills yet"
-            sub="Add OTT, rent, wifi or any other recurring payments."
-            action={<button className="btn btn-sm btn-primary" onClick={() => { setEdit(null); setFormOpen(true); }}>Add a bill</button>}
-          />
-        </div>
+        <div className="glass"><EmptyState icon={Ico.bill} title="No bills yet" sub="Add OTT, rent, wifi or any other recurring payments." action={<button className="btn btn-sm btn-primary" onClick={() => { setEdit(null); setFormOpen(true); }}>Add a bill</button>} /></div>
       ) : (
         <div className="list">
           {data.bills.map(b => {
@@ -2845,9 +2500,7 @@ function Bills({ data, mut, showToast, sync }) {
                 <div className="item-body">
                   <div className="item-name">{b.name}</div>
                   <div className="item-meta">
-                    <span className={'pill ' + (dd <= 3 ? 'red' : dd <= 7 ? 'amber' : 'blue')}>
-                      <span className="pdot"></span>due {relDays(dd)}
-                    </span>
+                    <span className={'pill ' + (dd <= 3 ? 'red' : dd <= 7 ? 'amber' : 'blue')}><span className="pdot"></span>due {relDays(dd)}</span>
                     <span>{fmtDate(due)}</span>
                   </div>
                 </div>
@@ -2864,18 +2517,9 @@ function Bills({ data, mut, showToast, sync }) {
         </div>
       )}
 
-      <div className="section-head">
-        <div className="section-title"><span className="dot"></span>Money Coming In</div>
-      </div>
+      <div className="section-head"><div className="section-title"><span className="dot"></span>Money Coming In</div></div>
       {data.inflows.length === 0 ? (
-        <div className="glass">
-          <EmptyState
-            icon={Ico.down}
-            title="No incoming payments yet"
-            sub="Add your salary or any expected payments."
-            action={<button className="btn btn-sm btn-primary" onClick={() => { setEditInflow(null); setInflowOpen(true); }}>Add income</button>}
-          />
-        </div>
+        <div className="glass"><EmptyState icon={Ico.down} title="No incoming payments yet" sub="Add your salary or any expected payments." action={<button className="btn btn-sm btn-primary" onClick={() => { setEditInflow(null); setInflowOpen(true); }}>Add income</button>} /></div>
       ) : (
         <div className="list">
           {data.inflows.map(f => {
@@ -2886,18 +2530,12 @@ function Bills({ data, mut, showToast, sync }) {
                 <div className="item-ico" style={{ color: 'var(--green)' }}>{Ico.down}</div>
                 <div className="item-body">
                   <div className="item-name">{f.name}</div>
-                  <div className="item-meta">
-                    <span className="pill green"><span className="pdot"></span>in {dd} days</span>
-                    <span>{fmtDate(due)}</span>
-                  </div>
+                  <div className="item-meta"><span className="pill green"><span className="pdot"></span>in {dd} days</span><span>{fmtDate(due)}</span></div>
                 </div>
                 <div className="item-amt" style={{ color: 'var(--green)' }}>+{inr(f.amount)}</div>
                 <div className="item-actions">
                   <button className="btn btn-sm" onClick={() => { setEditInflow(f); setInflowOpen(true); }}>Edit</button>
-                  <button className="btn btn-sm btn-danger" onClick={() => {
-                    mut(d => { d.inflows = d.inflows.filter(x => x.id !== f.id); });
-                    showToast('Removed');
-                  }}>Delete</button>
+                  <button className="btn btn-sm btn-danger" onClick={() => { mut(d => { d.inflows = d.inflows.filter(x => x.id !== f.id); }); showToast('Removed'); }}>Delete</button>
                 </div>
               </div>
             );
@@ -2911,10 +2549,7 @@ function Bills({ data, mut, showToast, sync }) {
       <Modal open={!!payTarget} onClose={() => setPayTarget(null)} title={payTarget ? 'Pay ' + payTarget.name : ''}>
         {payTarget && (
           <div>
-            <div className="field">
-              <label className="label">Amount</label>
-              <MoneyInput value={payAmount} onChange={setPayAmount} />
-            </div>
+            <div className="field"><label className="label">Amount</label><MoneyInput value={payAmount} onChange={setPayAmount} /></div>
             <div className="field">
               <label className="label">Pay from</label>
               <select className="select" value={payBank} onChange={(e) => setPayBank(e.target.value)}>
@@ -2944,36 +2579,17 @@ function BillModal({ open, onClose, bill, onSave }) {
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
   const [dueDay, setDueDay] = useState('');
-  useEffect(() => {
-    if (open) {
-      setName(bill ? bill.name : '');
-      setAmount(bill ? String(bill.amount || '') : '');
-      setDueDay(bill ? String(bill.dueDay || '') : '');
-    }
-  }, [open, bill]);
+  useEffect(() => { if (open) { setName(bill ? bill.name : ''); setAmount(bill ? String(bill.amount || '') : ''); setDueDay(bill ? String(bill.dueDay || '') : ''); } }, [open, bill]);
   if (!open) return null;
   return (
     <Modal open={open} onClose={onClose} title={bill ? 'Edit Bill' : 'Add Bill'}>
-      <div className="field">
-        <label className="label">Bill Name</label>
-        <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Netflix, Rent, Wifi" />
-      </div>
+      <div className="field"><label className="label">Bill Name</label><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Netflix, Rent, Wifi" /></div>
       <div className="row2">
-        <div className="field">
-          <label className="label">Amount</label>
-          <MoneyInput value={amount} onChange={setAmount} />
-        </div>
-        <div className="field">
-          <label className="label">Due Day (1-31)</label>
-          <DayInput value={dueDay} onChange={setDueDay} />
-        </div>
+        <div className="field"><label className="label">Amount</label><MoneyInput value={amount} onChange={setAmount} /></div>
+        <div className="field"><label className="label">Due Day (1-31)</label><DayInput value={dueDay} onChange={setDueDay} /></div>
       </div>
       <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }}
-        onClick={() => onSave({
-          name: name.trim() || 'Bill',
-          amount: r2(amount),
-          dueDay: Math.min(31, Math.max(1, Number(dueDay) || 1))
-        }, bill ? bill.id : null)}>
+        onClick={() => onSave({ name: name.trim() || 'Bill', amount: r2(amount), dueDay: Math.min(31, Math.max(1, Number(dueDay) || 1)) }, bill ? bill.id : null)}>
         {bill ? 'Save Changes' : 'Add Bill'}
       </button>
     </Modal>
@@ -2984,43 +2600,23 @@ function InflowFormModal({ open, onClose, inflow, onSave }) {
   const [name, setName] = useState('');
   const [amount, setAmount] = useState('');
   const [day, setDay] = useState('');
-  useEffect(() => {
-    if (open) {
-      setName(inflow ? inflow.name : '');
-      setAmount(inflow ? String(inflow.amount || '') : '');
-      setDay(inflow ? String(inflow.day || '') : '');
-    }
-  }, [open, inflow]);
+  useEffect(() => { if (open) { setName(inflow ? inflow.name : ''); setAmount(inflow ? String(inflow.amount || '') : ''); setDay(inflow ? String(inflow.day || '') : ''); } }, [open, inflow]);
   if (!open) return null;
   return (
     <Modal open={open} onClose={onClose} title={inflow ? 'Edit Incoming Payment' : 'Add Incoming Payment'}>
-      <div className="field">
-        <label className="label">Name</label>
-        <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Salary, Rent from tenant" />
-      </div>
+      <div className="field"><label className="label">Name</label><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Salary, Rent from tenant" /></div>
       <div className="row2">
-        <div className="field">
-          <label className="label">Expected Amount</label>
-          <MoneyInput value={amount} onChange={setAmount} />
-        </div>
-        <div className="field">
-          <label className="label">Day of Month (1-31)</label>
-          <DayInput value={day} onChange={setDay} />
-        </div>
+        <div className="field"><label className="label">Expected Amount</label><MoneyInput value={amount} onChange={setAmount} /></div>
+        <div className="field"><label className="label">Day of Month (1-31)</label><DayInput value={day} onChange={setDay} /></div>
       </div>
       <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }}
-        onClick={() => onSave({
-          name: name.trim() || 'Income',
-          amount: r2(amount),
-          day: Math.min(31, Math.max(1, Number(day) || 1))
-        }, inflow ? inflow.id : null)}>
+        onClick={() => onSave({ name: name.trim() || 'Income', amount: r2(amount), day: Math.min(31, Math.max(1, Number(day) || 1)) }, inflow ? inflow.id : null)}>
         {inflow ? 'Save Changes' : 'Add'}
       </button>
     </Modal>
   );
 }
 
-/* ---------- Demat Calendar ---------- */
 function DematCalendar({ account, onSetValue, onClearValue }) {
   const today = startOfToday();
   const [viewYear, setViewYear] = useState(today.getFullYear());
@@ -3043,27 +2639,19 @@ function DematCalendar({ account, onSetValue, onClearValue }) {
   for (let d = 1; d <= dim; d++) {
     const iso = viewYear + '-' + pad(viewMonth + 1) + '-' + pad(d);
     const val = history[iso];
-    const cellDate = new Date(viewYear, viewMonth, d);
-    // Find previous entry's value before this date
     let prevVal = null;
-    let prevDateStr = null;
     const sortedKeys = Object.keys(history).sort();
     for (let k = 0; k < sortedKeys.length; k++) {
-      if (sortedKeys[k] < iso) { prevVal = history[sortedKeys[k]]; prevDateStr = sortedKeys[k]; }
+      if (sortedKeys[k] < iso) prevVal = history[sortedKeys[k]];
       else break;
     }
     const pnl = (val !== undefined && prevVal !== null) ? r2(val - prevVal) : null;
-    cells.push({
-      empty: false, key: iso, day: d, iso, val: val !== undefined ? val : null,
-      pnl, isToday: iso === toISO(today), prevDateStr
-    });
+    cells.push({ empty: false, key: iso, day: d, iso, val: val !== undefined ? val : null, pnl, isToday: iso === toISO(today) });
   }
-  // pad to full weeks
   while (cells.length % 7 !== 0) cells.push({ empty: true, key: 'pe' + cells.length });
 
   const monthLabel = MONTHS_FULL[viewMonth] + ' ' + viewYear;
 
-  // Month stats
   const monthEntries = (account.history || []).filter(h => h.date.startsWith(viewYear + '-' + pad(viewMonth + 1)));
   let monthStart = null, monthEnd = null;
   if (monthEntries.length) {
@@ -3073,36 +2661,17 @@ function DematCalendar({ account, onSetValue, onClearValue }) {
   }
   const monthPnl = (monthStart !== null && monthEnd !== null) ? r2(monthEnd - monthStart) : null;
 
-  const prevMonth = () => {
-    if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); }
-    else setViewMonth(m => m - 1);
-  };
-  const nextMonth = () => {
-    if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); }
-    else setViewMonth(m => m + 1);
-  };
+  const prevMonth = () => { if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); } else setViewMonth(m => m - 1); };
+  const nextMonth = () => { if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); } else setViewMonth(m => m + 1); };
 
-  const openEdit = (cell) => {
-    if (cell.empty) return;
-    setEditDate(cell.iso);
-    setEditVal(cell.val !== null ? String(cell.val) : '');
-  };
-
+  const openEdit = (cell) => { if (cell.empty) return; setEditDate(cell.iso); setEditVal(cell.val !== null ? String(cell.val) : ''); };
   const saveEdit = () => {
     if (!editDate) return;
-    if (editVal === '' || editVal === null) {
-      onClearValue(editDate);
-    } else {
-      onSetValue(editDate, r2(editVal));
-    }
+    if (editVal === '' || editVal === null) onClearValue(editDate);
+    else onSetValue(editDate, r2(editVal));
     setEditDate(null);
   };
-
-  const clearEdit = () => {
-    if (!editDate) return;
-    onClearValue(editDate);
-    setEditDate(null);
-  };
+  const clearEdit = () => { if (!editDate) return; onClearValue(editDate); setEditDate(null); };
 
   return (
     <div>
@@ -3113,9 +2682,7 @@ function DematCalendar({ account, onSetValue, onClearValue }) {
       </div>
       <div className="cal-wrap">
         {DOW.map(d => <div className="cal-dow" key={d}>{d}</div>)}
-        {cells.map(c => c.empty ? (
-          <div key={c.key} className="cal-cell empty"></div>
-        ) : (
+        {cells.map(c => c.empty ? (<div key={c.key} className="cal-cell empty"></div>) : (
           <div key={c.key}
             className={'cal-cell' + (c.isToday ? ' today' : '') + (c.val !== null ? ' has-value' : '')}
             onClick={() => openEdit(c)}
@@ -3125,9 +2692,7 @@ function DematCalendar({ account, onSetValue, onClearValue }) {
               <React.Fragment>
                 <div className="cal-val">{inr(c.val)}</div>
                 {c.pnl !== null && Math.abs(c.pnl) > 0.005 && (
-                  <div className={'cal-pnl ' + (c.pnl >= 0 ? 'up' : 'down')}>
-                    {c.pnl >= 0 ? '+' : ''}{money(c.pnl)}
-                  </div>
+                  <div className={'cal-pnl ' + (c.pnl >= 0 ? 'up' : 'down')}>{c.pnl >= 0 ? '+' : ''}{money(c.pnl)}</div>
                 )}
               </React.Fragment>
             )}
@@ -3138,15 +2703,11 @@ function DematCalendar({ account, onSetValue, onClearValue }) {
       <div className="cal-month-stats">
         <div className="cal-stat">
           <div className="cal-stat-label">Month start</div>
-          <div className="cal-stat-val" style={{ color: monthStart !== null ? 'var(--txt)' : 'var(--muted)' }}>
-            {monthStart !== null ? inr(monthStart) : '—'}
-          </div>
+          <div className="cal-stat-val" style={{ color: monthStart !== null ? 'var(--txt)' : 'var(--muted)' }}>{monthStart !== null ? inr(monthStart) : '—'}</div>
         </div>
         <div className="cal-stat">
           <div className="cal-stat-label">Month end</div>
-          <div className="cal-stat-val" style={{ color: monthEnd !== null ? 'var(--txt)' : 'var(--muted)' }}>
-            {monthEnd !== null ? inr(monthEnd) : '—'}
-          </div>
+          <div className="cal-stat-val" style={{ color: monthEnd !== null ? 'var(--txt)' : 'var(--muted)' }}>{monthEnd !== null ? inr(monthEnd) : '—'}</div>
         </div>
         <div className="cal-stat">
           <div className="cal-stat-label">Month P&L</div>
@@ -3157,18 +2718,13 @@ function DematCalendar({ account, onSetValue, onClearValue }) {
       </div>
 
       <Modal open={!!editDate} onClose={() => setEditDate(null)} title={editDate ? 'Demat value on ' + fmtDate(editDate) : ''}>
-        <div className="field">
-          <label className="label">Capital / Value (₹)</label>
-          <MoneyInput value={editVal} onChange={setEditVal} autoFocus />
-        </div>
+        <div className="field"><label className="label">Capital / Value (₹)</label><MoneyInput value={editVal} onChange={setEditVal} autoFocus /></div>
         <div style={{ fontSize: '11.5px', color: 'var(--muted)', marginBottom: '14px', lineHeight: 1.5 }}>
           Enter the total demat value on this date. P&L for the day will be calculated from the previous entry.
         </div>
         <div style={{ display: 'flex', gap: '10px' }}>
           <button className="btn" style={{ flex: 1, justifyContent: 'center' }} onClick={() => setEditDate(null)}>Cancel</button>
-          {editDate && history[editDate] !== undefined && (
-            <button className="btn btn-danger" style={{ justifyContent: 'center' }} onClick={clearEdit}>Clear</button>
-          )}
+          {editDate && history[editDate] !== undefined && (<button className="btn btn-danger" style={{ justifyContent: 'center' }} onClick={clearEdit}>Clear</button>)}
           <button className="btn btn-primary" style={{ flex: 1, justifyContent: 'center' }} onClick={saveEdit}>Save</button>
         </div>
       </Modal>
@@ -3191,9 +2747,7 @@ function Demat({ data, mut, showToast, sync }) {
   const total = data.demats.reduce((s, d) => s + (Number(d.balance) || 0), 0);
 
   useEffect(() => {
-    if (data.demats.length && !data.demats.find(d => d.id === calAccountId)) {
-      setCalAccountId(data.demats[0].id);
-    }
+    if (data.demats.length && !data.demats.find(d => d.id === calAccountId)) setCalAccountId(data.demats[0].id);
   }, [data.demats]);
 
   const chartPoints = useMemo(() => {
@@ -3227,9 +2781,7 @@ function Demat({ data, mut, showToast, sync }) {
       a.history = (a.history || []).filter(h => h.date !== date);
       a.history.push({ date, value });
       a.history.sort((x, y) => x.date.localeCompare(y.date));
-      // If date is today, update current balance too
       if (date === toISO(new Date())) a.balance = value;
-      // If date is the latest date, update current balance
       const latest = a.history[a.history.length - 1];
       if (latest && latest.date === date) a.balance = value;
     });
@@ -3314,11 +2866,7 @@ function Demat({ data, mut, showToast, sync }) {
             </select>
           </div>
           <div className="glass" style={{ padding: '20px', marginBottom: '18px' }}>
-            <DematCalendar
-              account={calAccount}
-              onSetValue={setCalValue}
-              onClearValue={clearCalValue}
-            />
+            <DematCalendar account={calAccount} onSetValue={setCalValue} onClearValue={clearCalValue} />
           </div>
         </React.Fragment>
       )}
@@ -3342,18 +2890,12 @@ function Demat({ data, mut, showToast, sync }) {
       </div>
 
       <Modal open={!!updateTarget} onClose={() => setUpdateTarget(null)} title="Update Today's Balance">
-        <div className="field">
-          <label className="label">Current value of {updateTarget ? updateTarget.name : ''}</label>
-          <MoneyInput value={updateVal} onChange={setUpdateVal} />
-        </div>
+        <div className="field"><label className="label">Current value of {updateTarget ? updateTarget.name : ''}</label><MoneyInput value={updateVal} onChange={setUpdateVal} /></div>
         <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={saveUpdate}>Save Today's Value</button>
       </Modal>
 
       <Modal open={!!withdrawTarget} onClose={() => setWithdrawTarget(null)} title="Withdraw to Bank">
-        <div className="field">
-          <label className="label">Amount to withdraw</label>
-          <MoneyInput value={withdrawAmt} onChange={setWithdrawAmt} />
-        </div>
+        <div className="field"><label className="label">Amount to withdraw</label><MoneyInput value={withdrawAmt} onChange={setWithdrawAmt} /></div>
         <div className="field">
           <label className="label">Send to bank</label>
           <select className="select" value={withdrawBank} onChange={(e) => setWithdrawBank(e.target.value)}>
@@ -3382,24 +2924,14 @@ function Demat({ data, mut, showToast, sync }) {
 function DematModal({ open, onClose, account, onSave }) {
   const [name, setName] = useState('');
   const [balance, setBalance] = useState('');
-  useEffect(() => {
-    if (open) { setName(account ? account.name : ''); setBalance(account ? String(account.balance || '') : ''); }
-  }, [open, account]);
+  useEffect(() => { if (open) { setName(account ? account.name : ''); setBalance(account ? String(account.balance || '') : ''); } }, [open, account]);
   if (!open) return null;
   return (
     <Modal open={open} onClose={onClose} title={account ? 'Edit Demat Account' : 'Add Demat Account'}>
-      <div className="field">
-        <label className="label">Account Name</label>
-        <input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Zerodha, Groww" />
-      </div>
-      <div className="field">
-        <label className="label">Current Value</label>
-        <MoneyInput value={balance} onChange={setBalance} />
-      </div>
+      <div className="field"><label className="label">Account Name</label><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Zerodha, Groww" /></div>
+      <div className="field"><label className="label">Current Value</label><MoneyInput value={balance} onChange={setBalance} /></div>
       <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }}
-        onClick={() => onSave(name.trim() || 'Demat', balance, account ? account.id : null)}>
-        {account ? 'Save' : 'Add Account'}
-      </button>
+        onClick={() => onSave(name.trim() || 'Demat', balance, account ? account.id : null)}>{account ? 'Save' : 'Add Account'}</button>
     </Modal>
   );
 }
@@ -3429,12 +2961,11 @@ function simulate(loans, extra) {
       if (l.rem < 0) l.rem = 0;
     }
   }
-  return { months: months, totalInterest: r2(totalInterest) };
+  return { months, totalInterest: r2(totalInterest) };
 }
 
 function AiBrain({ data, sync }) {
   const [extra, setExtra] = useState('5000');
-
   const bankTotal = data.banks.reduce((s, b) => s + (Number(b.balance) || 0), 0);
   const dematTotal = data.demats.reduce((s, d) => s + (Number(d.balance) || 0), 0);
   const cardDebt = data.cards.reduce((s, c) => s + (Number(c.outstanding) || 0), 0);
@@ -3458,69 +2989,25 @@ function AiBrain({ data, sync }) {
   const interestSaved = r2(Math.max(0, base.totalInterest - withExtra.totalInterest));
 
   const insights = [];
-  if (liabilities === 0) {
-    insights.push({ icon: Ico.check, title: 'You are debt free', text: 'No loans and no credit card outstanding. Keep building your investments.' });
-  }
-  if (cardDebt > 0) {
-    insights.push({
-      icon: Ico.card,
-      title: 'Credit cards first',
-      text: 'Credit card interest is usually 36% to 42% a year, way higher than most loans. Clear ' + (sortedCards[0] ? sortedCards[0].name : 'your card') + ' (' + inr(sortedCards[0] ? sortedCards[0].outstanding : 0) + ') before making extra payments on loans.'
-    });
-  }
+  if (liabilities === 0) insights.push({ icon: Ico.check, title: 'You are debt free', text: 'No loans and no credit card outstanding. Keep building your investments.' });
+  if (cardDebt > 0) insights.push({ icon: Ico.card, title: 'Credit cards first', text: 'Credit card interest is usually 36% to 42% a year, way higher than most loans. Clear ' + (sortedCards[0] ? sortedCards[0].name : 'your card') + ' (' + inr(sortedCards[0] ? sortedCards[0].outstanding : 0) + ') before making extra payments on loans.' });
   if (sortedLoans.length > 0) {
     const top = sortedLoans[0];
-    insights.push({
-      icon: Ico.loan,
-      title: 'Attack this loan first',
-      text: top.name + ' has the highest interest at ' + top.rate + '% a year. Put any extra money here first. It saves you the most interest.'
-    });
+    insights.push({ icon: Ico.loan, title: 'Attack this loan first', text: top.name + ' has the highest interest at ' + top.rate + '% a year. Put any extra money here first.' });
     const small = smallest[0];
-    if (small !== top) {
-      insights.push({
-        icon: Ico.sparkle,
-        title: 'Or try the quick win',
-        text: 'If you need motivation, close ' + small.name + ' first. Only ' + inr(small.remaining) + ' left. One less EMI makes you feel lighter.'
-      });
-    }
+    if (small !== top) insights.push({ icon: Ico.sparkle, title: 'Or try the quick win', text: 'If you need motivation, close ' + small.name + ' first. Only ' + inr(small.remaining) + ' left.' });
   }
-  if (bankTotal > 0 && bankTotal < mOut) {
-    insights.push({ icon: Ico.bank, title: 'Thin cushion', text: 'Your bank balance is less than one month of spending. Try to keep at least 3 months of expenses (' + inr(r2(mOut * 3)) + ') as an emergency fund.' });
-  } else if (mOut > 0) {
-    insights.push({ icon: Ico.bank, title: 'Emergency fund check', text: 'A safe cushion is about 3 to 6 months of expenses. For you that is ' + inr(r2(mOut * 3)) + ' to ' + inr(r2(mOut * 6)) + '. Park it in a savings account or liquid fund.' });
-  }
+  if (bankTotal > 0 && bankTotal < mOut) insights.push({ icon: Ico.bank, title: 'Thin cushion', text: 'Your bank balance is less than one month of spending. Try to keep at least 3 months of expenses (' + inr(r2(mOut * 3)) + ') as an emergency fund.' });
+  else if (mOut > 0) insights.push({ icon: Ico.bank, title: 'Emergency fund check', text: 'A safe cushion is about 3 to 6 months of expenses. For you that is ' + inr(r2(mOut * 3)) + ' to ' + inr(r2(mOut * 6)) + '.' });
   if (mIn > 0) {
     const rate = r2(((mIn - mOut) / mIn) * 100);
-    insights.push({
-      icon: Ico.sparkle,
-      title: 'This month savings rate: ' + rate + '%',
-      text: rate >= 20
-        ? 'Great going. You are keeping ' + inr(r2(mIn - mOut)) + ' this month. Push that straight into your highest interest debt.'
-        : rate >= 0
-          ? 'You are saving ' + inr(r2(mIn - mOut)) + '. Try to push this above 20% of your income.'
-          : 'You spent more than you earned this month by ' + inr(Math.abs(r2(mIn - mOut))) + '. Look at the biggest expense category and cut it.'
-    });
+    insights.push({ icon: Ico.sparkle, title: 'This month savings rate: ' + rate + '%', text: rate >= 20 ? 'Great going. You are keeping ' + inr(r2(mIn - mOut)) + ' this month.' : rate >= 0 ? 'You are saving ' + inr(r2(mIn - mOut)) + '. Try to push this above 20%.' : 'You spent more than you earned by ' + inr(Math.abs(r2(mIn - mOut))) + '.' });
   }
   const catTotals = {};
-  monthTx.filter(t => t.dir === 'out').forEach(t => {
-    const c = t.category || 'Other';
-    catTotals[c] = r2((catTotals[c] || 0) + (Number(t.amount) || 0));
-  });
-  const topCats = Object.keys(catTotals).map(k => ({ k: k, v: catTotals[k] })).sort((a, b) => b.v - a.v).slice(0, 3);
-  if (topCats.length) {
-    insights.push({
-      icon: Ico.bill,
-      title: 'Where your money went this month',
-      text: topCats.map(c => c.k + ' ' + inr(c.v)).join(' · ')
-    });
-  }
-  if (base.months > 0) {
-    insights.push({
-      icon: Ico.sparkle,
-      title: 'Debt free in about ' + base.months + ' months',
-      text: 'If you keep paying your normal EMIs, you will be debt free around ' + fmtDate(new Date(new Date().getFullYear(), new Date().getMonth() + base.months, 1)) + '. Total interest you will pay: ' + inr(base.totalInterest) + '.'
-    });
-  }
+  monthTx.filter(t => t.dir === 'out').forEach(t => { const c = t.category || 'Other'; catTotals[c] = r2((catTotals[c] || 0) + (Number(t.amount) || 0)); });
+  const topCats = Object.keys(catTotals).map(k => ({ k, v: catTotals[k] })).sort((a, b) => b.v - a.v).slice(0, 3);
+  if (topCats.length) insights.push({ icon: Ico.bill, title: 'Where your money went this month', text: topCats.map(c => c.k + ' ' + inr(c.v)).join(' · ') });
+  if (base.months > 0) insights.push({ icon: Ico.sparkle, title: 'Debt free in about ' + base.months + ' months', text: 'If you keep paying your normal EMIs, you will be debt free around ' + fmtDate(new Date(new Date().getFullYear(), new Date().getMonth() + base.months, 1)) + '.' });
 
   const foreclosable = data.loans.filter(l => Number(l.foreclosureAmount) > 0);
   const bestForeclose = foreclosable.slice().sort((a, b) => (Number(b.rate) || 0) - (Number(a.rate) || 0))[0];
@@ -3547,9 +3034,7 @@ function AiBrain({ data, sync }) {
         </div>
       </div>
 
-      <div className="section-head">
-        <div className="section-title"><span className="dot"></span>What the AI sees</div>
-      </div>
+      <div className="section-head"><div className="section-title"><span className="dot"></span>What the AI sees</div></div>
       <div className="list">
         {insights.map((ins, i) => (
           <div className="item" key={i}>
@@ -3562,9 +3047,7 @@ function AiBrain({ data, sync }) {
         ))}
       </div>
 
-      <div className="section-head">
-        <div className="section-title"><span className="dot"></span>Extra Payment Planner</div>
-      </div>
+      <div className="section-head"><div className="section-title"><span className="dot"></span>Extra Payment Planner</div></div>
       <div className="glass" style={{ padding: '20px' }}>
         <div className="field" style={{ maxWidth: '320px' }}>
           <label className="label">If I put this much extra every month</label>
@@ -3589,16 +3072,14 @@ function AiBrain({ data, sync }) {
         </div>
         {sortedLoans.length > 0 && r2(extra) > 0 ? (
           <div style={{ marginTop: '16px', fontSize: '12.5px', color: 'var(--muted)', lineHeight: 1.6 }}>
-            Put the extra <b style={{ color: 'var(--txt)' }}>{inr(extra)}</b> into <b style={{ color: 'var(--txt)' }}>{sortedLoans[0].name}</b> first because it charges the highest interest at {sortedLoans[0].rate}% a year. Once that is done, move to the next highest.
+            Put the extra <b style={{ color: 'var(--txt)' }}>{inr(extra)}</b> into <b style={{ color: 'var(--txt)' }}>{sortedLoans[0].name}</b> first because it charges the highest interest at {sortedLoans[0].rate}% a year.
           </div>
         ) : null}
       </div>
 
       {bestForeclose ? (
         <React.Fragment>
-          <div className="section-head">
-            <div className="section-title"><span className="dot"></span>Foreclosure Advice</div>
-          </div>
+          <div className="section-head"><div className="section-title"><span className="dot"></span>Foreclosure Advice</div></div>
           <div className="glass" style={{ padding: '20px', fontSize: '13px', lineHeight: 1.7 }}>
             <b>{bestForeclose.name}</b> can be closed today for <b>{inr(bestForeclose.foreclosureAmount)}</b>.
             You still owe <b>{inr(bestForeclose.remaining)}</b> and have <b>{bestForeclose.monthsLeft || 0} months</b> left at <b>{bestForeclose.rate}%</b>.
@@ -3610,14 +3091,10 @@ function AiBrain({ data, sync }) {
         </React.Fragment>
       ) : null}
 
-      <div className="section-head">
-        <div className="section-title"><span className="dot"></span>Payoff Order</div>
-      </div>
+      <div className="section-head"><div className="section-title"><span className="dot"></span>Payoff Order</div></div>
       <div className="list">
         {sortedLoans.length === 0 && sortedCards.length === 0 ? (
-          <div className="glass">
-            <EmptyState icon={Ico.check} title="Nothing to pay off" sub="You are debt free. Nice." />
-          </div>
+          <div className="glass"><EmptyState icon={Ico.check} title="Nothing to pay off" sub="You are debt free. Nice." /></div>
         ) : null}
         {sortedLoans.map((l, i) => (
           <div className="item" key={l.id}>
@@ -3649,11 +3126,6 @@ function AiBrain({ data, sync }) {
       </div>
     </div>
   );
-}
-
-const RaysRoot = document.getElementById('rays-root');
-if (RaysRoot) {
-  ReactDOM.createRoot(RaysRoot).render(<LightRaysBackground theme={document.documentElement.getAttribute('data-theme') || 'dark'} />);
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
@@ -3723,7 +3195,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);
     function tryNext() {
       if (i >= urls.length) return Promise.resolve(null);
       var url = urls[i++];
-      return import(/* webpackIgnore: true */ url).then(function (mod) {
+      return import(url).then(function (mod) {
         if (mod && mod.Renderer && mod.Program && mod.Triangle && mod.Mesh) {
           window.ogl = mod;
           return mod;
@@ -3737,7 +3209,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);
   function showError(err) {
     var d = document.createElement('div');
     d.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#05060a;color:#f87171;padding:28px;font-family:ui-monospace,Menlo,monospace;font-size:13px;line-height:1.7;overflow:auto;white-space:pre-wrap';
-    d.textContent = 'FinVault could not start.\n\n' + (err && err.stack ? err.stack : String(err)) +
+    d.textContent = 'ShubhVault could not start.\n\n' + (err && err.stack ? err.stack : String(err)) +
       '\n\nTry a hard refresh (Ctrl+Shift+R). If it still fails, your network or browser may be blocking the script CDN.';
     document.body.appendChild(d);
   }
