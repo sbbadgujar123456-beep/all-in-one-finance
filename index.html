@@ -298,6 +298,12 @@ html[data-theme="light"] .toast{background:rgba(255,255,255,.98);color:#0c1120}
 .spotlight.red::before{background:radial-gradient(circle,rgba(248,113,113,.12),transparent 70%)}
 .spotlight.green::before{background:radial-gradient(circle,rgba(52,211,153,.12),transparent 70%)}
 .spotlight.amber::before{background:radial-gradient(circle,rgba(251,191,36,.12),transparent 70%)}
+
+.plan-box{background:linear-gradient(135deg, rgba(251,191,36,.06), rgba(124,146,255,.04)); border:1px solid rgba(251,191,36,.18)}
+.plan-item{background:var(--glass-2);border:1px solid var(--brd);border-radius:12px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:flex-start;gap:14px}
+.plan-item:last-child{margin-bottom:0}
+.plan-amt{font-size:20px;font-weight:800;color:var(--amber);letter-spacing:-.6px;font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+.plan-action{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.5}
 </style>
 </head>
 <body>
@@ -557,7 +563,8 @@ const Ico = {
   cloud: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M17.5 19a4.5 4.5 0 0 0 .5-9 6 6 0 0 0-11.6-1.5A4.5 4.5 0 0 0 6.5 19z"/></svg>,
   cloudOff: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 3l18 18"/><path d="M17.5 19a4.5 4.5 0 0 0 .5-9 6 6 0 0 0-3.6-5.4"/><path d="M6.5 19a4.5 4.5 0 0 1-.3-9 6 6 0 0 1 4.8-5.6"/></svg>,
   refresh: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"/><path d="M3 12a9 9 0 0 1 15.5-6.2L21 8"/><path d="M21 3v5h-5"/><path d="M3 21v-5h5"/></svg>,
-  warn: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10.3 3.7 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+  warn: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M10.3 3.7 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>,
+  arrowDown: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 5v14"/><path d="M19 12l-7 7-7-7"/></svg>
 };
 
 function CategoryIcon({ kind }) {
@@ -1296,6 +1303,9 @@ function Home({ data, mut, showToast, go, sync }) {
   const [payAmount, setPayAmount] = useState('');
   const [payBank, setPayBank] = useState(data.banks[0] ? data.banks[0].id : '');
   const [inflowTarget, setInflowTarget] = useState(null);
+  const [withdrawHint, setWithdrawHint] = useState(null);
+  const [withdrawHintAmt, setWithdrawHintAmt] = useState('');
+  const [withdrawHintBank, setWithdrawHintBank] = useState(data.banks[0] ? data.banks[0].id : '');
 
   const loanItems = useMemo(() => data.loans.map(l => {
     const due = nextDueDate(l.dueDay || 5, l.paidCycles);
@@ -1320,6 +1330,84 @@ function Home({ data, mut, showToast, go, sync }) {
   const feed = useMemo(() => {
     return [].concat(loanItems, cardItems, billItems, inflowItems).sort((a, b) => a.due - b.due);
   }, [loanItems, cardItems, billItems, inflowItems]);
+
+  // Plan Ahead: dues within next 5 days that need demat funding
+  const planAhead = useMemo(() => {
+    const today = startOfToday();
+    const cutoff = new Date(today); cutoff.setDate(cutoff.getDate() + 5);
+
+    const dues = [];
+    data.loans.forEach(l => {
+      const due = nextDueDate(l.dueDay || 5, l.paidCycles);
+      if (due >= today && due <= cutoff && Number(l.emi) > 0) {
+        dues.push({ kind: 'loan', name: l.name, amount: r2(l.emi), due, days: daysUntil(due) });
+      }
+    });
+    data.cards.forEach(c => {
+      const due = nextDueDate(c.dueDay || 10, c.paidCycles);
+      if (due >= today && due <= cutoff && Number(c.outstanding) > 0) {
+        dues.push({ kind: 'card', name: c.name, amount: r2(c.outstanding), due, days: daysUntil(due) });
+      }
+    });
+    data.bills.forEach(b => {
+      const due = nextDueDate(b.dueDay || 1, b.paidCycles);
+      if (due >= today && due <= cutoff && Number(b.amount) > 0) {
+        dues.push({ kind: 'bill', name: b.name, amount: r2(b.amount), due, days: daysUntil(due) });
+      }
+    });
+
+    if (dues.length === 0) return [];
+    dues.sort((a, b) => a.due - b.due);
+
+    // Simulate cumulative: bank balance preserved as buffer, withdrawals add on top
+    let runningBank = bankTotal;
+    const usedInflowKeys = {};
+    const result = [];
+
+    dues.forEach(d => {
+      // Inflows arriving before or on this due date (not yet counted)
+      let inflowSum = 0;
+      data.inflows.forEach(f => {
+        const iDue = nextDueDate(f.day || 1, f.receivedCycles);
+        if (iDue <= d.due) {
+          const key = f.id + '|' + toISO(iDue);
+          if (!usedInflowKeys[key]) {
+            inflowSum += Number(f.amount) || 0;
+            usedInflowKeys[key] = true;
+          }
+        }
+      });
+
+      const available = r2(runningBank + inflowSum);
+      const needs = available < d.amount;
+
+      if (needs) {
+        // Withdraw enough so existing bank is preserved as buffer
+        const withdraw = r2(Math.max(0, d.amount - inflowSum));
+        result.push({
+          ...d,
+          needsWithdraw: true,
+          withdraw,
+          bankBefore: r2(runningBank),
+          inflowsBefore: r2(inflowSum),
+          available,
+        });
+        runningBank = r2(runningBank + withdraw + inflowSum - d.amount);
+      } else {
+        result.push({
+          ...d,
+          needsWithdraw: false,
+          withdraw: 0,
+          bankBefore: r2(runningBank),
+          inflowsBefore: r2(inflowSum),
+          available,
+        });
+        runningBank = r2(available - d.amount);
+      }
+    });
+
+    return result;
+  }, [data, bankTotal]);
 
   const mk = monthKey(new Date());
   const monthTx = data.transactions.filter(t => String(t.date).startsWith(mk));
@@ -1403,6 +1491,30 @@ function Home({ data, mut, showToast, go, sync }) {
     showToast('Money added to your bank');
   };
 
+  const executeWithdraw = () => {
+    if (!withdrawHint) return;
+    const amt = r2(withdrawHintAmt);
+    if (!amt || amt <= 0) { showToast('Enter a valid amount'); return; }
+    const a0 = withdrawHint;
+    // Find first demat with enough balance, else use first
+    let pickDemat = data.demats.find(x => Number(x.balance) >= amt);
+    if (!pickDemat) pickDemat = data.demats[0];
+    if (!pickDemat) { showToast('Add a demat account first'); return; }
+    mut(d => {
+      const a = d.demats.find(x => x.id === pickDemat.id);
+      const b = d.banks.find(x => x.id === withdrawHintBank);
+      if (!a || !b) return;
+      a.balance = r2(a.balance - amt);
+      a.history = (a.history || []).filter(h => h.date !== toISO(new Date()));
+      a.history.push({ date: toISO(new Date()), value: a.balance });
+      a.history.sort((x, y) => x.date.localeCompare(y.date));
+      b.balance = r2(b.balance + amt);
+      d.transactions.push({ id: uid(), bankId: withdrawHintBank, amount: amt, dir: 'in', note: 'Withdrawn from ' + a.name + ' for ' + a0.name, category: 'Transfer', date: toISO(new Date()), affectsBalance: true, ts: Date.now() });
+    });
+    setWithdrawHint(null);
+    showToast('Money moved from Demat to your bank');
+  };
+
   const renderItem = (item) => {
     const isIn = item.kind === 'inflow';
     const I = CategoryIcon({ kind: item.kind });
@@ -1437,6 +1549,8 @@ function Home({ data, mut, showToast, go, sync }) {
     );
   };
 
+  const planNeedingWithdraw = planAhead.filter(p => p.needsWithdraw);
+
   return (
     <div>
       <PageHead title="Home" sub={'Today is ' + fmtDateLong(new Date())} sync={sync} />
@@ -1463,6 +1577,70 @@ function Home({ data, mut, showToast, go, sync }) {
           <div className="kpi-note">Assets {inr(assets)} − Debts {inr(liabilities)}</div>
         </div>
       </div>
+
+      {planNeedingWithdraw.length > 0 ? (
+        <React.Fragment>
+          <div className="section-head">
+            <div className="section-title"><span className="dot"></span>Plan Ahead — withdrawals needed from Demat</div>
+            <span className="pill amber"><span className="pdot"></span>action in next 5 days</span>
+          </div>
+          <div className="glass plan-box" style={{ padding: '16px' }}>
+            {planNeedingWithdraw.map((p, i) => (
+              <div className="plan-item" key={i}>
+                <div className="item-ico" style={{ color: 'var(--amber)' }}>{CategoryIcon({ kind: p.kind })}</div>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px' }}>
+                    <div>
+                      <div className="item-name">{p.name}</div>
+                      <div className="item-meta">
+                        <span className={'pill ' + (p.days <= 2 ? 'red' : p.days <= 4 ? 'amber' : 'blue')}>
+                          <span className="pdot"></span>due {relDays(p.days)}
+                        </span>
+                        <span>{fmtDate(p.due)}</span>
+                        <span className="pill">due amount {inr(p.amount)}</span>
+                      </div>
+                    </div>
+                    <div style={{ textAlign: 'right' }}>
+                      <div className="plan-amt">{inr(p.withdraw)}</div>
+                      <div style={{ fontSize: '10.5px', color: 'var(--muted)', marginTop: '3px', letterSpacing: '.3px', textTransform: 'uppercase', fontWeight: 600 }}>
+                        withdraw from demat
+                      </div>
+                    </div>
+                  </div>
+                  <div className="plan-action">
+                    Bank has <b style={{ color: 'var(--txt-2)' }}>{inr(p.bankBefore)}</b>
+                    {p.inflowsBefore > 0 ? <React.Fragment> · inflows before due <b style={{ color: 'var(--green)' }}>{inr(p.inflowsBefore)}</b></React.Fragment> : null}
+                    {' '}· after withdrawal + payment, your bank keeps <b style={{ color: 'var(--txt-2)' }}>{inr(p.bankBefore)}</b> as buffer
+                  </div>
+                  <div style={{ marginTop: '10px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
+                    <button className="btn btn-sm btn-primary" onClick={() => {
+                      setWithdrawHint(p);
+                      setWithdrawHintAmt(String(p.withdraw));
+                      setWithdrawHintBank(data.banks[0] ? data.banks[0].id : '');
+                    }}>
+                      Move {inr(p.withdraw)} now
+                    </button>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </React.Fragment>
+      ) : planAhead.length > 0 ? (
+        <React.Fragment>
+          <div className="section-head">
+            <div className="section-title"><span className="dot"></span>Plan Ahead — next 5 days</div>
+            <span className="pill green"><span className="pdot"></span>all covered</span>
+          </div>
+          <div className="glass" style={{ padding: '14px' }}>
+            <div style={{ padding: '6px 4px', fontSize: '13px', color: 'var(--muted)', lineHeight: 1.6 }}>
+              You have upcoming dues in the next 5 days but your bank balance covers them.
+              {planAhead.length} item{planAhead.length !== 1 ? 's' : ''} due · total {inr(r2(planAhead.reduce((s, p) => s + p.amount, 0)))}.
+              No demat withdrawal needed right now.
+            </div>
+          </div>
+        </React.Fragment>
+      ) : null}
 
       <div className="section-head">
         <div className="section-title"><span className="dot"></span>Notifications — everything coming up</div>
@@ -1591,6 +1769,33 @@ function Home({ data, mut, showToast, go, sync }) {
       </Modal>
 
       <InflowModal target={inflowTarget} data={data} onClose={() => setInflowTarget(null)} onConfirm={confirmInflow} />
+
+      <Modal open={!!withdrawHint} onClose={() => setWithdrawHint(null)} title={withdrawHint ? 'Withdraw for ' + withdrawHint.name : ''}>
+        {withdrawHint && (
+          <div>
+            <div className="glass-soft" style={{ padding: '13px 15px', marginBottom: '16px' }}>
+              <div className="kpi-label">Suggested amount from Demat</div>
+              <div style={{ fontSize: '20px', fontWeight: 700, marginTop: '5px', letterSpacing: '-.4px', color: 'var(--amber)' }} className="mono">{inr(withdrawHint.withdraw)}</div>
+              <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '6px', lineHeight: 1.5 }}>
+                Due {fmtDate(withdrawHint.due)} · Due amount {inr(withdrawHint.amount)} · Bank currently {inr(withdrawHint.bankBefore)}
+              </div>
+            </div>
+            <div className="field">
+              <label className="label">Amount to withdraw</label>
+              <MoneyInput value={withdrawHintAmt} onChange={setWithdrawHintAmt} />
+            </div>
+            <div className="field">
+              <label className="label">Add to which bank?</label>
+              <select className="select" value={withdrawHintBank} onChange={(e) => setWithdrawHintBank(e.target.value)}>
+                {data.banks.map(b => <option key={b.id} value={b.id}>{b.name} — {inr(b.balance)}</option>)}
+              </select>
+            </div>
+            <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={executeWithdraw}>
+              Move {inr(withdrawHintAmt || 0)} to bank
+            </button>
+          </div>
+        )}
+      </Modal>
     </div>
   );
 }
