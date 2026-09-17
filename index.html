@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<title>FinVault — Money Tracker</title>
+<title>ShubhVault — Money Tracker</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -318,7 +318,7 @@ html[data-theme="light"] .toast-action{color:#4f6dff}
 <body>
 <div class="bg-base"></div>
 <div id="root">
-  <div class="boot"><div class="boot-inner"><div class="boot-logo">FV</div><div>Starting FinVault…</div></div></div>
+  <div class="boot"><div class="boot-inner"><div class="boot-logo">SV</div><div>Starting ShubhVault…</div></div></div>
 </div>
 
 <script id="app-src" type="text/x-jsx">
@@ -943,8 +943,8 @@ function Login({ onOk, theme, toggleTheme }) {
   return (
     <div className="login-wrap">
       <form className={'login-card glass' + (shake ? ' shake' : '')} onSubmit={submit}>
-        <div className="login-logo">FV</div>
-        <div className="login-title">FinVault</div>
+        <div className="login-logo">SV</div>
+        <div className="login-title">ShubhVault</div>
         <div className="login-sub">Your private money command centre</div>
         <div className="field"><label className="label">Username</label><input className="input" value={u} onChange={(e) => setU(e.target.value)} autoComplete="off" placeholder="Enter username" /></div>
         <div className="field"><label className="label">Password</label><input className="input" type="password" value={p} onChange={(e) => setP(e.target.value)} autoComplete="off" placeholder="Enter password" /></div>
@@ -956,11 +956,15 @@ function Login({ onOk, theme, toggleTheme }) {
   );
 }
 
-function PageHead({ title, sub, children, sync }) {
+function PageHead({ title, sub, children, sync, openTx }) {
   return (
     <div className="topbar">
       <div><div className="page-title">{title}</div>{sub ? <div className="page-sub">{sub}</div> : null}</div>
-      <div className="top-actions"><SyncBadge sync={sync} />{children}</div>
+      <div className="top-actions">
+        <SyncBadge sync={sync} />
+        <button className="btn btn-sm btn-primary" onClick={() => openTx()}>+ Add Transaction</button>
+        {children}
+      </div>
     </div>
   );
 }
@@ -983,6 +987,9 @@ function App() {
   const [toast, setToast] = useState({ msg: '', action: null, onAction: null });
   const toastTimerRef = useRef(null);
 
+  const [txOpen, setTxOpen] = useState(false);
+  const [txPrefill, setTxPrefill] = useState(null);
+
   useEffect(() => { document.documentElement.setAttribute('data-theme', theme); localStorage.setItem('fv_theme', theme); }, [theme]);
 
   const showToast = useCallback((msg, undoFn) => {
@@ -995,12 +1002,39 @@ function App() {
   const mut = useCallback((fn) => { setData(prev => { if (!prev) return prev; const next = JSON.parse(JSON.stringify(prev)); fn(next); return next; }); }, [setData]);
   const toggleTheme = () => setTheme(t => (t === 'dark' ? 'light' : 'dark'));
 
+  const openTx = (prefill = null) => {
+    setTxPrefill(prefill);
+    setTxOpen(true);
+  };
+
+  const saveTx = (payload, id) => {
+    mut(d => {
+      if (id) {
+        const old = d.transactions.find(t => t.id === id);
+        if (old && old.affectsBalance && old.bankId) { const ob = d.banks.find(b => b.id === old.bankId); if (ob) ob.balance = r2(ob.balance - (old.dir === 'in' ? old.amount : -old.amount)); }
+        if (old) Object.assign(old, payload);
+        const t = d.transactions.find(x => x.id === id);
+        if (t && t.affectsBalance && t.bankId) { const nb = d.banks.find(b => b.id === t.bankId); if (nb) nb.balance = r2(nb.balance + (t.dir === 'in' ? t.amount : -t.amount)); }
+      } else {
+        const t = Object.assign({ id: uid(), ts: Date.now() }, payload);
+        d.transactions.push(t);
+        if (t.affectsBalance && t.bankId) { const nb = d.banks.find(b => b.id === t.bankId); if (nb) nb.balance = r2(nb.balance + (t.dir === 'in' ? t.amount : -t.amount)); }
+      }
+    });
+    setTxOpen(false);
+    setTxPrefill(null);
+    showToast(id ? 'Transaction updated' : 'Transaction added');
+    if (txPrefill && txPrefill._onSave) {
+      txPrefill._onSave(payload);
+    }
+  };
+
   const currentNetWorth = useMemo(() => {
     if (!data) return 0;
     const bankTotal = data.banks.reduce((s, b) => s + (Number(b.balance) || 0), 0);
     const dematTotal = data.demats.reduce((s, d) => s + (Number(d.balance) || 0), 0);
     const cardDebt = data.cards.reduce((s, c) => s + (Number(c.outstanding) || 0), 0);
-    const loanDebt = data.loans.reduce((s, l) => s + (Number(l.remaining) || 0), 0);
+    const loanDebt = data.loans.reduce((s, l) => s + (Number(l.emi || 0) * Number(l.monthsLeft || 0)), 0);
     return r2(bankTotal + dematTotal - cardDebt - loanDebt);
   }, [data]);
 
@@ -1009,7 +1043,7 @@ function App() {
     const total = data.banks.reduce((s, b) => s + (Number(b.balance) || 0), 0) +
       data.demats.reduce((s, d) => s + (Number(d.balance) || 0), 0) +
       data.cards.reduce((s, c) => s + (Number(c.outstanding) || 0), 0) +
-      data.loans.reduce((s, l) => s + (Number(l.remaining) || 0), 0) +
+      data.loans.reduce((s, l) => s + (Number(l.emi || 0) * Number(l.monthsLeft || 0)), 0) +
       data.bills.reduce((s, b) => s + (Number(b.amount) || 0), 0) +
       data.inflows.reduce((s, f) => s + (Number(f.amount) || 0), 0);
     return total > 0.5;
@@ -1035,9 +1069,9 @@ function App() {
   }, [currentNetWorth, data, mut, meaningful]);
 
   if (!authed) return <Login onOk={() => setAuthed(true)} theme={theme} toggleTheme={toggleTheme} />;
-  if (!data) return <div className="boot"><div className="boot-inner"><div className="boot-logo">FV</div><div>Loading your vault…</div></div></div>;
+  if (!data) return <div className="boot"><div className="boot-inner"><div className="boot-logo">SV</div><div>Loading your vault…</div></div></div>;
 
-  const props = { data, mut, showToast, go: setPage, theme, toggleTheme, sync };
+  const props = { data, mut, showToast, go: setPage, theme, toggleTheme, sync, openTx };
   const NAV = [
     { id: 'home', label: 'Home', icon: Ico.home },
     { id: 'banks', label: 'Banks', icon: Ico.bank },
@@ -1053,7 +1087,7 @@ function App() {
       <LightRaysBackground theme={theme} />
       <div className="app">
         <aside className="sidebar">
-          <div className="brand"><div className="brand-logo">FV</div><div><div className="brand-name">FinVault</div><div className="brand-sub">MONEY TRACKER</div></div></div>
+          <div className="brand"><div className="brand-logo">SV</div><div><div className="brand-name">ShubhVault</div><div className="brand-sub">MONEY TRACKER</div></div></div>
           {NAV.map(n => (<button key={n.id} className={'nav-item' + (page === n.id ? ' active' : '')} onClick={() => setPage(n.id)}><span className="nav-ico">{n.icon}</span><span>{n.label}</span></button>))}
           <div className="side-foot">
             <div style={{ padding: '10px 12px 6px' }}><SyncBadge sync={sync} /></div>
@@ -1074,24 +1108,21 @@ function App() {
           {NAV.map(n => (<button key={n.id} className={'mnav' + (page === n.id ? ' active' : '')} onClick={() => setPage(n.id)}>{n.icon}<span>{n.label}</span></button>))}
         </nav>
         <Toast msg={toast.msg} action={toast.action} onAction={toast.onAction} />
+        <TxModal open={txOpen} onClose={() => { setTxOpen(false); setTxPrefill(null); }} banks={data.banks} prefill={txPrefill} onSave={saveTx} />
       </div>
     </React.Fragment>
   );
 }
 
-function Home({ data, mut, showToast, go, sync }) {
+function Home({ data, mut, showToast, go, sync, openTx }) {
   const bankTotal = data.banks.reduce((s, b) => s + (Number(b.balance) || 0), 0);
   const dematTotal = data.demats.reduce((s, d) => s + (Number(d.balance) || 0), 0);
   const cardDebt = data.cards.reduce((s, c) => s + (Number(c.outstanding) || 0), 0);
-  const loanDebt = data.loans.reduce((s, l) => s + (Number(l.remaining) || 0), 0);
+  const loanDebt = data.loans.reduce((s, l) => s + (Number(l.emi || 0) * Number(l.monthsLeft || 0)), 0);
   const assets = r2(bankTotal + dematTotal);
   const liabilities = r2(cardDebt + loanDebt);
   const netWorth = r2(assets - liabilities);
 
-  const [payTarget, setPayTarget] = useState(null);
-  const [payMode, setPayMode] = useState('full');
-  const [payAmount, setPayAmount] = useState('');
-  const [payBank, setPayBank] = useState(data.banks[0] ? data.banks[0].id : '');
   const [inflowTarget, setInflowTarget] = useState(null);
   const [withdrawHint, setWithdrawHint] = useState(null);
   const [withdrawHintAmt, setWithdrawHintAmt] = useState('');
@@ -1237,34 +1268,32 @@ function Home({ data, mut, showToast, go, sync }) {
     showToast('Skipped ' + skipped.length + ' item' + (skipped.length !== 1 ? 's' : '') + ' · moved to next month', () => { undoSkips(skipped); showToast('Skips undone'); });
   };
 
-  const openPay = (item) => { setPayTarget(item); setPayMode('full'); setPayAmount(String(item.amount)); setPayBank(data.banks[0] ? data.banks[0].id : ''); };
-
-  const doPay = () => {
-    if (!payTarget) return;
-    const amt = r2(payAmount);
-    if (!amt || amt <= 0) { showToast('Enter a valid amount'); return; }
-    const item = payTarget;
-    const cycle = monthKey(nextDueDate(item.ref.dueDay || 1, item.ref.paidCycles));
-    mut(d => {
-      const bank = d.banks.find(b => b.id === payBank);
-      if (bank) bank.balance = r2(bank.balance - amt);
-      d.transactions.push({ 
-        id: uid(), 
-        bankId: payBank, 
-        amount: amt, 
-        dir: 'out', 
-        note: item.name + (item.kind === 'card' ? ' Card Payment' : item.kind === 'loan' ? ' EMI' : ' Bill Payment'), 
-        category: item.kind === 'card' ? 'Credit Card' : item.kind === 'loan' ? 'Loan EMI' : 'Bills', 
-        date: toISO(new Date()), 
-        affectsBalance: true, 
-        ts: Date.now() 
-      });
-      if (item.kind === 'card') { const c = d.cards.find(x => x.id === item.id); if (c) { c.outstanding = r2(Math.max(0, c.outstanding - amt)); c.paidCycles = (c.paidCycles || []).concat([cycle]); } }
-      else if (item.kind === 'loan') { const l = d.loans.find(x => x.id === item.id); if (l) { l.remaining = r2(Math.max(0, l.remaining - amt)); l.monthsLeft = Math.max(0, (Number(l.monthsLeft) || 1) - 1); l.paidCycles = (l.paidCycles || []).concat([cycle]); } }
-      else if (item.kind === 'bill') { const b = d.bills.find(x => x.id === item.id); if (b) b.paidCycles = (b.paidCycles || []).concat([cycle]); }
+  const openPay = (item) => {
+    openTx({
+      bankId: data.banks[0] ? data.banks[0].id : '',
+      dir: 'out',
+      amount: String(item.amount),
+      note: item.name + (item.kind === 'card' ? ' Card Payment' : item.kind === 'loan' ? ' EMI' : ' Bill Payment'),
+      category: item.kind === 'card' ? 'Credit Card' : item.kind === 'loan' ? 'Loan EMI' : 'Bills',
+      date: toISO(new Date()),
+      affectsBalance: true,
+      _onSave: (payload) => {
+        const amt = r2(payload.amount);
+        const cycle = monthKey(nextDueDate(item.ref.dueDay || 1, item.ref.paidCycles));
+        mut(d => {
+          if (item.kind === 'card') { const c = d.cards.find(x => x.id === item.id); if (c) { c.outstanding = r2(Math.max(0, c.outstanding - amt)); c.paidCycles = (c.paidCycles || []).concat([cycle]); } }
+          else if (item.kind === 'loan') { 
+            const l = d.loans.find(x => x.id === item.id); 
+            if (l) { 
+              l.monthsLeft = Math.max(0, (Number(l.monthsLeft) || 1) - 1); 
+              l.remaining = r2((Number(l.emi) || 0) * (Number(l.monthsLeft) || 0)); 
+              l.paidCycles = (l.paidCycles || []).concat([cycle]); 
+            } 
+          }
+          else if (item.kind === 'bill') { const b = d.bills.find(x => x.id === item.id); if (b) b.paidCycles = (b.paidCycles || []).concat([cycle]); }
+        });
+      }
     });
-    setPayTarget(null);
-    showToast('Payment recorded');
   };
 
   const confirmInflow = (actualAmount, bankId, adjust) => {
@@ -1305,9 +1334,7 @@ function Home({ data, mut, showToast, go, sync }) {
       const b = d.banks.find(x => x.id === withdrawHintBank);
       if (!a || !b) return;
       a.balance = r2(a.balance - amt);
-      a.history = (a.history || []).filter(h => h.date !== toISO(new Date()));
-      a.history.push({ date: toISO(new Date()), value: a.balance });
-      a.history.sort((x, y) => x.date.localeCompare(y.date));
+      // Do NOT add to history to prevent chart dip
       b.balance = r2(b.balance + amt);
       d.transactions.push({ 
         id: uid(), 
@@ -1420,7 +1447,7 @@ function Home({ data, mut, showToast, go, sync }) {
 
   return (
     <div>
-      <PageHead title="Home" sub={'Today is ' + fmtDateLong(new Date())} sync={sync} />
+      <PageHead title="Home" sub={'Today is ' + fmtDateLong(new Date())} sync={sync} openTx={openTx} />
 
       <div className="grid g4">
         <div className="kpi glass"><div className="kpi-head"><span className="kpi-dot accent"></span><span className="kpi-label">Total Bank Balance</span></div><div className="kpi-val">{inr(bankTotal)}</div><div className="kpi-note">{data.banks.length} bank account{data.banks.length > 1 ? 's' : ''}</div></div>
@@ -1511,30 +1538,6 @@ function Home({ data, mut, showToast, go, sync }) {
         <div style={{ fontSize: '17px', fontWeight: 700, letterSpacing: '-.4px', color: r2(mIn - mOut) >= 0 ? 'var(--green)' : 'var(--red)' }} className="mono">{inr(r2(mIn - mOut))}</div>
       </div>
 
-      <Modal open={!!payTarget} onClose={() => setPayTarget(null)} title={payTarget ? 'Pay ' + payTarget.name : ''}>
-        {payTarget && (
-          <div>
-            <div className="glass-soft" style={{ padding: '13px 15px', marginBottom: '16px' }}>
-              <div className="kpi-label">Total Outstanding</div>
-              <div style={{ fontSize: '20px', fontWeight: 700, marginTop: '5px', letterSpacing: '-.4px' }} className="mono">{inr(payTarget.amount)}</div>
-              <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '5px' }}>Due {fmtDate(payTarget.due)}</div>
-            </div>
-            <div className="field">
-              <label className="label">How much are you paying?</label>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}>
-                <button className={'btn btn-sm' + (payMode === 'full' ? ' btn-primary' : '')} onClick={() => { setPayMode('full'); setPayAmount(String(payTarget.amount)); }}>Full Amount</button>
-                <button className={'btn btn-sm' + (payMode === 'partial' ? ' btn-primary' : '')} onClick={() => { setPayMode('partial'); setPayAmount(''); }}>Partial Payment</button>
-              </div>
-              <MoneyInput value={payAmount} onChange={setPayAmount} />
-            </div>
-            <div className="field"><label className="label">Pay from</label>
-              <select className="select" value={payBank} onChange={(e) => setPayBank(e.target.value)}>{data.banks.map(b => <option key={b.id} value={b.id}>{b.name} — {inr(b.balance)}</option>)}</select>
-            </div>
-            <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={doPay}>Confirm Payment</button>
-          </div>
-        )}
-      </Modal>
-
       <InflowModal target={inflowTarget} data={data} onClose={() => setInflowTarget(null)} onConfirm={confirmInflow} />
 
       <Modal open={!!withdrawHint} onClose={() => setWithdrawHint(null)} title={withdrawHint ? 'Withdraw for ' + withdrawHint.name : ''}>
@@ -1584,7 +1587,7 @@ function InflowModal({ target, data, onClose, onConfirm }) {
   );
 }
 
-function Banks({ data, mut, showToast, sync }) {
+function Banks({ data, mut, showToast, sync, openTx }) {
   const [txOpen, setTxOpen] = useState(false);
   const [editTx, setEditTx] = useState(null);
   const [bankOpen, setBankOpen] = useState(false);
@@ -1684,33 +1687,6 @@ function Banks({ data, mut, showToast, sync }) {
 
   const deleteBank = (id) => { mut(d => { d.banks = d.banks.filter(b => b.id !== id); d.transactions = d.transactions.filter(t => t.bankId !== id); }); setConfirmDel(null); showToast('Bank removed'); };
 
-  const saveTx = (payload, id) => {
-    mut(d => {
-      if (id) {
-        const old = d.transactions.find(t => t.id === id);
-        if (old && old.affectsBalance && old.bankId) { const ob = d.banks.find(b => b.id === old.bankId); if (ob) ob.balance = r2(ob.balance - (old.dir === 'in' ? old.amount : -old.amount)); }
-        if (old) Object.assign(old, payload);
-        const t = d.transactions.find(x => x.id === id);
-        if (t && t.affectsBalance && t.bankId) { const nb = d.banks.find(b => b.id === t.bankId); if (nb) nb.balance = r2(nb.balance + (t.dir === 'in' ? t.amount : -t.amount)); }
-      } else {
-        const t = Object.assign({ id: uid(), ts: Date.now() }, payload);
-        d.transactions.push(t);
-        if (t.affectsBalance && t.bankId) { const nb = d.banks.find(b => b.id === t.bankId); if (nb) nb.balance = r2(nb.balance + (t.dir === 'in' ? t.amount : -t.amount)); }
-      }
-    });
-    setTxOpen(false); setEditTx(null);
-    showToast(id ? 'Transaction updated' : 'Transaction added');
-  };
-
-  const deleteTx = (id) => {
-    mut(d => {
-      const t = d.transactions.find(x => x.id === id);
-      if (t && t.affectsBalance && t.bankId) { const b = d.banks.find(x => x.id === t.bankId); if (b) b.balance = r2(b.balance - (t.dir === 'in' ? t.amount : -t.amount)); }
-      d.transactions = d.transactions.filter(x => x.id !== id);
-    });
-    showToast('Transaction deleted');
-  };
-
   const doTransfer = (from, to, amount) => {
     const amt = r2(amount);
     if (!from || !to || from === to || !amt || amt <= 0) { showToast('Check the transfer details'); return; }
@@ -1726,10 +1702,9 @@ function Banks({ data, mut, showToast, sync }) {
 
   return (
     <div>
-      <PageHead title="Bank Accounts" sub={data.banks.length + ' account' + (data.banks.length > 1 ? 's' : '') + ' connected'} sync={sync}>
+      <PageHead title="Bank Accounts" sub={data.banks.length + ' account' + (data.banks.length > 1 ? 's' : '') + ' connected'} sync={sync} openTx={openTx}>
         <button className="btn btn-sm" onClick={() => setTransferOpen(true)}>Transfer</button>
         <button className="btn btn-sm" onClick={() => { setEditBank(null); setBankOpen(true); }}>Add Bank</button>
-        <button className="btn btn-sm btn-primary" onClick={() => { setEditTx(null); setTxOpen(true); }}>+ Transaction</button>
       </PageHead>
 
       <div className="kpi glass spotlight" style={{ marginBottom: '18px' }}><div className="kpi-head"><span className="kpi-dot accent"></span><span className="kpi-label">Total Balance Across All Banks</span></div><div className="kpi-val" style={{ fontSize: '28px', marginTop: '10px' }}>{inr(total)}</div></div>
@@ -1811,7 +1786,7 @@ function Banks({ data, mut, showToast, sync }) {
       </div>
 
       {grouped.length === 0 ? (
-        <div className="glass"><EmptyState icon={Ico.inbox} title={search ? 'No matching transactions' : 'No transactions yet'} sub={search ? 'Try a different search term.' : 'Add your first transaction to start keeping a record.'} action={!search ? <button className="btn btn-sm btn-primary" onClick={() => { setEditTx(null); setTxOpen(true); }}>Add transaction</button> : null} /></div>
+        <div className="glass"><EmptyState icon={Ico.inbox} title={search ? 'No matching transactions' : 'No transactions yet'} sub={search ? 'Try a different search term.' : 'Add your first transaction to start keeping a record.'} action={!search ? <button className="btn btn-sm btn-primary" onClick={() => openTx()}>Add transaction</button> : null} /></div>
       ) : (
         grouped.map(ydata => (
           <div className="log-year" key={ydata.year}>
@@ -1854,7 +1829,7 @@ function Banks({ data, mut, showToast, sync }) {
         ))
       )}
 
-      <TxModal open={txOpen} onClose={() => { setTxOpen(false); setEditTx(null); }} banks={data.banks} tx={editTx} onSave={saveTx} />
+      <TxModal open={txOpen} onClose={() => { setTxOpen(false); setEditTx(null); }} banks={data.banks} tx={editTx} onSave={(payload, id) => { saveTx(payload, id); setTxOpen(false); setEditTx(null); }} />
       <BankModal open={bankOpen} onClose={() => { setBankOpen(false); setEditBank(null); }} bank={editBank} onSave={saveBank} />
       <TransferModal open={transferOpen} onClose={() => setTransferOpen(false)} banks={data.banks} onTransfer={doTransfer} />
 
@@ -1866,7 +1841,7 @@ function Banks({ data, mut, showToast, sync }) {
   );
 }
 
-function TxModal({ open, onClose, banks, tx, onSave }) {
+function TxModal({ open, onClose, banks, tx, prefill, onSave }) {
   const [bankId, setBankId] = useState('');
   const [dir, setDir] = useState('out');
   const [amount, setAmount] = useState('');
@@ -1875,7 +1850,7 @@ function TxModal({ open, onClose, banks, tx, onSave }) {
   const [date, setDate] = useState(toISO(new Date()));
   const [affects, setAffects] = useState(true);
 
-  const IN_CATEGORIES = ['Salary', 'Interest', 'UPI', 'Cash', 'Investment', 'Upstox Withdrawal', 'Other'];
+  const IN_CATEGORIES = ['Salary', 'Interest', 'Upstox Withdrawal', 'UPI', 'Cash', 'Transfer', 'Investment', 'Other'];
   const OUT_CATEGORIES = ['Food', 'Transportation', 'Rent', 'Shopping', 'Bills', 'Credit Card', 'Loan EMI', 'Travel', 'Medical', 'Investment', 'Transfer', 'Cash', 'Other'];
 
   useEffect(() => {
@@ -1888,6 +1863,14 @@ function TxModal({ open, onClose, banks, tx, onSave }) {
         setCategory(tx.category || (tx.dir === 'in' ? 'Salary' : 'Food')); 
         setDate(tx.date); 
         setAffects(tx.affectsBalance !== false);
+      } else if (prefill) {
+        setBankId(prefill.bankId || (banks[0] ? banks[0].id : ''));
+        setDir(prefill.dir);
+        setAmount(prefill.amount);
+        setNote(prefill.note);
+        setCategory(prefill.category);
+        setDate(prefill.date);
+        setAffects(prefill.affectsBalance !== false);
       } else {
         setBankId(banks[0] ? banks[0].id : ''); 
         setDir('out'); 
@@ -1898,7 +1881,7 @@ function TxModal({ open, onClose, banks, tx, onSave }) {
         setAffects(true);
       }
     }
-  }, [open, tx]);
+  }, [open, tx, prefill]);
 
   if (!open) return null;
 
@@ -1997,7 +1980,7 @@ function TransferModal({ open, onClose, banks, onTransfer }) {
   );
 }
 
-function Cards({ data, mut, showToast, sync }) {
+function Cards({ data, mut, showToast, sync, openTx }) {
   const [formOpen, setFormOpen] = useState(false);
   const [edit, setEdit] = useState(null);
   const [payTarget, setPayTarget] = useState(null);
@@ -2044,28 +2027,24 @@ function Cards({ data, mut, showToast, sync }) {
     });
   };
 
-  const doPay = () => {
-    const amt = r2(payAmount);
-    if (!amt || amt <= 0) { showToast('Enter a valid amount'); return; }
-    const c0 = payTarget;
-    const cycle = monthKey(nextDueDate(c0.dueDay || 10, c0.paidCycles));
-    mut(d => {
-      const bank = d.banks.find(b => b.id === payBank); if (bank) bank.balance = r2(bank.balance - amt);
-      d.transactions.push({ 
-        id: uid(), 
-        bankId: payBank, 
-        amount: amt, 
-        dir: 'out', 
-        note: c0.name + ' Card Payment', 
-        category: 'Credit Card', 
-        date: toISO(new Date()), 
-        affectsBalance: true, 
-        ts: Date.now() 
-      });
-      const c = d.cards.find(x => x.id === c0.id);
-      if (c) { c.outstanding = r2(Math.max(0, c.outstanding - amt)); c.paidCycles = (c.paidCycles || []).concat([cycle]); }
+  const openPay = (card) => {
+    openTx({
+      bankId: data.banks[0] ? data.banks[0].id : '',
+      dir: 'out',
+      amount: String(card.outstanding),
+      note: card.name + ' Card Payment',
+      category: 'Credit Card',
+      date: toISO(new Date()),
+      affectsBalance: true,
+      _onSave: (payload) => {
+        const amt = r2(payload.amount);
+        const cycle = monthKey(nextDueDate(card.dueDay || 10, card.paidCycles));
+        mut(d => {
+          const c = d.cards.find(x => x.id === card.id);
+          if (c) { c.outstanding = r2(Math.max(0, c.outstanding - amt)); c.paidCycles = (c.paidCycles || []).concat([cycle]); }
+        });
+      }
     });
-    setPayTarget(null); showToast('Bill paid');
   };
 
   const saveAdjust = () => {
@@ -2076,7 +2055,7 @@ function Cards({ data, mut, showToast, sync }) {
 
   return (
     <div>
-      <PageHead title="Credit Cards" sub={'Total outstanding ' + inr(totalOut)} sync={sync}>
+      <PageHead title="Credit Cards" sub={'Total outstanding ' + inr(totalOut)} sync={sync} openTx={openTx}>
         <button className="btn btn-sm btn-primary" onClick={() => { setEdit(null); setFormOpen(true); }}>+ Add Card</button>
       </PageHead>
 
@@ -2084,7 +2063,7 @@ function Cards({ data, mut, showToast, sync }) {
         <div className="glass"><EmptyState icon={Ico.card} title="No credit cards yet" sub="Add a card to track bills, due dates and outstanding." action={<button className="btn btn-sm btn-primary" onClick={() => { setEdit(null); setFormOpen(true); }}>Add your first card</button>} /></div>
       ) : (
         <div className="grid g2">
-          {sortedCards.map(c => (<FlipCard key={c.id} card={c} onEdit={() => { setEdit(c); setFormOpen(true); }} onDelete={() => setConfirmDel(c)} onMarkDone={() => markDone(c)} onSkip={() => skipCard(c)} onPay={() => { setPayTarget(c); setPayAmount(String(c.outstanding)); setPayBank(data.banks[0] ? data.banks[0].id : ''); }} />))}
+          {sortedCards.map(c => (<FlipCard key={c.id} card={c} onEdit={() => { setEdit(c); setFormOpen(true); }} onDelete={() => setConfirmDel(c)} onMarkDone={() => markDone(c)} onSkip={() => skipCard(c)} onPay={() => openPay(c)} />))}
         </div>
       )}
 
@@ -2106,20 +2085,6 @@ function Cards({ data, mut, showToast, sync }) {
       )}
 
       <CardModal open={formOpen} onClose={() => { setFormOpen(false); setEdit(null); }} card={edit} onSave={save} />
-
-      <Modal open={!!payTarget} onClose={() => setPayTarget(null)} title={payTarget ? 'Pay ' + payTarget.name : ''}>
-        {payTarget && (
-          <div>
-            <div className="glass-soft" style={{ padding: '13px 15px', marginBottom: '16px' }}><div className="kpi-label">Total Outstanding</div><div style={{ fontSize: '20px', fontWeight: 700, marginTop: '5px', letterSpacing: '-.4px' }} className="mono">{inr(payTarget.outstanding)}</div></div>
-            <div className="field"><label className="label">Amount to pay</label>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '10px' }}><button className="btn btn-sm" onClick={() => setPayAmount(String(payTarget.outstanding))}>Pay Full</button><button className="btn btn-sm" onClick={() => setPayAmount('')}>Pay Partial</button></div>
-              <MoneyInput value={payAmount} onChange={setPayAmount} />
-            </div>
-            <div className="field"><label className="label">Pay from</label><select className="select" value={payBank} onChange={(e) => setPayBank(e.target.value)}>{data.banks.map(b => <option key={b.id} value={b.id}>{b.name} — {inr(b.balance)}</option>)}</select></div>
-            <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={doPay}>Confirm Payment</button>
-          </div>
-        )}
-      </Modal>
 
       <Modal open={!!adjustTarget} onClose={() => setAdjustTarget(null)} title="Adjust Outstanding">
         <div className="field"><label className="label">Correct outstanding amount</label><MoneyInput value={adjustVal} onChange={setAdjustVal} /></div>
@@ -2175,17 +2140,13 @@ function CardModal({ open, onClose, card, onSave }) {
   );
 }
 
-function Loans({ data, mut, showToast, sync }) {
+function Loans({ data, mut, showToast, sync, openTx }) {
   const [formOpen, setFormOpen] = useState(false);
   const [edit, setEdit] = useState(null);
-  const [payTarget, setPayTarget] = useState(null);
-  const [payMode, setPayMode] = useState('emi');
-  const [payAmount, setPayAmount] = useState('');
-  const [payBank, setPayBank] = useState(data.banks[0] ? data.banks[0].id : '');
   const [confirmDel, setConfirmDel] = useState(null);
   const [sortBy, setSortBy] = useState('name');
 
-  const total = data.loans.reduce((s, l) => s + (Number(l.remaining) || 0), 0);
+  const total = data.loans.reduce((s, l) => s + (Number(l.emi || 0) * Number(l.monthsLeft || 0)), 0);
   const totalEmi = data.loans.reduce((s, l) => s + (Number(l.emi) || 0), 0);
 
   const sortedLoans = useMemo(() => {
@@ -2220,38 +2181,32 @@ function Loans({ data, mut, showToast, sync }) {
     });
   };
 
-  const doPay = () => {
-    const amt = r2(payAmount);
-    if (!amt || amt <= 0) { showToast('Enter a valid amount'); return; }
-    const l0 = payTarget;
-    const cycle = monthKey(nextDueDate(l0.dueDay || 5, l0.paidCycles));
-    const isForeclose = payMode === 'foreclose';
-    mut(d => {
-      const bank = d.banks.find(b => b.id === payBank); if (bank) bank.balance = r2(bank.balance - amt);
-      d.transactions.push({ 
-        id: uid(), 
-        bankId: payBank, 
-        amount: amt, 
-        dir: 'out', 
-        note: isForeclose ? l0.name + ' Loan Foreclosure' : l0.name + ' EMI', 
-        category: 'Loan EMI', 
-        date: toISO(new Date()), 
-        affectsBalance: true, 
-        ts: Date.now() 
-      });
-      const l = d.loans.find(x => x.id === l0.id);
-      if (!l) return;
-      if (isForeclose) { l.remaining = 0; l.monthsLeft = 0; l.foreclosureAmount = 0; }
-      else { l.remaining = r2(Math.max(0, l.remaining - amt)); if (payMode === 'emi') l.monthsLeft = Math.max(0, (Number(l.monthsLeft) || 1) - 1); }
-      l.paidCycles = (l.paidCycles || []).concat([cycle]);
+  const openPay = (loan) => {
+    openTx({
+      bankId: data.banks[0] ? data.banks[0].id : '',
+      dir: 'out',
+      amount: String(loan.emi),
+      note: loan.name + ' EMI',
+      category: 'Loan EMI',
+      date: toISO(new Date()),
+      affectsBalance: true,
+      _onSave: (payload) => {
+        const amt = r2(payload.amount);
+        const cycle = monthKey(nextDueDate(loan.dueDay || 5, loan.paidCycles));
+        mut(d => {
+          const l = d.loans.find(x => x.id === loan.id);
+          if (!l) return;
+          l.monthsLeft = Math.max(0, (Number(l.monthsLeft) || 1) - 1);
+          l.remaining = r2((Number(l.emi) || 0) * (Number(l.monthsLeft) || 0));
+          l.paidCycles = (l.paidCycles || []).concat([cycle]);
+        });
+      }
     });
-    setPayTarget(null);
-    showToast(isForeclose ? 'Loan closed' : 'Payment recorded');
   };
 
   return (
     <div>
-      <PageHead title="Loans" sub={'Total remaining ' + inr(total) + ' · Monthly EMI ' + inr(totalEmi)} sync={sync}>
+      <PageHead title="Loans" sub={'Total remaining ' + inr(total) + ' · Monthly EMI ' + inr(totalEmi)} sync={sync} openTx={openTx}>
         <div className="seg">
           <button className={'seg-btn' + (sortBy === 'name' ? ' active' : '')} onClick={() => setSortBy('name')}>By name</button>
           <button className={'seg-btn' + (sortBy === 'due' ? ' active' : '')} onClick={() => setSortBy('due')}>By due date</button>
@@ -2266,7 +2221,8 @@ function Loans({ data, mut, showToast, sync }) {
           {sortedLoans.map(l => {
             const due = nextDueDate(l.dueDay || 5, l.paidCycles);
             const dd = daysUntil(due);
-            const paidPct = l.principal ? Math.min(100, r2(((l.principal - l.remaining) / l.principal) * 100)) : 0;
+            const computedRemaining = r2((Number(l.emi) || 0) * (Number(l.monthsLeft) || 0));
+            const paidPct = l.principal ? Math.min(100, r2(((l.principal - computedRemaining) / l.principal) * 100)) : 0;
             return (
               <div className="item" key={l.id} style={{ flexWrap: 'wrap' }}>
                 <div className="item-ico">{Ico.loan}</div>
@@ -2281,12 +2237,12 @@ function Loans({ data, mut, showToast, sync }) {
                   {l.principal ? (<div style={{ marginTop: '10px', maxWidth: '340px' }}><div style={{ height: '4px', borderRadius: '10px', background: 'var(--glass-3)', overflow: 'hidden' }}><div style={{ height: '100%', width: paidPct + '%', background: 'linear-gradient(90deg,var(--green),var(--accent))', borderRadius: '10px', transition: 'width .5s' }}></div></div><div style={{ fontSize: '11px', color: 'var(--muted)', marginTop: '5px' }}>{paidPct}% paid off</div></div>) : null}
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                  <div className="item-amt">{inr(l.remaining)}</div>
+                  <div className="item-amt">{inr(computedRemaining)}</div>
                   <div style={{ fontSize: '11.5px', color: 'var(--muted)', marginTop: '3px' }}>EMI {inr(l.emi)}</div>
                   {l.foreclosureAmount ? (<div style={{ fontSize: '11.5px', color: 'var(--amber)', marginTop: '3px' }}>Foreclose at {inr(l.foreclosureAmount)}</div>) : null}
                 </div>
                 <div className="item-actions">
-                  <button className="btn btn-sm btn-primary" onClick={() => { setPayTarget(l); setPayMode('emi'); setPayAmount(String(l.emi)); setPayBank(data.banks[0] ? data.banks[0].id : ''); }}>Pay</button>
+                  <button className="btn btn-sm btn-primary" onClick={() => openPay(l)}>Pay</button>
                   <button className="btn btn-sm" onClick={() => markDone(l)}>Done</button>
                   <button className="btn btn-sm btn-warn" onClick={() => skipLoan(l)}>Skip</button>
                   <button className="btn btn-sm" onClick={() => { setEdit(l); setFormOpen(true); }}>Edit</button>
@@ -2299,30 +2255,6 @@ function Loans({ data, mut, showToast, sync }) {
       )}
 
       <LoanModal open={formOpen} onClose={() => { setFormOpen(false); setEdit(null); }} loan={edit} onSave={save} />
-
-      <Modal open={!!payTarget} onClose={() => setPayTarget(null)} title={payTarget ? 'Pay ' + payTarget.name : ''}>
-        {payTarget && (
-          <div>
-            <div className="glass-soft" style={{ padding: '13px 15px', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-                <div><div className="kpi-label">Remaining</div><div style={{ fontSize: '18px', fontWeight: 700, marginTop: '5px', letterSpacing: '-.4px' }} className="mono">{inr(payTarget.remaining)}</div></div>
-                <div style={{ textAlign: 'right' }}><div className="kpi-label">EMI</div><div style={{ fontSize: '18px', fontWeight: 700, marginTop: '5px', letterSpacing: '-.4px' }} className="mono">{inr(payTarget.emi)}</div></div>
-              </div>
-              <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '10px', lineHeight: 1.5 }}>{payTarget.monthsLeft || 0} months left · {payTarget.rate}% interest{payTarget.foreclosureAmount ? ' · Foreclose now for ' + inr(payTarget.foreclosureAmount) : ''}</div>
-            </div>
-            <div className="field"><label className="label">Payment type</label>
-              <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                <button className={'btn btn-sm' + (payMode === 'emi' ? ' btn-primary' : '')} onClick={() => { setPayMode('emi'); setPayAmount(String(payTarget.emi)); }}>Pay EMI</button>
-                <button className={'btn btn-sm' + (payMode === 'partial' ? ' btn-primary' : '')} onClick={() => { setPayMode('partial'); setPayAmount(''); }}>Partial Payment</button>
-                {payTarget.foreclosureAmount ? (<button className={'btn btn-sm' + (payMode === 'foreclose' ? ' btn-primary' : '')} onClick={() => { setPayMode('foreclose'); setPayAmount(String(payTarget.foreclosureAmount)); }}>Foreclose Loan</button>) : null}
-              </div>
-            </div>
-            <div className="field"><label className="label">Amount</label><MoneyInput value={payAmount} onChange={setPayAmount} /></div>
-            <div className="field"><label className="label">Pay from</label><select className="select" value={payBank} onChange={(e) => setPayBank(e.target.value)}>{data.banks.map(b => <option key={b.id} value={b.id}>{b.name} — {inr(b.balance)}</option>)}</select></div>
-            <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={doPay}>{payMode === 'foreclose' ? 'Foreclose & Close Loan' : 'Confirm Payment'}</button>
-          </div>
-        )}
-      </Modal>
 
       <Modal open={!!confirmDel} onClose={() => setConfirmDel(null)} title="Delete this loan?">
         <p style={{ fontSize: '13.5px', color: 'var(--muted)', marginBottom: '18px', lineHeight: 1.55 }}>This removes the loan and its reminders. Cannot be undone.</p>
@@ -2352,15 +2284,23 @@ function LoanModal({ open, onClose, loan, onSave }) {
     }
   }, [open, loan]);
   if (!open) return null;
-  const simpleRemaining = (emiVal, monthsVal) => { const e = Number(emiVal) || 0; const n = Number(monthsVal) || 0; return r2(e * n); };
+  
   const submit = () => {
-    let remaining;
-    if (loan && Number(loan.remaining) > 0) {
-      const unchanged = Number(loan.emi) === Number(emi) && Number(loan.monthsLeft) === Number(monthsLeft);
-      remaining = unchanged ? loan.remaining : simpleRemaining(emi, monthsLeft);
-    } else remaining = simpleRemaining(emi, monthsLeft);
-    onSave({ name: name.trim() || 'Loan', emi: r2(emi), remaining: r2(remaining), principal: r2(principal) || r2(remaining), rate: r2(rate), monthsLeft: Number(monthsLeft) || 0, foreclosureAmount: r2(foreclosure), dueDay: Math.min(31, Math.max(1, Number(dueDay) || 5)) }, loan ? loan.id : null);
+    const e = r2(emi);
+    const n = Number(monthsLeft) || 0;
+    const calculatedRemaining = r2(e * n);
+    onSave({ 
+      name: name.trim() || 'Loan', 
+      emi: e, 
+      remaining: calculatedRemaining, 
+      principal: r2(principal) || calculatedRemaining, 
+      rate: r2(rate), 
+      monthsLeft: n, 
+      foreclosureAmount: r2(foreclosure), 
+      dueDay: Math.min(31, Math.max(1, Number(dueDay) || 5)) 
+    }, loan ? loan.id : null);
   };
+
   return (
     <Modal open={open} onClose={onClose} title={loan ? 'Edit Loan' : 'Add Loan'}>
       <div className="field"><label className="label">Loan Name</label><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Home Loan, Car Loan" /></div>
@@ -2379,13 +2319,10 @@ function LoanModal({ open, onClose, loan, onSave }) {
   );
 }
 
-function Bills({ data, mut, showToast, sync }) {
+function Bills({ data, mut, showToast, sync, openTx }) {
   const [formOpen, setFormOpen] = useState(false);
   const [edit, setEdit] = useState(null);
   const [confirmDel, setConfirmDel] = useState(null);
-  const [payTarget, setPayTarget] = useState(null);
-  const [payAmount, setPayAmount] = useState('');
-  const [payBank, setPayBank] = useState(data.banks[0] ? data.banks[0].id : '');
   const [inflowOpen, setInflowOpen] = useState(false);
   const [editInflow, setEditInflow] = useState(null);
 
@@ -2441,33 +2378,28 @@ function Bills({ data, mut, showToast, sync }) {
     });
   };
 
-  const doPay = () => {
-    const amt = r2(payAmount);
-    if (!amt || amt <= 0) { showToast('Enter a valid amount'); return; }
-    const b0 = payTarget;
-    const cycle = monthKey(nextDueDate(b0.dueDay || 1, b0.paidCycles));
-    mut(d => {
-      const bank = d.banks.find(b => b.id === payBank); if (bank) bank.balance = r2(bank.balance - amt);
-      d.transactions.push({ 
-        id: uid(), 
-        bankId: payBank, 
-        amount: amt, 
-        dir: 'out', 
-        note: b0.name + ' Bill Payment', 
-        category: 'Bills', 
-        date: toISO(new Date()), 
-        affectsBalance: true, 
-        ts: Date.now() 
-      });
-      const b = d.bills.find(x => x.id === b0.id);
-      if (b) b.paidCycles = (b.paidCycles || []).concat([cycle]);
+  const openPay = (bill) => {
+    openTx({
+      bankId: data.banks[0] ? data.banks[0].id : '',
+      dir: 'out',
+      amount: String(bill.amount),
+      note: bill.name + ' Bill Payment',
+      category: 'Bills',
+      date: toISO(new Date()),
+      affectsBalance: true,
+      _onSave: (payload) => {
+        const cycle = monthKey(nextDueDate(bill.dueDay || 1, bill.paidCycles));
+        mut(d => {
+          const b = d.bills.find(x => x.id === bill.id);
+          if (b) b.paidCycles = (b.paidCycles || []).concat([cycle]);
+        });
+      }
     });
-    setPayTarget(null); showToast('Payment recorded');
   };
 
   return (
     <div>
-      <PageHead title="Bills & Subscriptions" sub={'Total monthly ' + inr(totalBills)} sync={sync}>
+      <PageHead title="Bills & Subscriptions" sub={'Total monthly ' + inr(totalBills)} sync={sync} openTx={openTx}>
         <button className="btn btn-sm" onClick={() => { setEditInflow(null); setInflowOpen(true); }}>+ Money In</button>
         <button className="btn btn-sm btn-primary" onClick={() => { setEdit(null); setFormOpen(true); }}>+ Add Bill</button>
       </PageHead>
@@ -2486,7 +2418,7 @@ function Bills({ data, mut, showToast, sync }) {
                 <div className="item-body"><div className="item-name">{b.name}</div><div className="item-meta"><span className={'pill ' + (dd <= 3 ? 'red' : dd <= 7 ? 'amber' : 'blue')}><span className="pdot"></span>due {relDays(dd)}</span><span>{fmtDate(due)}</span></div></div>
                 <div className="item-amt">{inr(b.amount)}</div>
                 <div className="item-actions">
-                  <button className="btn btn-sm btn-primary" onClick={() => { setPayTarget(b); setPayAmount(String(b.amount)); setPayBank(data.banks[0] ? data.banks[0].id : ''); }}>Pay</button>
+                  <button className="btn btn-sm btn-primary" onClick={() => openPay(b)}>Pay</button>
                   <button className="btn btn-sm" onClick={() => markDone(b)}>Done</button>
                   <button className="btn btn-sm btn-warn" onClick={() => skipBill(b)}>Skip</button>
                   <button className="btn btn-sm" onClick={() => { setEdit(b); setFormOpen(true); }}>Edit</button>
@@ -2530,16 +2462,6 @@ function Bills({ data, mut, showToast, sync }) {
 
       <BillModal open={formOpen} onClose={() => { setFormOpen(false); setEdit(null); }} bill={edit} onSave={saveBill} />
       <InflowFormModal open={inflowOpen} onClose={() => { setInflowOpen(false); setEditInflow(null); }} inflow={editInflow} onSave={saveInflow} />
-
-      <Modal open={!!payTarget} onClose={() => setPayTarget(null)} title={payTarget ? 'Pay ' + payTarget.name : ''}>
-        {payTarget && (
-          <div>
-            <div className="field"><label className="label">Amount</label><MoneyInput value={payAmount} onChange={setPayAmount} /></div>
-            <div className="field"><label className="label">Pay from</label><select className="select" value={payBank} onChange={(e) => setPayBank(e.target.value)}>{data.banks.map(b => <option key={b.id} value={b.id}>{b.name} — {inr(b.balance)}</option>)}</select></div>
-            <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={doPay}>Confirm Payment</button>
-          </div>
-        )}
-      </Modal>
 
       <Modal open={!!confirmDel} onClose={() => setConfirmDel(null)} title="Delete this bill?">
         <p style={{ fontSize: '13.5px', color: 'var(--muted)', marginBottom: '18px', lineHeight: 1.55 }}>Removes the bill and its reminder.</p>
@@ -2704,14 +2626,11 @@ function DematCalendar({ account, onSetValue, onClearValue }) {
   );
 }
 
-function Demat({ data, mut, showToast, sync }) {
+function Demat({ data, mut, showToast, sync, openTx }) {
   const [formOpen, setFormOpen] = useState(false);
   const [edit, setEdit] = useState(null);
   const [updateTarget, setUpdateTarget] = useState(null);
   const [updateVal, setUpdateVal] = useState('');
-  const [withdrawTarget, setWithdrawTarget] = useState(null);
-  const [withdrawAmt, setWithdrawAmt] = useState('');
-  const [withdrawBank, setWithdrawBank] = useState(data.banks[0] ? data.banks[0].id : '');
   const [selected, setSelected] = useState('all');
   const [calAccountId, setCalAccountId] = useState(data.demats[0] ? data.demats[0].id : '');
   const [confirmDel, setConfirmDel] = useState(null);
@@ -2782,37 +2701,29 @@ function Demat({ data, mut, showToast, sync }) {
     showToast('Demat balance updated');
   };
 
-  const doWithdraw = () => {
-    const amt = r2(withdrawAmt);
-    if (!amt || amt <= 0) { showToast('Enter a valid amount'); return; }
-    const a0 = withdrawTarget;
-    mut(d => {
-      const a = d.demats.find(x => x.id === a0.id); const b = d.banks.find(x => x.id === withdrawBank);
-      if (!a || !b) return;
-      a.balance = r2(a.balance - amt);
-      a.history = (a.history || []).filter(h => h.date !== toISO(new Date()));
-      a.history.push({ date: toISO(new Date()), value: a.balance });
-      a.history.sort((x, y) => x.date.localeCompare(y.date));
-      b.balance = r2(b.balance + amt);
-      d.transactions.push({ 
-        id: uid(), 
-        bankId: withdrawBank, 
-        amount: amt, 
-        dir: 'in', 
-        note: 'Withdrawn from ' + a.name, 
-        category: 'Transfer', 
-        date: toISO(new Date()), 
-        affectsBalance: true, 
-        ts: Date.now() 
-      });
+  const openWithdraw = (item) => {
+    openTx({
+      dir: 'in',
+      category: 'Transfer',
+      amount: String(item.balance),
+      note: 'Withdrawn from ' + item.name,
+      date: toISO(new Date()),
+      affectsBalance: true,
+      _onSave: (payload) => {
+        const amt = r2(payload.amount);
+        mut(d => {
+          const a = d.demats.find(x => x.id === item.id);
+          if (!a) return;
+          a.balance = r2(a.balance - amt);
+          // Do NOT update history to prevent chart dip
+        });
+      }
     });
-    setWithdrawTarget(null);
-    showToast('Money moved to your bank');
   };
 
   return (
     <div>
-      <PageHead title="Demat Accounts" sub={'Total value ' + inr(total)} sync={sync}>
+      <PageHead title="Demat Accounts" sub={'Total value ' + inr(total)} sync={sync} openTx={openTx}>
         <button className="btn btn-sm btn-primary" onClick={() => { setEdit(null); setFormOpen(true); }}>+ Add Demat</button>
       </PageHead>
 
@@ -2847,7 +2758,7 @@ function Demat({ data, mut, showToast, sync }) {
             <div style={{ fontSize: '11.5px', color: 'var(--muted)', marginTop: '6px' }}>{(a.history || []).length} entries · last {(a.history && a.history.length) ? fmtDate(a.history[a.history.length - 1].date) : '—'}</div>
             <div className="item-actions" style={{ marginTop: '14px' }}>
               <button className="btn btn-sm btn-primary" onClick={() => { setUpdateTarget(a); setUpdateVal(String(a.balance)); }}>Update Today</button>
-              <button className="btn btn-sm" onClick={() => { setWithdrawTarget(a); setWithdrawAmt(''); setWithdrawBank(data.banks[0] ? data.banks[0].id : ''); }}>Withdraw</button>
+              <button className="btn btn-sm" onClick={() => openWithdraw(a)}>Withdraw</button>
               <button className="btn btn-sm" onClick={() => { setEdit(a); setFormOpen(true); }}>Edit</button>
               <button className="btn btn-sm btn-danger" onClick={() => setConfirmDel(a)}>Delete</button>
             </div>
@@ -2858,12 +2769,6 @@ function Demat({ data, mut, showToast, sync }) {
       <Modal open={!!updateTarget} onClose={() => setUpdateTarget(null)} title="Update Today's Balance">
         <div className="field"><label className="label">Current value of {updateTarget ? updateTarget.name : ''}</label><MoneyInput value={updateVal} onChange={setUpdateVal} /></div>
         <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={saveUpdate}>Save Today's Value</button>
-      </Modal>
-
-      <Modal open={!!withdrawTarget} onClose={() => setWithdrawTarget(null)} title="Withdraw to Bank">
-        <div className="field"><label className="label">Amount to withdraw</label><MoneyInput value={withdrawAmt} onChange={setWithdrawAmt} /></div>
-        <div className="field"><label className="label">Send to bank</label><select className="select" value={withdrawBank} onChange={(e) => setWithdrawBank(e.target.value)}>{data.banks.map(b => <option key={b.id} value={b.id}>{b.name} — {inr(b.balance)}</option>)}</select></div>
-        <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={doWithdraw}>Move Money</button>
       </Modal>
 
       <DematModal open={formOpen} onClose={() => { setFormOpen(false); setEdit(null); }} account={edit} onSave={saveAccount} />
@@ -2891,7 +2796,7 @@ function DematModal({ open, onClose, account, onSave }) {
 }
 
 function simulate(loans, extra) {
-  const ls = loans.map(l => ({ name: l.name, rem: r2(l.remaining), rate: r2(l.rate), emi: r2(l.emi) }));
+  const ls = loans.map(l => ({ name: l.name, rem: r2((Number(l.emi) || 0) * (Number(l.monthsLeft) || 0)), rate: r2(l.rate), emi: r2(l.emi) }));
   let months = 0; let totalInterest = 0;
   while (ls.some(l => l.rem > 0.5) && months < 720) {
     months++;
@@ -2912,12 +2817,12 @@ function simulate(loans, extra) {
   return { months, totalInterest: r2(totalInterest) };
 }
 
-function AiBrain({ data, sync }) {
+function AiBrain({ data, sync, openTx }) {
   const [extra, setExtra] = useState('5000');
   const bankTotal = data.banks.reduce((s, b) => s + (Number(b.balance) || 0), 0);
   const dematTotal = data.demats.reduce((s, d) => s + (Number(d.balance) || 0), 0);
   const cardDebt = data.cards.reduce((s, c) => s + (Number(c.outstanding) || 0), 0);
-  const loanDebt = data.loans.reduce((s, l) => s + (Number(l.remaining) || 0), 0);
+  const loanDebt = data.loans.reduce((s, l) => s + (Number(l.emi || 0) * Number(l.monthsLeft || 0)), 0);
   const assets = r2(bankTotal + dematTotal);
   const liabilities = r2(cardDebt + loanDebt);
   const netWorth = r2(assets - liabilities);
@@ -2928,7 +2833,7 @@ function AiBrain({ data, sync }) {
   const mOut = r2(monthTx.filter(t => t.dir === 'out').reduce((s, t) => s + (Number(t.amount) || 0), 0));
 
   const sortedLoans = data.loans.slice().sort((a, b) => (Number(b.rate) || 0) - (Number(a.rate) || 0));
-  const smallest = data.loans.slice().sort((a, b) => (Number(a.remaining) || 0) - (Number(b.remaining) || 0));
+  const smallest = data.loans.slice().sort((a, b) => (Number(a.emi || 0) * Number(a.monthsLeft || 0)) - (Number(b.emi || 0) * Number(b.monthsLeft || 0)));
   const sortedCards = data.cards.slice().sort((a, b) => (Number(b.outstanding) || 0) - (Number(a.outstanding) || 0));
 
   const base = useMemo(() => simulate(data.loans, 0), [data.loans]);
@@ -2943,7 +2848,10 @@ function AiBrain({ data, sync }) {
     const top = sortedLoans[0];
     insights.push({ icon: Ico.loan, title: 'Attack this loan first', text: top.name + ' has the highest interest at ' + top.rate + '% a year. Put any extra money here first.' });
     const small = smallest[0];
-    if (small !== top) insights.push({ icon: Ico.sparkle, title: 'Or try the quick win', text: 'If you need motivation, close ' + small.name + ' first. Only ' + inr(small.remaining) + ' left.' });
+    if (small !== top) {
+      const smallRemaining = r2((Number(small.emi) || 0) * (Number(small.monthsLeft) || 0));
+      insights.push({ icon: Ico.sparkle, title: 'Or try the quick win', text: 'If you need motivation, close ' + small.name + ' first. Only ' + inr(smallRemaining) + ' left.' });
+    }
   }
   if (bankTotal > 0 && bankTotal < mOut) insights.push({ icon: Ico.bank, title: 'Thin cushion', text: 'Your bank balance is less than one month of spending. Try to keep at least 3 months of expenses (' + inr(r2(mOut * 3)) + ') as an emergency fund.' });
   else if (mOut > 0) insights.push({ icon: Ico.bank, title: 'Emergency fund check', text: 'A safe cushion is about 3 to 6 months of expenses. For you that is ' + inr(r2(mOut * 3)) + ' to ' + inr(r2(mOut * 6)) + '.' });
@@ -2962,7 +2870,7 @@ function AiBrain({ data, sync }) {
 
   return (
     <div>
-      <PageHead title="AI Brain" sub="Smart money analysis based on your real data" sync={sync} />
+      <PageHead title="AI Brain" sub="Smart money analysis based on your real data" sync={sync} openTx={openTx} />
       <div className="grid g3" style={{ marginBottom: '18px' }}>
         <div className="kpi glass"><div className="kpi-head"><span className="kpi-dot green"></span><span className="kpi-label">Assets</span></div><div className="kpi-val" style={{ color: 'var(--green)' }}>{inr(assets)}</div><div className="kpi-note">Banks {inr(bankTotal)} + Demat {inr(dematTotal)}</div></div>
         <div className="kpi glass"><div className="kpi-head"><span className="kpi-dot red"></span><span className="kpi-label">Debts</span></div><div className="kpi-val" style={{ color: 'var(--red)' }}>{inr(liabilities)}</div><div className="kpi-note">Loans {inr(loanDebt)} + Cards {inr(cardDebt)}</div></div>
@@ -2991,7 +2899,7 @@ function AiBrain({ data, sync }) {
         <React.Fragment>
           <div className="section-head"><div className="section-title"><span className="dot"></span>Foreclosure Advice</div></div>
           <div className="glass" style={{ padding: '20px', fontSize: '13px', lineHeight: 1.7 }}>
-            <b>{bestForeclose.name}</b> can be closed today for <b>{inr(bestForeclose.foreclosureAmount)}</b>. You still owe <b>{inr(bestForeclose.remaining)}</b> and have <b>{bestForeclose.monthsLeft || 0} months</b> left at <b>{bestForeclose.rate}%</b>. Closing now saves you roughly <b>{inr(r2(Math.max(0, (Number(bestForeclose.emi) || 0) * (Number(bestForeclose.monthsLeft) || 0) - Number(bestForeclose.foreclosureAmount))))}</b> in future payments. {Number(bankTotal) >= Number(bestForeclose.foreclosureAmount) ? ' You have enough in the bank to do this right now.' : ' You need ' + inr(r2(Number(bestForeclose.foreclosureAmount) - bankTotal)) + ' more in the bank to do this today.'}
+            <b>{bestForeclose.name}</b> can be closed today for <b>{inr(bestForeclose.foreclosureAmount)}</b>. You still owe <b>{inr(r2((Number(bestForeclose.emi) || 0) * (Number(bestForeclose.monthsLeft) || 0)))}</b> and have <b>{bestForeclose.monthsLeft || 0} months</b> left at <b>{bestForeclose.rate}%</b>. Closing now saves you roughly <b>{inr(r2(Math.max(0, (Number(bestForeclose.emi) || 0) * (Number(bestForeclose.monthsLeft) || 0) - Number(bestForeclose.foreclosureAmount))))}</b> in future payments. {Number(bankTotal) >= Number(bestForeclose.foreclosureAmount) ? ' You have enough in the bank to do this right now.' : ' You need ' + inr(r2(Number(bestForeclose.foreclosureAmount) - bankTotal)) + ' more in the bank to do this today.'}
           </div>
         </React.Fragment>
       ) : null}
@@ -3003,7 +2911,7 @@ function AiBrain({ data, sync }) {
           <div className="item" key={l.id}>
             <div className="item-ico" style={{ fontWeight: 700, fontSize: '14px' }}>{i + 1}</div>
             <div className="item-body"><div className="item-name">{l.name}</div><div className="item-meta"><span className="pill amber">{l.rate}% interest</span><span className="pill">{l.monthsLeft || 0} months left</span><span className="pill blue">EMI {inr(l.emi)}</span></div></div>
-            <div className="item-amt">{inr(l.remaining)}</div>
+            <div className="item-amt">{inr(r2((Number(l.emi) || 0) * (Number(l.monthsLeft) || 0)))}</div>
           </div>
         ))}
         {sortedCards.map((c) => (
@@ -3061,7 +2969,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(<App />);
   function showError(err) {
     var d = document.createElement('div');
     d.style.cssText = 'position:fixed;inset:0;z-index:9999;background:#05060a;color:#f87171;padding:28px;font-family:ui-monospace,Menlo,monospace;font-size:13px;line-height:1.7;overflow:auto;white-space:pre-wrap';
-    d.textContent = 'FinVault could not start.\n\n' + (err && err.stack ? err.stack : String(err)) + '\n\nTry a hard refresh (Ctrl+Shift+R).';
+    d.textContent = 'ShubhVault could not start.\n\n' + (err && err.stack ? err.stack : String(err)) + '\n\nTry a hard refresh (Ctrl+Shift+R).';
     document.body.appendChild(d);
   }
 
