@@ -1248,7 +1248,17 @@ function Home({ data, mut, showToast, go, sync }) {
     mut(d => {
       const bank = d.banks.find(b => b.id === payBank);
       if (bank) bank.balance = r2(bank.balance - amt);
-      d.transactions.push({ id: uid(), bankId: payBank, amount: amt, dir: 'out', note: item.name + ' payment', category: item.kind === 'card' ? 'Credit Card' : item.kind === 'loan' ? 'Loan EMI' : 'Bills', date: toISO(new Date()), affectsBalance: true, ts: Date.now() });
+      d.transactions.push({ 
+        id: uid(), 
+        bankId: payBank, 
+        amount: amt, 
+        dir: 'out', 
+        note: item.name + (item.kind === 'card' ? ' Card Payment' : item.kind === 'loan' ? ' EMI' : ' Bill Payment'), 
+        category: item.kind === 'card' ? 'Credit Card' : item.kind === 'loan' ? 'Loan EMI' : 'Bills', 
+        date: toISO(new Date()), 
+        affectsBalance: true, 
+        ts: Date.now() 
+      });
       if (item.kind === 'card') { const c = d.cards.find(x => x.id === item.id); if (c) { c.outstanding = r2(Math.max(0, c.outstanding - amt)); c.paidCycles = (c.paidCycles || []).concat([cycle]); } }
       else if (item.kind === 'loan') { const l = d.loans.find(x => x.id === item.id); if (l) { l.remaining = r2(Math.max(0, l.remaining - amt)); l.monthsLeft = Math.max(0, (Number(l.monthsLeft) || 1) - 1); l.paidCycles = (l.paidCycles || []).concat([cycle]); } }
       else if (item.kind === 'bill') { const b = d.bills.find(x => x.id === item.id); if (b) b.paidCycles = (b.paidCycles || []).concat([cycle]); }
@@ -1264,7 +1274,17 @@ function Home({ data, mut, showToast, go, sync }) {
     mut(d => {
       const bank = d.banks.find(b => b.id === bankId);
       if (bank) bank.balance = r2(bank.balance + amt);
-      d.transactions.push({ id: uid(), bankId, amount: amt, dir: 'in', note: f.name + ' received', category: 'Salary', date: toISO(new Date()), affectsBalance: true, ts: Date.now() });
+      d.transactions.push({ 
+        id: uid(), 
+        bankId, 
+        amount: amt, 
+        dir: 'in', 
+        note: f.name + ' received', 
+        category: 'Salary', 
+        date: toISO(new Date()), 
+        affectsBalance: true, 
+        ts: Date.now() 
+      });
       const inf = d.inflows.find(x => x.id === f.id);
       if (inf) { inf.receivedCycles = (inf.receivedCycles || []).concat([cycle]); if (adjust) inf.amount = amt; }
     });
@@ -1289,7 +1309,17 @@ function Home({ data, mut, showToast, go, sync }) {
       a.history.push({ date: toISO(new Date()), value: a.balance });
       a.history.sort((x, y) => x.date.localeCompare(y.date));
       b.balance = r2(b.balance + amt);
-      d.transactions.push({ id: uid(), bankId: withdrawHintBank, amount: amt, dir: 'in', note: 'Withdrawn from ' + a.name + ' for ' + a0.name, category: 'Transfer', date: toISO(new Date()), affectsBalance: true, ts: Date.now() });
+      d.transactions.push({ 
+        id: uid(), 
+        bankId: withdrawHintBank, 
+        amount: amt, 
+        dir: 'in', 
+        note: 'Withdrawn from ' + a.name + ' for ' + a0.name, 
+        category: 'Transfer', 
+        date: toISO(new Date()), 
+        affectsBalance: true, 
+        ts: Date.now() 
+      });
     });
     setWithdrawHint(null);
     showToast('Money moved from Demat to your bank');
@@ -1841,29 +1871,78 @@ function TxModal({ open, onClose, banks, tx, onSave }) {
   const [dir, setDir] = useState('out');
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
-  const [category, setCategory] = useState('General');
+  const [category, setCategory] = useState('Food');
   const [date, setDate] = useState(toISO(new Date()));
   const [affects, setAffects] = useState(true);
+
+  const IN_CATEGORIES = ['Salary', 'UPI', 'Cash', 'Transfer', 'Investment', 'Other'];
+  const OUT_CATEGORIES = ['Food', 'Transportation', 'Rent', 'Shopping', 'Bills', 'Credit Card', 'Loan EMI', 'Travel', 'Medical', 'Investment', 'Transfer', 'Cash', 'Other'];
+
   useEffect(() => {
     if (open) {
       if (tx) {
         setBankId(tx.bankId || (banks[0] ? banks[0].id : ''));
-        setDir(tx.dir); setAmount(String(tx.amount)); setNote(tx.note || '');
-        setCategory(tx.category || 'General'); setDate(tx.date); setAffects(tx.affectsBalance !== false);
+        setDir(tx.dir); 
+        setAmount(String(tx.amount)); 
+        setNote(tx.note || '');
+        setCategory(tx.category || (tx.dir === 'in' ? 'Salary' : 'Food')); 
+        setDate(tx.date); 
+        setAffects(tx.affectsBalance !== false);
       } else {
-        setBankId(banks[0] ? banks[0].id : ''); setDir('out'); setAmount(''); setNote('');
-        setCategory('General'); setDate(toISO(new Date())); setAffects(true);
+        setBankId(banks[0] ? banks[0].id : ''); 
+        setDir('out'); 
+        setAmount(''); 
+        setNote('');
+        setCategory('Food'); 
+        setDate(toISO(new Date())); 
+        setAffects(true);
       }
     }
   }, [open, tx]);
+
   if (!open) return null;
-  const submit = () => { const amt = r2(amount); if (!amt || amt <= 0) return; onSave({ bankId, dir, amount: amt, note, category, date, affectsBalance: affects }, tx ? tx.id : null); };
+
+  const submit = () => { 
+    const amt = r2(amount); 
+    if (!amt || amt <= 0) return; 
+    onSave({ bankId, dir, amount: amt, note, category, date, affectsBalance: affects }, tx ? tx.id : null); 
+  };
+
+  let activeCategories = dir === 'in' ? IN_CATEGORIES : OUT_CATEGORIES;
+  if (category && !activeCategories.includes(category)) {
+    activeCategories = [...activeCategories, category];
+  }
+
   return (
     <Modal open={open} onClose={onClose} title={tx ? 'Edit Transaction' : 'Add Transaction'}>
       <div className="field"><label className="label">Money going</label>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button className={'btn btn-sm' + (dir === 'in' ? ' btn-primary' : '')} style={{ flex: 1, justifyContent: 'center' }} onClick={() => setDir('in')}>In ↓</button>
-          <button className={'btn btn-sm' + (dir === 'out' ? ' btn-primary' : '')} style={{ flex: 1, justifyContent: 'center' }} onClick={() => setDir('out')}>Out ↑</button>
+          <button 
+            className={'btn btn-sm'} 
+            style={{
+              flex: 1, justifyContent: 'center',
+              background: dir === 'in' ? 'var(--green)' : 'var(--glass-2)',
+              borderColor: dir === 'in' ? 'var(--green)' : 'var(--brd-2)',
+              color: dir === 'in' ? '#fff' : 'var(--muted)',
+              boxShadow: dir === 'in' ? '0 6px 16px -6px var(--green-soft)' : 'none'
+            }}
+            onClick={() => { setDir('in'); setCategory('Salary'); }}
+          >
+            In ↓
+          </button>
+          <button 
+            className={'btn btn-sm'} 
+            style={{
+              flex: 1, justifyContent: 'center',
+              background: dir === 'out' ? 'var(--red)' : 'var(--glass-2)',
+              borderColor: dir === 'out' ? 'var(--red)' : 'var(--brd-2)',
+              color: dir === 'out' ? '#fff' : 'var(--muted)',
+              boxShadow: dir === 'out' ? '0 6px 16px -6px var(--red-soft)' : 'none'
+            }}
+            onClick={() => { setDir('out'); setCategory('Food'); }}
+          >
+            Out ↑
+          </button>
         </div>
       </div>
       <div className="row2">
@@ -1874,7 +1953,7 @@ function TxModal({ open, onClose, banks, tx, onSave }) {
       <div className="field"><label className="label">Note</label><input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="What was this for?" /></div>
       <div className="field"><label className="label">Category</label>
         <select className="select" value={category} onChange={(e) => setCategory(e.target.value)}>
-          {['General','Salary','Food','Rent','Shopping','Travel','Bills','Credit Card','Loan EMI','Transfer','Investment','Medical','Other'].map(c => <option key={c} value={c}>{c}</option>)}
+          {activeCategories.map(c => <option key={c} value={c}>{c}</option>)}
         </select>
       </div>
       <div className="switch" onClick={() => setAffects(a => !a)}><div className={'switch-track' + (affects ? ' on' : '')}><div className="switch-knob"></div></div><div className="switch-lbl">Adjust bank balance with this transaction</div></div>
@@ -1972,7 +2051,17 @@ function Cards({ data, mut, showToast, sync }) {
     const cycle = monthKey(nextDueDate(c0.dueDay || 10, c0.paidCycles));
     mut(d => {
       const bank = d.banks.find(b => b.id === payBank); if (bank) bank.balance = r2(bank.balance - amt);
-      d.transactions.push({ id: uid(), bankId: payBank, amount: amt, dir: 'out', note: c0.name + ' bill payment', category: 'Credit Card', date: toISO(new Date()), affectsBalance: true, ts: Date.now() });
+      d.transactions.push({ 
+        id: uid(), 
+        bankId: payBank, 
+        amount: amt, 
+        dir: 'out', 
+        note: c0.name + ' Card Payment', 
+        category: 'Credit Card', 
+        date: toISO(new Date()), 
+        affectsBalance: true, 
+        ts: Date.now() 
+      });
       const c = d.cards.find(x => x.id === c0.id);
       if (c) { c.outstanding = r2(Math.max(0, c.outstanding - amt)); c.paidCycles = (c.paidCycles || []).concat([cycle]); }
     });
@@ -2139,7 +2228,17 @@ function Loans({ data, mut, showToast, sync }) {
     const isForeclose = payMode === 'foreclose';
     mut(d => {
       const bank = d.banks.find(b => b.id === payBank); if (bank) bank.balance = r2(bank.balance - amt);
-      d.transactions.push({ id: uid(), bankId: payBank, amount: amt, dir: 'out', note: isForeclose ? l0.name + ' loan foreclosure' : l0.name + ' payment', category: 'Loan EMI', date: toISO(new Date()), affectsBalance: true, ts: Date.now() });
+      d.transactions.push({ 
+        id: uid(), 
+        bankId: payBank, 
+        amount: amt, 
+        dir: 'out', 
+        note: isForeclose ? l0.name + ' Loan Foreclosure' : l0.name + ' EMI', 
+        category: 'Loan EMI', 
+        date: toISO(new Date()), 
+        affectsBalance: true, 
+        ts: Date.now() 
+      });
       const l = d.loans.find(x => x.id === l0.id);
       if (!l) return;
       if (isForeclose) { l.remaining = 0; l.monthsLeft = 0; l.foreclosureAmount = 0; }
@@ -2349,7 +2448,17 @@ function Bills({ data, mut, showToast, sync }) {
     const cycle = monthKey(nextDueDate(b0.dueDay || 1, b0.paidCycles));
     mut(d => {
       const bank = d.banks.find(b => b.id === payBank); if (bank) bank.balance = r2(bank.balance - amt);
-      d.transactions.push({ id: uid(), bankId: payBank, amount: amt, dir: 'out', note: b0.name + ' paid', category: 'Bills', date: toISO(new Date()), affectsBalance: true, ts: Date.now() });
+      d.transactions.push({ 
+        id: uid(), 
+        bankId: payBank, 
+        amount: amt, 
+        dir: 'out', 
+        note: b0.name + ' Bill Payment', 
+        category: 'Bills', 
+        date: toISO(new Date()), 
+        affectsBalance: true, 
+        ts: Date.now() 
+      });
       const b = d.bills.find(x => x.id === b0.id);
       if (b) b.paidCycles = (b.paidCycles || []).concat([cycle]);
     });
@@ -2685,7 +2794,17 @@ function Demat({ data, mut, showToast, sync }) {
       a.history.push({ date: toISO(new Date()), value: a.balance });
       a.history.sort((x, y) => x.date.localeCompare(y.date));
       b.balance = r2(b.balance + amt);
-      d.transactions.push({ id: uid(), bankId: withdrawBank, amount: amt, dir: 'in', note: 'Withdrawn from ' + a.name, category: 'Transfer', date: toISO(new Date()), affectsBalance: true, ts: Date.now() });
+      d.transactions.push({ 
+        id: uid(), 
+        bankId: withdrawBank, 
+        amount: amt, 
+        dir: 'in', 
+        note: 'Withdrawn from ' + a.name, 
+        category: 'Transfer', 
+        date: toISO(new Date()), 
+        affectsBalance: true, 
+        ts: Date.now() 
+      });
     });
     setWithdrawTarget(null);
     showToast('Money moved to your bank');
