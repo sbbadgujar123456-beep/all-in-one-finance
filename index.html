@@ -405,7 +405,7 @@ function normalize(d) {
   ['banks','transactions','demats','cards','loans','bills','inflows','netWorthHistory'].forEach(k => { if (!Array.isArray(out[k])) out[k] = []; });
   out.demats = out.demats.map(x => Object.assign({ history: [] }, x, { history: Array.isArray(x.history) ? x.history : [] }));
   out.cards = out.cards.map(x => Object.assign({ paidCycles: [] }, x));
-  out.loans = out.loans.map(x => Object.assign({ paidCycles: [] }, x));
+  out.loans = out.loans.map(x => Object.assign({ paidCycles: [], startDate: toISO(new Date()), originalMonths: x.monthsLeft || 0, closed: false, closedDate: null }, x));
   out.bills = out.bills.map(x => Object.assign({ paidCycles: [] }, x));
   out.inflows = out.inflows.map(x => Object.assign({ receivedCycles: [], recurring: x.recurring !== false }, x));
   if (!out.banks.length) out.banks = [{ id: 'b1', name: 'Main Bank', balance: 0 }];
@@ -1034,7 +1034,7 @@ function App() {
     const bankTotal = data.banks.reduce((s, b) => s + (Number(b.balance) || 0), 0);
     const dematTotal = data.demats.reduce((s, d) => s + (Number(d.balance) || 0), 0);
     const cardDebt = data.cards.reduce((s, c) => s + (Number(c.outstanding) || 0), 0);
-    const loanDebt = data.loans.reduce((s, l) => s + (Number(l.emi || 0) * Number(l.monthsLeft || 0)), 0);
+    const loanDebt = data.loans.filter(l => !l.closed).reduce((s, l) => s + (Number(l.emi || 0) * Number(l.monthsLeft || 0)), 0);
     return r2(bankTotal + dematTotal - cardDebt - loanDebt);
   }, [data]);
 
@@ -1043,7 +1043,7 @@ function App() {
     const total = data.banks.reduce((s, b) => s + (Number(b.balance) || 0), 0) +
       data.demats.reduce((s, d) => s + (Number(d.balance) || 0), 0) +
       data.cards.reduce((s, c) => s + (Number(c.outstanding) || 0), 0) +
-      data.loans.reduce((s, l) => s + (Number(l.emi || 0) * Number(l.monthsLeft || 0)), 0) +
+      data.loans.filter(l => !l.closed).reduce((s, l) => s + (Number(l.emi || 0) * Number(l.monthsLeft || 0)), 0) +
       data.bills.reduce((s, b) => s + (Number(b.amount) || 0), 0) +
       data.inflows.reduce((s, f) => s + (Number(f.amount) || 0), 0);
     return total > 0.5;
@@ -1118,7 +1118,7 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
   const bankTotal = data.banks.reduce((s, b) => s + (Number(b.balance) || 0), 0);
   const dematTotal = data.demats.reduce((s, d) => s + (Number(d.balance) || 0), 0);
   const cardDebt = data.cards.reduce((s, c) => s + (Number(c.outstanding) || 0), 0);
-  const loanDebt = data.loans.reduce((s, l) => s + (Number(l.emi || 0) * Number(l.monthsLeft || 0)), 0);
+  const loanDebt = data.loans.filter(l => !l.closed).reduce((s, l) => s + (Number(l.emi || 0) * Number(l.monthsLeft || 0)), 0);
   const assets = r2(bankTotal + dematTotal);
   const liabilities = r2(cardDebt + loanDebt);
   const netWorth = r2(assets - liabilities);
@@ -1129,7 +1129,7 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
   const [withdrawHintBank, setWithdrawHintBank] = useState(data.banks[0] ? data.banks[0].id : '');
   const [expandedGroups, setExpandedGroups] = useState({});
 
-  const loanItems = useMemo(() => data.loans.map(l => { const due = nextDueDate(l.dueDay || 5, l.paidCycles); return { kind: 'loan', ref: l, id: l.id, name: l.name, amount: r2(l.emi), due, days: daysUntil(due) }; }).sort((a, b) => a.due - b.due), [data.loans]);
+  const loanItems = useMemo(() => data.loans.filter(l => !l.closed).map(l => { const due = nextDueDate(l.dueDay || 5, l.paidCycles); return { kind: 'loan', ref: l, id: l.id, name: l.name, amount: r2(l.emi), due, days: daysUntil(due) }; }).sort((a, b) => a.due - b.due), [data.loans]);
   const cardItems = useMemo(() => data.cards.map(c => { const due = nextDueDate(c.dueDay || 10, c.paidCycles); return { kind: 'card', ref: c, id: c.id, name: c.name, amount: r2(c.outstanding), due, days: daysUntil(due) }; }).sort((a, b) => a.due - b.due), [data.cards]);
   const billItems = useMemo(() => data.bills.map(b => { const due = nextDueDate(b.dueDay || 1, b.paidCycles); return { kind: 'bill', ref: b, id: b.id, name: b.name, amount: r2(b.amount), due, days: daysUntil(due) }; }).sort((a, b) => a.due - b.due), [data.bills]);
   const inflowItems = useMemo(() => data.inflows.map(f => {
@@ -1166,7 +1166,7 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
     const today = startOfToday();
     const cutoff = new Date(today); cutoff.setDate(cutoff.getDate() + 5);
     const dues = [];
-    data.loans.forEach(l => { const due = nextDueDate(l.dueDay || 5, l.paidCycles); if (due >= today && due <= cutoff && Number(l.emi) > 0) dues.push({ kind: 'loan', name: l.name, amount: r2(l.emi), due, days: daysUntil(due) }); });
+    data.loans.filter(l => !l.closed).forEach(l => { const due = nextDueDate(l.dueDay || 5, l.paidCycles); if (due >= today && due <= cutoff && Number(l.emi) > 0) dues.push({ kind: 'loan', name: l.name, amount: r2(l.emi), due, days: daysUntil(due) }); });
     data.cards.forEach(c => { const due = nextDueDate(c.dueDay || 10, c.paidCycles); if (due >= today && due <= cutoff && Number(c.outstanding) > 0) dues.push({ kind: 'card', name: c.name, amount: r2(c.outstanding), due, days: daysUntil(due) }); });
     data.bills.forEach(b => { const due = nextDueDate(b.dueDay || 1, b.paidCycles); if (due >= today && due <= cutoff && Number(b.amount) > 0) dues.push({ kind: 'bill', name: b.name, amount: r2(b.amount), due, days: daysUntil(due) }); });
     if (dues.length === 0) return [];
@@ -1288,6 +1288,7 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
               l.monthsLeft = Math.max(0, (Number(l.monthsLeft) || 1) - 1); 
               l.remaining = r2((Number(l.emi) || 0) * (Number(l.monthsLeft) || 0)); 
               l.paidCycles = (l.paidCycles || []).concat([cycle]); 
+              if (l.monthsLeft <= 0) { l.closed = true; l.closedDate = toISO(new Date()); }
             } 
           }
           else if (item.kind === 'bill') { const b = d.bills.find(x => x.id === item.id); if (b) b.paidCycles = (b.paidCycles || []).concat([cycle]); }
@@ -1983,9 +1984,6 @@ function TransferModal({ open, onClose, banks, onTransfer }) {
 function Cards({ data, mut, showToast, sync, openTx }) {
   const [formOpen, setFormOpen] = useState(false);
   const [edit, setEdit] = useState(null);
-  const [payTarget, setPayTarget] = useState(null);
-  const [payAmount, setPayAmount] = useState('');
-  const [payBank, setPayBank] = useState(data.banks[0] ? data.banks[0].id : '');
   const [adjustTarget, setAdjustTarget] = useState(null);
   const [adjustVal, setAdjustVal] = useState('');
   const [confirmDel, setConfirmDel] = useState(null);
@@ -2145,16 +2143,26 @@ function Loans({ data, mut, showToast, sync, openTx }) {
   const [edit, setEdit] = useState(null);
   const [confirmDel, setConfirmDel] = useState(null);
   const [sortBy, setSortBy] = useState('name');
+  const [showHistory, setShowHistory] = useState(false);
 
-  const total = data.loans.reduce((s, l) => s + (Number(l.emi || 0) * Number(l.monthsLeft || 0)), 0);
-  const totalEmi = data.loans.reduce((s, l) => s + (Number(l.emi) || 0), 0);
+  const activeLoans = useMemo(() => data.loans.filter(l => !l.closed), [data.loans]);
+  const closedLoans = useMemo(() => data.loans.filter(l => l.closed), [data.loans]);
 
-  const sortedLoans = useMemo(() => {
-    const arr = data.loans.slice();
+  const total = activeLoans.reduce((s, l) => s + (Number(l.emi || 0) * Number(l.monthsLeft || 0)), 0);
+  const totalEmi = activeLoans.reduce((s, l) => s + (Number(l.emi) || 0), 0);
+
+  const sortedActive = useMemo(() => {
+    const arr = activeLoans.slice();
     if (sortBy === 'name') arr.sort((a, b) => naturalCompare(a.name, b.name));
     else arr.sort((a, b) => { const da = nextDueDate(a.dueDay || 5, a.paidCycles); const db = nextDueDate(b.dueDay || 5, b.paidCycles); if (da - db !== 0) return da - db; return naturalCompare(a.name, b.name); });
     return arr;
-  }, [data.loans, sortBy]);
+  }, [activeLoans, sortBy]);
+
+  const sortedClosed = useMemo(() => {
+    const arr = closedLoans.slice();
+    arr.sort((a, b) => (b.closedDate || '').localeCompare(a.closedDate || ''));
+    return arr;
+  }, [closedLoans]);
 
   const save = (payload, id) => {
     mut(d => {
@@ -2199,9 +2207,30 @@ function Loans({ data, mut, showToast, sync, openTx }) {
           l.monthsLeft = Math.max(0, (Number(l.monthsLeft) || 1) - 1);
           l.remaining = r2((Number(l.emi) || 0) * (Number(l.monthsLeft) || 0));
           l.paidCycles = (l.paidCycles || []).concat([cycle]);
+          if (l.monthsLeft <= 0) { l.closed = true; l.closedDate = toISO(new Date()); }
         });
       }
     });
+  };
+
+  const getLoanStatus = (l) => {
+    if (l.closed) return { label: 'Paid off', color: 'green' };
+    const start = l.startDate ? parseISO(l.startDate) : startOfToday();
+    const today = startOfToday();
+    const monthsElapsed = (today.getFullYear() - start.getFullYear()) * 12 + (today.getMonth() - start.getMonth());
+    const monthsPaid = (l.originalMonths || l.monthsLeft || 0) - (l.monthsLeft || 0);
+    const diff = monthsPaid - monthsElapsed;
+    if (diff > 0) return { label: 'Ahead by ' + diff + ' months', color: 'green' };
+    if (diff === 0) return { label: 'On track', color: 'blue' };
+    return { label: 'Behind by ' + Math.abs(diff) + ' months', color: 'red' };
+  };
+
+  const getPaidDuration = (l) => {
+    if (!l.startDate || !l.closedDate) return '—';
+    const start = parseISO(l.startDate);
+    const end = parseISO(l.closedDate);
+    const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
+    return months + ' month' + (months !== 1 ? 's' : '');
   };
 
   return (
@@ -2214,15 +2243,16 @@ function Loans({ data, mut, showToast, sync, openTx }) {
         <button className="btn btn-sm btn-primary" onClick={() => { setEdit(null); setFormOpen(true); }}>+ Add Loan</button>
       </PageHead>
 
-      {data.loans.length === 0 ? (
-        <div className="glass"><EmptyState icon={Ico.loan} title="No loans yet" sub="Add a loan to track EMIs, months left, interest and payoff progress." action={<button className="btn btn-sm btn-primary" onClick={() => { setEdit(null); setFormOpen(true); }}>Add your first loan</button>} /></div>
+      {activeLoans.length === 0 ? (
+        <div className="glass"><EmptyState icon={Ico.loan} title="No active loans" sub="Add a loan to track EMIs, months left, interest and payoff progress." action={<button className="btn btn-sm btn-primary" onClick={() => { setEdit(null); setFormOpen(true); }}>Add your first loan</button>} /></div>
       ) : (
         <div className="list">
-          {sortedLoans.map(l => {
+          {sortedActive.map(l => {
             const due = nextDueDate(l.dueDay || 5, l.paidCycles);
             const dd = daysUntil(due);
             const computedRemaining = r2((Number(l.emi) || 0) * (Number(l.monthsLeft) || 0));
             const paidPct = l.principal ? Math.min(100, r2(((l.principal - computedRemaining) / l.principal) * 100)) : 0;
+            const status = getLoanStatus(l);
             return (
               <div className="item" key={l.id} style={{ flexWrap: 'wrap' }}>
                 <div className="item-ico">{Ico.loan}</div>
@@ -2242,6 +2272,7 @@ function Loans({ data, mut, showToast, sync, openTx }) {
                   {l.foreclosureAmount ? (<div style={{ fontSize: '11.5px', color: 'var(--amber)', marginTop: '3px' }}>Foreclose at {inr(l.foreclosureAmount)}</div>) : null}
                 </div>
                 <div className="item-actions">
+                  <div style={{ marginRight: '6px' }}><span className={'pill ' + status.color}><span className="pdot"></span>{status.label}</span></div>
                   <button className="btn btn-sm btn-primary" onClick={() => openPay(l)}>Pay</button>
                   <button className="btn btn-sm" onClick={() => markDone(l)}>Done</button>
                   <button className="btn btn-sm btn-warn" onClick={() => skipLoan(l)}>Skip</button>
@@ -2252,6 +2283,41 @@ function Loans({ data, mut, showToast, sync, openTx }) {
             );
           })}
         </div>
+      )}
+
+      {closedLoans.length > 0 && (
+        <React.Fragment>
+          <div className="section-head">
+            <div className="section-title"><span className="dot"></span>Closed Loans History</div>
+            <button className="btn btn-sm" onClick={() => setShowHistory(h => !h)}>{showHistory ? 'Hide' : 'Show'} History</button>
+          </div>
+          {showHistory && (
+            <div className="list">
+              {sortedClosed.map(l => (
+                <div className="item" key={l.id} style={{ opacity: 0.7, flexWrap: 'wrap' }}>
+                  <div className="item-ico" style={{ color: 'var(--green)' }}>{Ico.check}</div>
+                  <div className="item-body" style={{ minWidth: '220px' }}>
+                    <div className="item-name">{l.name}</div>
+                    <div className="item-meta">
+                      <span className="pill green"><span className="pdot"></span>Paid off</span>
+                      <span className="pill">Original: {l.originalMonths || '—'} months</span>
+                      <span className="pill blue">Taken: {getPaidDuration(l)}</span>
+                      <span>Closed {fmtDate(l.closedDate)}</span>
+                    </div>
+                  </div>
+                  <div style={{ textAlign: 'right' }}>
+                    <div className="item-amt" style={{ color: 'var(--green)' }}>{inr(l.principal || 0)}</div>
+                    <div style={{ fontSize: '11.5px', color: 'var(--muted)', marginTop: '3px' }}>Total Paid</div>
+                  </div>
+                  <div className="item-actions">
+                    <button className="btn btn-sm" onClick={() => { setEdit(l); setFormOpen(true); }}>Edit</button>
+                    <button className="btn btn-sm btn-danger" onClick={() => setConfirmDel(l)}>Delete</button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </React.Fragment>
       )}
 
       <LoanModal open={formOpen} onClose={() => { setFormOpen(false); setEdit(null); }} loan={edit} onSave={save} />
@@ -2269,22 +2335,29 @@ function LoanModal({ open, onClose, loan, onSave }) {
   const [emi, setEmi] = useState('');
   const [principal, setPrincipal] = useState('');
   const [rate, setRate] = useState('');
+  const [originalMonths, setOriginalMonths] = useState('');
   const [monthsLeft, setMonthsLeft] = useState('');
   const [foreclosure, setForeclosure] = useState('');
   const [dueDay, setDueDay] = useState('');
+  const [startDate, setStartDate] = useState(toISO(new Date()));
+  const [closed, setClosed] = useState(false);
+
   useEffect(() => {
     if (open) {
       setName(loan ? loan.name : '');
       setEmi(loan ? String(loan.emi || '') : '');
       setPrincipal(loan ? String(loan.principal || '') : '');
       setRate(loan ? String(loan.rate || '') : '');
+      setOriginalMonths(loan ? String(loan.originalMonths || loan.monthsLeft || '') : '');
       setMonthsLeft(loan ? String(loan.monthsLeft || '') : '');
       setForeclosure(loan ? String(loan.foreclosureAmount || '') : '');
       setDueDay(loan ? String(loan.dueDay || '') : '');
+      setStartDate(loan ? (loan.startDate || toISO(new Date())) : toISO(new Date()));
+      setClosed(loan ? !!loan.closed : false);
     }
   }, [open, loan]);
   if (!open) return null;
-  
+
   const submit = () => {
     const e = r2(emi);
     const n = Number(monthsLeft) || 0;
@@ -2295,9 +2368,13 @@ function LoanModal({ open, onClose, loan, onSave }) {
       remaining: calculatedRemaining, 
       principal: r2(principal) || calculatedRemaining, 
       rate: r2(rate), 
+      originalMonths: Number(originalMonths) || n,
       monthsLeft: n, 
       foreclosureAmount: r2(foreclosure), 
-      dueDay: Math.min(31, Math.max(1, Number(dueDay) || 5)) 
+      dueDay: Math.min(31, Math.max(1, Number(dueDay) || 5)),
+      startDate,
+      closed,
+      closedDate: closed && !loan?.closed ? toISO(new Date()) : (loan?.closedDate || null)
     }, loan ? loan.id : null);
   };
 
@@ -2309,11 +2386,16 @@ function LoanModal({ open, onClose, loan, onSave }) {
         <div className="field"><label className="label">Interest Rate (%)</label><input className="input" inputMode="decimal" value={rate} onChange={(e) => { const v = e.target.value.replace(/[^\d.]/g, ''); if (/^\d*(\.\d{0,2})?$/.test(v)) setRate(v); }} placeholder="9.5" /></div>
       </div>
       <div className="row2">
+        <div className="field"><label className="label">Original Months</label><input className="input" inputMode="numeric" value={originalMonths} onChange={(e) => setOriginalMonths(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="43" /></div>
         <div className="field"><label className="label">Months Left</label><input className="input" inputMode="numeric" value={monthsLeft} onChange={(e) => setMonthsLeft(e.target.value.replace(/\D/g, '').slice(0, 4))} placeholder="24" /></div>
+      </div>
+      <div className="row2">
+        <div className="field"><label className="label">Start Date</label><input className="input" type="date" value={startDate} onChange={(e) => setStartDate(e.target.value)} /></div>
         <div className="field"><label className="label">EMI Due Day (1-31)</label><DayInput value={dueDay} onChange={setDueDay} /></div>
       </div>
       <div className="field"><label className="label">Original Loan Amount</label><MoneyInput value={principal} onChange={setPrincipal} /></div>
       <div className="field"><label className="label">Foreclosure Amount (if you close it today)</label><MoneyInput value={foreclosure} onChange={setForeclosure} /></div>
+      <div className="switch" onClick={() => setClosed(c => !c)}><div className={'switch-track' + (closed ? ' on' : '')}><div className="switch-knob"></div></div><div className="switch-lbl">Mark as closed (fully paid)</div></div>
       <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={submit}>{loan ? 'Save Changes' : 'Add Loan'}</button>
     </Modal>
   );
@@ -2822,7 +2904,8 @@ function AiBrain({ data, sync, openTx }) {
   const bankTotal = data.banks.reduce((s, b) => s + (Number(b.balance) || 0), 0);
   const dematTotal = data.demats.reduce((s, d) => s + (Number(d.balance) || 0), 0);
   const cardDebt = data.cards.reduce((s, c) => s + (Number(c.outstanding) || 0), 0);
-  const loanDebt = data.loans.reduce((s, l) => s + (Number(l.emi || 0) * Number(l.monthsLeft || 0)), 0);
+  const activeLoans = data.loans.filter(l => !l.closed);
+  const loanDebt = activeLoans.reduce((s, l) => s + (Number(l.emi || 0) * Number(l.monthsLeft || 0)), 0);
   const assets = r2(bankTotal + dematTotal);
   const liabilities = r2(cardDebt + loanDebt);
   const netWorth = r2(assets - liabilities);
@@ -2832,17 +2915,17 @@ function AiBrain({ data, sync, openTx }) {
   const mIn = r2(monthTx.filter(t => t.dir === 'in').reduce((s, t) => s + (Number(t.amount) || 0), 0));
   const mOut = r2(monthTx.filter(t => t.dir === 'out').reduce((s, t) => s + (Number(t.amount) || 0), 0));
 
-  const sortedLoans = data.loans.slice().sort((a, b) => (Number(b.rate) || 0) - (Number(a.rate) || 0));
-  const smallest = data.loans.slice().sort((a, b) => (Number(a.emi || 0) * Number(a.monthsLeft || 0)) - (Number(b.emi || 0) * Number(b.monthsLeft || 0)));
+  const sortedLoans = activeLoans.slice().sort((a, b) => (Number(b.rate) || 0) - (Number(a.rate) || 0));
+  const smallest = activeLoans.slice().sort((a, b) => (Number(a.emi || 0) * Number(a.monthsLeft || 0)) - (Number(b.emi || 0) * Number(b.monthsLeft || 0)));
   const sortedCards = data.cards.slice().sort((a, b) => (Number(b.outstanding) || 0) - (Number(a.outstanding) || 0));
 
-  const base = useMemo(() => simulate(data.loans, 0), [data.loans]);
-  const withExtra = useMemo(() => simulate(data.loans, r2(extra) || 0), [data.loans, extra]);
+  const base = useMemo(() => simulate(activeLoans, 0), [activeLoans]);
+  const withExtra = useMemo(() => simulate(activeLoans, r2(extra) || 0), [activeLoans, extra]);
   const monthsSaved = Math.max(0, base.months - withExtra.months);
   const interestSaved = r2(Math.max(0, base.totalInterest - withExtra.totalInterest));
 
   const insights = [];
-  if (liabilities === 0) insights.push({ icon: Ico.check, title: 'You are debt free', text: 'No loans and no credit card outstanding. Keep building your investments.' });
+  if (liabilities === 0) insights.push({ icon: Ico.check, title: 'You are debt free', text: 'No active loans and no credit card outstanding. Keep building your investments.' });
   if (cardDebt > 0) insights.push({ icon: Ico.card, title: 'Credit cards first', text: 'Credit card interest is usually 36% to 42% a year, way higher than most loans. Clear ' + (sortedCards[0] ? sortedCards[0].name : 'your card') + ' (' + inr(sortedCards[0] ? sortedCards[0].outstanding : 0) + ') before making extra payments on loans.' });
   if (sortedLoans.length > 0) {
     const top = sortedLoans[0];
@@ -2865,7 +2948,7 @@ function AiBrain({ data, sync, openTx }) {
   if (topCats.length) insights.push({ icon: Ico.bill, title: 'Where your money went this month', text: topCats.map(c => c.k + ' ' + inr(c.v)).join(' · ') });
   if (base.months > 0) insights.push({ icon: Ico.sparkle, title: 'Debt free in about ' + base.months + ' months', text: 'If you keep paying your normal EMIs, you will be debt free around ' + fmtDate(new Date(new Date().getFullYear(), new Date().getMonth() + base.months, 1)) + '.' });
 
-  const foreclosable = data.loans.filter(l => Number(l.foreclosureAmount) > 0);
+  const foreclosable = activeLoans.filter(l => Number(l.foreclosureAmount) > 0);
   const bestForeclose = foreclosable.slice().sort((a, b) => (Number(b.rate) || 0) - (Number(a.rate) || 0))[0];
 
   return (
