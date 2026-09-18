@@ -676,7 +676,7 @@ function SyncBadge({ sync }) {
 function Modal({ open, onClose, title, children }) {
   if (!open) return null;
   return (
-    <div className="modal-bg" onClick={onClose}>
+    <div className="modal-bg">
       <div className="modal glass" onClick={(e) => e.stopPropagation()}>
         <div className="modal-head"><h3>{title}</h3><button className="icon-btn" onClick={onClose}>{Ico.close}</button></div>
         <div>{children}</div>
@@ -1694,6 +1694,46 @@ function Banks({ data, mut, showToast, sync, openTx }) {
 
   const deleteBank = (id) => { mut(d => { d.banks = d.banks.filter(b => b.id !== id); d.transactions = d.transactions.filter(t => t.bankId !== id); }); setConfirmDel(null); showToast('Bank removed'); };
 
+  const saveTx = (payload, id) => {
+    mut(d => {
+      if (id) {
+        const old = d.transactions.find(t => t.id === id);
+        if (old && old.affectsBalance && old.bankId) { 
+          const ob = d.banks.find(b => b.id === old.bankId); 
+          if (ob) ob.balance = r2(ob.balance - (old.dir === 'in' ? old.amount : -old.amount)); 
+        }
+        if (old) Object.assign(old, payload);
+        const t = d.transactions.find(x => x.id === id);
+        if (t && t.affectsBalance && t.bankId) { 
+          const nb = d.banks.find(b => b.id === t.bankId); 
+          if (nb) nb.balance = r2(nb.balance + (t.dir === 'in' ? t.amount : -t.amount)); 
+        }
+      } else {
+        const t = Object.assign({ id: uid(), ts: Date.now() }, payload);
+        d.transactions.push(t);
+        if (t.affectsBalance && t.bankId) { 
+          const nb = d.banks.find(b => b.id === t.bankId); 
+          if (nb) nb.balance = r2(nb.balance + (t.dir === 'in' ? t.amount : -t.amount)); 
+        }
+      }
+    });
+    setTxOpen(false);
+    setEditTx(null);
+    showToast(id ? 'Transaction updated' : 'Transaction added');
+  };
+
+  const deleteTx = (id) => {
+    mut(d => {
+      const t = d.transactions.find(x => x.id === id);
+      if (t && t.affectsBalance && t.bankId) { 
+        const b = d.banks.find(x => x.id === t.bankId); 
+        if (b) b.balance = r2(b.balance - (t.dir === 'in' ? t.amount : -t.amount)); 
+      }
+      d.transactions = d.transactions.filter(x => x.id !== id);
+    });
+    showToast('Transaction deleted');
+  };
+
   const doTransfer = (from, to, amount) => {
     const amt = r2(amount);
     if (!from || !to || from === to || !amt || amt <= 0) { showToast('Check the transfer details'); return; }
@@ -1836,7 +1876,7 @@ function Banks({ data, mut, showToast, sync, openTx }) {
         ))
       )}
 
-      <TxModal open={txOpen} onClose={() => { setTxOpen(false); setEditTx(null); }} banks={data.banks} tx={editTx} onSave={(payload, id) => { saveTx(payload, id); setTxOpen(false); setEditTx(null); }} />
+      <TxModal open={txOpen} onClose={() => { setTxOpen(false); setEditTx(null); }} banks={data.banks} tx={editTx} onSave={saveTx} />
       <BankModal open={bankOpen} onClose={() => { setBankOpen(false); setEditBank(null); }} bank={editBank} onSave={saveBank} />
       <TransferModal open={transferOpen} onClose={() => setTransferOpen(false)} banks={data.banks} onTransfer={doTransfer} />
 
@@ -1857,7 +1897,7 @@ function TxModal({ open, onClose, banks, tx, prefill, onSave }) {
   const [date, setDate] = useState(toISO(new Date()));
   const [affects, setAffects] = useState(true);
 
-  const IN_CATEGORIES = ['Salary', 'Interest', 'Cashback' ,'Upstox Withdrawal', 'UPI', 'Cash', 'Transfer', 'Investment', 'Other'];
+  const IN_CATEGORIES = ['Salary', 'Interest', 'Cashback' , 'Upstox Withdrawal', 'UPI', 'Cash', 'Transfer', 'Investment', 'Other'];
   const OUT_CATEGORIES = ['Food', 'Transportation', 'Rent', 'Shopping', 'Bills', 'Credit Card', 'Loan EMI', 'Travel', 'Medical', 'Investment', 'Transfer', 'Cash', 'Other'];
 
   useEffect(() => {
