@@ -1850,7 +1850,7 @@ function TxModal({ open, onClose, banks, tx, prefill, onSave }) {
   const [date, setDate] = useState(toISO(new Date()));
   const [affects, setAffects] = useState(true);
 
-  const IN_CATEGORIES = ['Salary', 'Interest', 'Upstox Withdrawal', 'UPI', 'Cash', 'Transfer', 'Investment', 'Other'];
+  const IN_CATEGORIES = ['Salary', 'Interest', 'Cashback' , 'Upstox Withdrawal', 'UPI', 'Cash', 'Transfer', 'Investment', 'Other'];
   const OUT_CATEGORIES = ['Food', 'Transportation', 'Rent', 'Shopping', 'Bills', 'Credit Card', 'Loan EMI', 'Travel', 'Medical', 'Investment', 'Transfer', 'Cash', 'Other'];
 
   useEffect(() => {
