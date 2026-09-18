@@ -371,6 +371,12 @@ function timeAgo(ts) { const s = Math.round((Date.now() - ts) / 1000); if (s < 5
 
 function naturalCompare(a, b) { return String(a || '').localeCompare(String(b || ''), undefined, { numeric: true, sensitivity: 'base' }); }
 
+function defaultBankId(banks) {
+  if (!banks || !banks.length) return '';
+  const kotak = banks.find(b => /kotak/i.test(b.name || ''));
+  return kotak ? kotak.id : banks[0].id;
+}
+
 function nextDueDate(dueDay, paidCycles) {
   const today = startOfToday();
   const y = today.getFullYear();
@@ -394,7 +400,7 @@ function nextInflowDueDate(f) {
 const DEFAULT_DATA = {
   banks: [{ id: 'b1', name: 'Main Bank', balance: 0 }],
   transactions: [],
-  demats: [{ id: 'd1', name: 'My Demat', balance: 0, history: [] }],
+  demats: [{ id: 'd1', name: 'My Demat', balance: 0, history: [], withdrawals: [] }],
   cards: [], loans: [], bills: [], inflows: [],
   netWorthHistory: [],
   meta: { version: 1 }
@@ -403,13 +409,13 @@ const DEFAULT_DATA = {
 function normalize(d) {
   const out = Object.assign({}, DEFAULT_DATA, d || {});
   ['banks','transactions','demats','cards','loans','bills','inflows','netWorthHistory'].forEach(k => { if (!Array.isArray(out[k])) out[k] = []; });
-  out.demats = out.demats.map(x => Object.assign({ history: [] }, x, { history: Array.isArray(x.history) ? x.history : [] }));
+  out.demats = out.demats.map(x => Object.assign({ history: [], withdrawals: [] }, x, { history: Array.isArray(x.history) ? x.history : [], withdrawals: Array.isArray(x.withdrawals) ? x.withdrawals : [] }));
   out.cards = out.cards.map(x => Object.assign({ paidCycles: [] }, x));
   out.loans = out.loans.map(x => Object.assign({ paidCycles: [], startDate: toISO(new Date()), originalMonths: x.monthsLeft || 0, closed: false, closedDate: null }, x));
   out.bills = out.bills.map(x => Object.assign({ paidCycles: [] }, x));
   out.inflows = out.inflows.map(x => Object.assign({ receivedCycles: [], recurring: x.recurring !== false }, x));
   if (!out.banks.length) out.banks = [{ id: 'b1', name: 'Main Bank', balance: 0 }];
-  if (!out.demats.length) out.demats = [{ id: 'd1', name: 'My Demat', balance: 0, history: [] }];
+  if (!out.demats.length) out.demats = [{ id: 'd1', name: 'My Demat', balance: 0, history: [], withdrawals: [] }];
   return out;
 }
 
@@ -1126,7 +1132,7 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
   const [inflowTarget, setInflowTarget] = useState(null);
   const [withdrawHint, setWithdrawHint] = useState(null);
   const [withdrawHintAmt, setWithdrawHintAmt] = useState('');
-  const [withdrawHintBank, setWithdrawHintBank] = useState(data.banks[0] ? data.banks[0].id : '');
+  const [withdrawHintBank, setWithdrawHintBank] = useState(defaultBankId(data.banks));
   const [expandedGroups, setExpandedGroups] = useState({});
 
   const loanItems = useMemo(() => data.loans.filter(l => !l.closed).map(l => { const due = nextDueDate(l.dueDay || 5, l.paidCycles); return { kind: 'loan', ref: l, id: l.id, name: l.name, amount: r2(l.emi), due, days: daysUntil(due) }; }).sort((a, b) => a.due - b.due), [data.loans]);
@@ -1270,7 +1276,7 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
 
   const openPay = (item) => {
     openTx({
-      bankId: data.banks[0] ? data.banks[0].id : '',
+      bankId: defaultBankId(data.banks),
       dir: 'out',
       amount: String(item.amount),
       note: item.name + (item.kind === 'card' ? ' Card Payment' : item.kind === 'loan' ? ' EMI' : ' Bill Payment'),
@@ -1335,7 +1341,7 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
       const b = d.banks.find(x => x.id === withdrawHintBank);
       if (!a || !b) return;
       a.balance = r2(a.balance - amt);
-      // Do NOT add to history to prevent chart dip
+      a.withdrawals = (a.withdrawals || []).concat([{ date: toISO(new Date()), amount: amt }]);
       b.balance = r2(b.balance + amt);
       d.transactions.push({ 
         id: uid(), 
@@ -1489,7 +1495,7 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
                     </div>
                   </div>
                   <div className="plan-action">Bank has <b style={{ color: 'var(--txt-2)' }}>{inr(p.bankBefore)}</b>{p.inflowsBefore > 0 ? <React.Fragment> · inflows before due <b style={{ color: 'var(--green)' }}>{inr(p.inflowsBefore)}</b></React.Fragment> : null}{' '}· after withdrawal + payment, your bank keeps <b style={{ color: 'var(--txt-2)' }}>{inr(p.bankBefore)}</b> as buffer</div>
-                  <div style={{ marginTop: '10px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}><button className="btn btn-sm btn-primary" onClick={() => { setWithdrawHint(p); setWithdrawHintAmt(String(p.withdraw)); setWithdrawHintBank(data.banks[0] ? data.banks[0].id : ''); }}>Move {inr(p.withdraw)} now</button></div>
+                  <div style={{ marginTop: '10px', display: 'flex', gap: '6px', flexWrap: 'wrap' }}><button className="btn btn-sm btn-primary" onClick={() => { setWithdrawHint(p); setWithdrawHintAmt(String(p.withdraw)); setWithdrawHintBank(defaultBankId(data.banks)); }}>Move {inr(p.withdraw)} now</button></div>
                 </div>
               </div>
             ))}
@@ -1563,9 +1569,9 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
 
 function InflowModal({ target, data, onClose, onConfirm }) {
   const [amt, setAmt] = useState('');
-  const [bank, setBank] = useState(data.banks[0] ? data.banks[0].id : '');
+  const [bank, setBank] = useState(defaultBankId(data.banks));
   const [adjust, setAdjust] = useState(false);
-  useEffect(() => { if (target) { setAmt(String(target.amount)); setAdjust(false); setBank(data.banks[0] ? data.banks[0].id : ''); } }, [target]);
+  useEffect(() => { if (target) { setAmt(String(target.amount)); setAdjust(false); setBank(defaultBankId(data.banks)); } }, [target]);
   if (!target) return null;
   return (
     <Modal open={!!target} onClose={onClose} title={'Did you receive ' + target.name + '?'}>
@@ -1851,13 +1857,13 @@ function TxModal({ open, onClose, banks, tx, prefill, onSave }) {
   const [date, setDate] = useState(toISO(new Date()));
   const [affects, setAffects] = useState(true);
 
-  const IN_CATEGORIES = ['Salary', 'Interest', 'Cashback' , 'Upstox Withdrawal', 'UPI', 'Cash', 'Transfer', 'Investment', 'Other'];
+  const IN_CATEGORIES = ['Salary', 'Interest', 'Cashback' ,'Upstox Withdrawal', 'UPI', 'Cash', 'Transfer', 'Investment', 'Other'];
   const OUT_CATEGORIES = ['Food', 'Transportation', 'Rent', 'Shopping', 'Bills', 'Credit Card', 'Loan EMI', 'Travel', 'Medical', 'Investment', 'Transfer', 'Cash', 'Other'];
 
   useEffect(() => {
     if (open) {
       if (tx) {
-        setBankId(tx.bankId || (banks[0] ? banks[0].id : ''));
+        setBankId(tx.bankId || defaultBankId(banks));
         setDir(tx.dir); 
         setAmount(String(tx.amount)); 
         setNote(tx.note || '');
@@ -1865,7 +1871,7 @@ function TxModal({ open, onClose, banks, tx, prefill, onSave }) {
         setDate(tx.date); 
         setAffects(tx.affectsBalance !== false);
       } else if (prefill) {
-        setBankId(prefill.bankId || (banks[0] ? banks[0].id : ''));
+        setBankId(prefill.bankId || defaultBankId(banks));
         setDir(prefill.dir);
         setAmount(prefill.amount);
         setNote(prefill.note);
@@ -1873,7 +1879,7 @@ function TxModal({ open, onClose, banks, tx, prefill, onSave }) {
         setDate(prefill.date);
         setAffects(prefill.affectsBalance !== false);
       } else {
-        setBankId(banks[0] ? banks[0].id : ''); 
+        setBankId(defaultBankId(banks)); 
         setDir('out'); 
         setAmount(''); 
         setNote('');
@@ -1964,7 +1970,7 @@ function TransferModal({ open, onClose, banks, onTransfer }) {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [amount, setAmount] = useState('');
-  useEffect(() => { if (open) { setFrom(banks[0] ? banks[0].id : ''); setTo(banks[1] ? banks[1].id : ''); setAmount(''); } }, [open]);
+  useEffect(() => { if (open) { setFrom(defaultBankId(banks)); setTo(banks[1] ? banks[1].id : ''); setAmount(''); } }, [open]);
   if (!open) return null;
   const receivers = banks.filter(b => b.id !== from);
   return (
@@ -2027,7 +2033,7 @@ function Cards({ data, mut, showToast, sync, openTx }) {
 
   const openPay = (card) => {
     openTx({
-      bankId: data.banks[0] ? data.banks[0].id : '',
+      bankId: defaultBankId(data.banks),
       dir: 'out',
       amount: String(card.outstanding),
       note: card.name + ' Card Payment',
@@ -2191,7 +2197,7 @@ function Loans({ data, mut, showToast, sync, openTx }) {
 
   const openPay = (loan) => {
     openTx({
-      bankId: data.banks[0] ? data.banks[0].id : '',
+      bankId: defaultBankId(data.banks),
       dir: 'out',
       amount: String(loan.emi),
       note: loan.name + ' EMI',
@@ -2462,7 +2468,7 @@ function Bills({ data, mut, showToast, sync, openTx }) {
 
   const openPay = (bill) => {
     openTx({
-      bankId: data.banks[0] ? data.banks[0].id : '',
+      bankId: defaultBankId(data.banks),
       dir: 'out',
       amount: String(bill.amount),
       note: bill.name + ' Bill Payment',
@@ -2641,6 +2647,12 @@ function DematCalendar({ account, onSetValue, onClearValue }) {
     return map;
   }, [account.history]);
 
+  const withdrawalsByDate = useMemo(() => {
+    const map = {};
+    (account.withdrawals || []).forEach(w => { map[w.date] = r2((map[w.date] || 0) + (Number(w.amount) || 0)); });
+    return map;
+  }, [account.withdrawals]);
+
   const firstDay = new Date(viewYear, viewMonth, 1);
   const startDow = firstDay.getDay();
   const dim = daysInMonth(viewYear, viewMonth);
@@ -2653,8 +2665,10 @@ function DematCalendar({ account, onSetValue, onClearValue }) {
     let prevVal = null;
     const sortedKeys = Object.keys(history).sort();
     for (let k = 0; k < sortedKeys.length; k++) { if (sortedKeys[k] < iso) prevVal = history[sortedKeys[k]]; else break; }
-    const pnl = (val !== undefined && prevVal !== null) ? r2(val - prevVal) : null;
-    cells.push({ empty: false, key: iso, day: d, iso, val: val !== undefined ? val : null, pnl, isToday: iso === toISO(today) });
+    const rawPnl = (val !== undefined && prevVal !== null) ? r2(val - prevVal) : null;
+    const wd = withdrawalsByDate[iso] || 0;
+    const pnl = rawPnl !== null ? r2(rawPnl + wd) : null;
+    cells.push({ empty: false, key: iso, day: d, iso, val: val !== undefined ? val : null, pnl, wd, isToday: iso === toISO(today) });
   }
   while (cells.length % 7 !== 0) cells.push({ empty: true, key: 'pe' + cells.length });
 
@@ -2665,7 +2679,10 @@ function DematCalendar({ account, onSetValue, onClearValue }) {
     const sorted = monthEntries.slice().sort((a, b) => a.date.localeCompare(b.date));
     monthStart = Number(sorted[0].value); monthEnd = Number(sorted[sorted.length - 1].value);
   }
-  const monthPnl = (monthStart !== null && monthEnd !== null) ? r2(monthEnd - monthStart) : null;
+  const monthWithdrawals = (account.withdrawals || [])
+    .filter(w => w.date.startsWith(viewYear + '-' + pad(viewMonth + 1)))
+    .reduce((s, w) => s + (Number(w.amount) || 0), 0);
+  const monthPnl = (monthStart !== null && monthEnd !== null) ? r2(monthEnd - monthStart + monthWithdrawals) : null;
 
   const prevMonth = () => { if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); } else setViewMonth(m => m - 1); };
   const nextMonth = () => { if (viewMonth === 11) { setViewMonth(0); setViewYear(y => y + 1); } else setViewMonth(m => m + 1); };
@@ -2684,7 +2701,7 @@ function DematCalendar({ account, onSetValue, onClearValue }) {
       <div className="cal-wrap">
         {DOW.map(d => <div className="cal-dow" key={d}>{d}</div>)}
         {cells.map(c => c.empty ? (<div key={c.key} className="cal-cell empty"></div>) : (
-          <div key={c.key} className={'cal-cell' + (c.isToday ? ' today' : '') + (c.val !== null ? ' has-value' : '')} onClick={() => openEdit(c)} title={c.val !== null ? inr(c.val) : 'Click to set value'}>
+          <div key={c.key} className={'cal-cell' + (c.isToday ? ' today' : '') + (c.val !== null ? ' has-value' : '')} onClick={() => openEdit(c)} title={c.val !== null ? inr(c.val) + (c.wd > 0 ? ' (withdrew ' + inr(c.wd) + ')' : '') : 'Click to set value'}>
             <div className="cal-day-num">{c.day}</div>
             {c.val !== null && (<React.Fragment><div className="cal-val">{inr(c.val)}</div>{c.pnl !== null && Math.abs(c.pnl) > 0.005 && (<div className={'cal-pnl ' + (c.pnl >= 0 ? 'up' : 'down')}>{c.pnl >= 0 ? '+' : ''}{money(c.pnl)}</div>)}</React.Fragment>)}
           </div>
@@ -2731,7 +2748,10 @@ function Demat({ data, mut, showToast, sync, openTx }) {
       let sum = 0;
       accounts.forEach(a => {
         const hs = (a.history || []).filter(h => h.date <= dt).sort((x, y) => x.date.localeCompare(y.date));
-        if (hs.length) sum += Number(hs[hs.length - 1].value) || 0; else sum += Number(a.balance) || 0;
+        let base = hs.length ? Number(hs[hs.length - 1].value) || 0 : Number(a.balance) || 0;
+        // Add back cumulative withdrawals up to this date to reflect "true" portfolio value
+        const cumWith = (a.withdrawals || []).filter(w => w.date <= dt).reduce((s, w) => s + (Number(w.amount) || 0), 0);
+        sum += base + cumWith;
       });
       return { date: dt, value: r2(sum) };
     });
@@ -2763,7 +2783,7 @@ function Demat({ data, mut, showToast, sync, openTx }) {
   const saveAccount = (name, balance, id) => {
     mut(d => {
       if (id) { const a = d.demats.find(x => x.id === id); if (a) { a.name = name; a.balance = r2(balance); } }
-      else d.demats.push({ id: uid(), name, balance: r2(balance), history: [{ date: toISO(new Date()), value: r2(balance) }] });
+      else d.demats.push({ id: uid(), name, balance: r2(balance), history: [{ date: toISO(new Date()), value: r2(balance) }], withdrawals: [] });
     });
     setFormOpen(false); setEdit(null);
     showToast(id ? 'Demat updated' : 'Demat added');
@@ -2786,18 +2806,19 @@ function Demat({ data, mut, showToast, sync, openTx }) {
   const openWithdraw = (item) => {
     openTx({
       dir: 'in',
-      category: 'Transfer',
-      amount: String(item.balance),
+      category: 'Upstox Withdrawal',
+      amount: '',
       note: 'Withdrawn from ' + item.name,
       date: toISO(new Date()),
       affectsBalance: true,
+      bankId: defaultBankId(data.banks),
       _onSave: (payload) => {
         const amt = r2(payload.amount);
         mut(d => {
           const a = d.demats.find(x => x.id === item.id);
           if (!a) return;
           a.balance = r2(a.balance - amt);
-          // Do NOT update history to prevent chart dip
+          a.withdrawals = (a.withdrawals || []).concat([{ date: payload.date || toISO(new Date()), amount: amt }]);
         });
       }
     });
