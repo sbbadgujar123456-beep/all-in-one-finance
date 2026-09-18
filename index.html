@@ -414,6 +414,7 @@ function normalize(d) {
   out.loans = out.loans.map(x => Object.assign({ paidCycles: [], startDate: toISO(new Date()), originalMonths: x.monthsLeft || 0, closed: false, closedDate: null }, x));
   out.bills = out.bills.map(x => Object.assign({ paidCycles: [] }, x));
   out.inflows = out.inflows.map(x => Object.assign({ receivedCycles: [], recurring: x.recurring !== false }, x));
+  // Ensure every withdrawal has a txId where possible (backwards compat) — leave as-is otherwise
   if (!out.banks.length) out.banks = [{ id: 'b1', name: 'Main Bank', balance: 0 }];
   if (!out.demats.length) out.demats = [{ id: 'd1', name: 'My Demat', balance: 0, history: [], withdrawals: [] }];
   return out;
@@ -492,6 +493,66 @@ function useStore() {
   }, []);
 
   return [data, setData, sync];
+}
+
+// Reverse the effect of a linked transaction on its entity (used when deleting or before editing)
+function reverseTxLink(d, tx) {
+  if (!tx || !tx.link) return;
+  const { type, id } = tx.link;
+  const amt = Number(tx.amount) || 0;
+  if (type === 'demat') {
+    const a = d.demats.find(x => x.id === id);
+    if (!a) return;
+    a.balance = r2(a.balance + amt);
+    a.withdrawals = (a.withdrawals || []).filter(w => w.txId !== tx.id);
+  } else if (type === 'card') {
+    const c = d.cards.find(x => x.id === id);
+    if (!c) return;
+    c.outstanding = r2(c.outstanding + amt);
+    if (tx.link.cycle && c.paidCycles) c.paidCycles = c.paidCycles.filter(cy => cy !== tx.link.cycle);
+  } else if (type === 'loan') {
+    const l = d.loans.find(x => x.id === id);
+    if (!l) return;
+    const months = Number(tx.link.monthsAdvanced || 1);
+    l.monthsLeft = (Number(l.monthsLeft) || 0) + months;
+    l.remaining = r2((Number(l.emi) || 0) * l.monthsLeft);
+    if (tx.link.cycle && l.paidCycles) l.paidCycles = l.paidCycles.filter(cy => cy !== tx.link.cycle);
+    if (l.closed) { l.closed = false; l.closedDate = null; }
+  } else if (type === 'bill') {
+    const b = d.bills.find(x => x.id === id);
+    if (!b) return;
+    if (tx.link.cycle && b.paidCycles) b.paidCycles = b.paidCycles.filter(cy => cy !== tx.link.cycle);
+  }
+}
+
+// Apply the effect of a linked transaction on its entity (after creating or editing)
+function applyTxLink(d, tx) {
+  if (!tx || !tx.link) return;
+  const { type, id } = tx.link;
+  const amt = Number(tx.amount) || 0;
+  if (type === 'demat') {
+    const a = d.demats.find(x => x.id === id);
+    if (!a) return;
+    a.balance = r2(a.balance - amt);
+    a.withdrawals = (a.withdrawals || []).concat([{ txId: tx.id, date: tx.date, amount: amt }]);
+  } else if (type === 'card') {
+    const c = d.cards.find(x => x.id === id);
+    if (!c) return;
+    c.outstanding = r2(Math.max(0, c.outstanding - amt));
+    if (tx.link.cycle) c.paidCycles = (c.paidCycles || []).concat([tx.link.cycle]);
+  } else if (type === 'loan') {
+    const l = d.loans.find(x => x.id === id);
+    if (!l) return;
+    const months = Number(tx.link.monthsAdvanced || 1);
+    l.monthsLeft = Math.max(0, (Number(l.monthsLeft) || 0) - months);
+    l.remaining = r2((Number(l.emi) || 0) * l.monthsLeft);
+    if (tx.link.cycle) l.paidCycles = (l.paidCycles || []).concat([tx.link.cycle]);
+    if (l.monthsLeft <= 0) { l.closed = true; l.closedDate = tx.date || toISO(new Date()); }
+  } else if (type === 'bill') {
+    const b = d.bills.find(x => x.id === id);
+    if (!b) return;
+    if (tx.link.cycle) b.paidCycles = (b.paidCycles || []).concat([tx.link.cycle]);
+  }
 }
 
 const Ico = {
@@ -1017,14 +1078,34 @@ function App() {
     mut(d => {
       if (id) {
         const old = d.transactions.find(t => t.id === id);
-        if (old && old.affectsBalance && old.bankId) { const ob = d.banks.find(b => b.id === old.bankId); if (ob) ob.balance = r2(ob.balance - (old.dir === 'in' ? old.amount : -old.amount)); }
-        if (old) Object.assign(old, payload);
+        if (old && old.affectsBalance && old.bankId) { 
+          const ob = d.banks.find(b => b.id === old.bankId); 
+          if (ob) ob.balance = r2(ob.balance - (old.dir === 'in' ? old.amount : -old.amount)); 
+        }
+        if (old) {
+          // Reverse the previous link effect before re-applying
+          reverseTxLink(d, old);
+          // Preserve link if new payload doesn't have one
+          const newLink = payload.link !== undefined ? payload.link : old.link;
+          Object.assign(old, payload);
+          if (newLink) old.link = newLink;
+        }
         const t = d.transactions.find(x => x.id === id);
-        if (t && t.affectsBalance && t.bankId) { const nb = d.banks.find(b => b.id === t.bankId); if (nb) nb.balance = r2(nb.balance + (t.dir === 'in' ? t.amount : -t.amount)); }
+        if (t) {
+          if (t.affectsBalance && t.bankId) { 
+            const nb = d.banks.find(b => b.id === t.bankId); 
+            if (nb) nb.balance = r2(nb.balance + (t.dir === 'in' ? t.amount : -t.amount)); 
+          }
+          applyTxLink(d, t);
+        }
       } else {
         const t = Object.assign({ id: uid(), ts: Date.now() }, payload);
         d.transactions.push(t);
-        if (t.affectsBalance && t.bankId) { const nb = d.banks.find(b => b.id === t.bankId); if (nb) nb.balance = r2(nb.balance + (t.dir === 'in' ? t.amount : -t.amount)); }
+        if (t.affectsBalance && t.bankId) { 
+          const nb = d.banks.find(b => b.id === t.bankId); 
+          if (nb) nb.balance = r2(nb.balance + (t.dir === 'in' ? t.amount : -t.amount)); 
+        }
+        applyTxLink(d, t);
       }
     });
     setTxOpen(false);
@@ -1275,6 +1356,7 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
   };
 
   const openPay = (item) => {
+    const cycle = monthKey(nextDueDate(item.ref.dueDay || 1, item.ref.paidCycles));
     openTx({
       bankId: defaultBankId(data.banks),
       dir: 'out',
@@ -1283,23 +1365,7 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
       category: item.kind === 'card' ? 'Credit Card' : item.kind === 'loan' ? 'Loan EMI' : 'Bills',
       date: toISO(new Date()),
       affectsBalance: true,
-      _onSave: (payload) => {
-        const amt = r2(payload.amount);
-        const cycle = monthKey(nextDueDate(item.ref.dueDay || 1, item.ref.paidCycles));
-        mut(d => {
-          if (item.kind === 'card') { const c = d.cards.find(x => x.id === item.id); if (c) { c.outstanding = r2(Math.max(0, c.outstanding - amt)); c.paidCycles = (c.paidCycles || []).concat([cycle]); } }
-          else if (item.kind === 'loan') { 
-            const l = d.loans.find(x => x.id === item.id); 
-            if (l) { 
-              l.monthsLeft = Math.max(0, (Number(l.monthsLeft) || 1) - 1); 
-              l.remaining = r2((Number(l.emi) || 0) * (Number(l.monthsLeft) || 0)); 
-              l.paidCycles = (l.paidCycles || []).concat([cycle]); 
-              if (l.monthsLeft <= 0) { l.closed = true; l.closedDate = toISO(new Date()); }
-            } 
-          }
-          else if (item.kind === 'bill') { const b = d.bills.find(x => x.id === item.id); if (b) b.paidCycles = (b.paidCycles || []).concat([cycle]); }
-        });
-      }
+      link: { type: item.kind, id: item.id, cycle, monthsAdvanced: item.kind === 'loan' ? 1 : undefined }
     });
   };
 
@@ -1336,23 +1402,25 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
     let pickDemat = data.demats.find(x => Number(x.balance) >= amt);
     if (!pickDemat) pickDemat = data.demats[0];
     if (!pickDemat) { showToast('Add a demat account first'); return; }
+    const txId = uid();
     mut(d => {
       const a = d.demats.find(x => x.id === pickDemat.id);
       const b = d.banks.find(x => x.id === withdrawHintBank);
       if (!a || !b) return;
       a.balance = r2(a.balance - amt);
-      a.withdrawals = (a.withdrawals || []).concat([{ date: toISO(new Date()), amount: amt }]);
+      a.withdrawals = (a.withdrawals || []).concat([{ txId, date: toISO(new Date()), amount: amt }]);
       b.balance = r2(b.balance + amt);
       d.transactions.push({ 
-        id: uid(), 
+        id: txId, 
         bankId: withdrawHintBank, 
         amount: amt, 
         dir: 'in', 
         note: 'Withdrawn from ' + a.name + ' for ' + a0.name, 
-        category: 'Transfer', 
+        category: 'Upstox Withdrawal', 
         date: toISO(new Date()), 
         affectsBalance: true, 
-        ts: Date.now() 
+        ts: Date.now(),
+        link: { type: 'demat', id: a.id }
       });
     });
     setWithdrawHint(null);
@@ -1702,11 +1770,19 @@ function Banks({ data, mut, showToast, sync, openTx }) {
           const ob = d.banks.find(b => b.id === old.bankId); 
           if (ob) ob.balance = r2(ob.balance - (old.dir === 'in' ? old.amount : -old.amount)); 
         }
-        if (old) Object.assign(old, payload);
+        if (old) {
+          reverseTxLink(d, old);
+          const newLink = payload.link !== undefined ? payload.link : old.link;
+          Object.assign(old, payload);
+          if (newLink) old.link = newLink;
+        }
         const t = d.transactions.find(x => x.id === id);
-        if (t && t.affectsBalance && t.bankId) { 
-          const nb = d.banks.find(b => b.id === t.bankId); 
-          if (nb) nb.balance = r2(nb.balance + (t.dir === 'in' ? t.amount : -t.amount)); 
+        if (t) {
+          if (t.affectsBalance && t.bankId) { 
+            const nb = d.banks.find(b => b.id === t.bankId); 
+            if (nb) nb.balance = r2(nb.balance + (t.dir === 'in' ? t.amount : -t.amount)); 
+          }
+          applyTxLink(d, t);
         }
       } else {
         const t = Object.assign({ id: uid(), ts: Date.now() }, payload);
@@ -1715,6 +1791,7 @@ function Banks({ data, mut, showToast, sync, openTx }) {
           const nb = d.banks.find(b => b.id === t.bankId); 
           if (nb) nb.balance = r2(nb.balance + (t.dir === 'in' ? t.amount : -t.amount)); 
         }
+        applyTxLink(d, t);
       }
     });
     setTxOpen(false);
@@ -1725,9 +1802,12 @@ function Banks({ data, mut, showToast, sync, openTx }) {
   const deleteTx = (id) => {
     mut(d => {
       const t = d.transactions.find(x => x.id === id);
-      if (t && t.affectsBalance && t.bankId) { 
-        const b = d.banks.find(x => x.id === t.bankId); 
-        if (b) b.balance = r2(b.balance - (t.dir === 'in' ? t.amount : -t.amount)); 
+      if (t) {
+        if (t.affectsBalance && t.bankId) { 
+          const b = d.banks.find(x => x.id === t.bankId); 
+          if (b) b.balance = r2(b.balance - (t.dir === 'in' ? t.amount : -t.amount)); 
+        }
+        reverseTxLink(d, t);
       }
       d.transactions = d.transactions.filter(x => x.id !== id);
     });
@@ -1861,7 +1941,7 @@ function Banks({ data, mut, showToast, sync, openTx }) {
                         return (
                           <div className="tx" key={t.id}>
                             <div className="item-ico" style={{ color: t.dir === 'in' ? 'var(--green)' : 'var(--red)' }}>{I}</div>
-                            <div className="item-body"><div className="item-name">{t.note || t.category || 'Transaction'}</div><div className="item-meta"><span>{bank ? bank.name : 'No bank'}</span>{t.category ? <span className="pill">{t.category}</span> : null}{!t.affectsBalance ? <span className="pill amber">balance not changed</span> : null}</div></div>
+                            <div className="item-body"><div className="item-name">{t.note || t.category || 'Transaction'}</div><div className="item-meta"><span>{bank ? bank.name : 'No bank'}</span>{t.category ? <span className="pill">{t.category}</span> : null}{t.link ? <span className="pill blue">linked</span> : null}{!t.affectsBalance ? <span className="pill amber">balance not changed</span> : null}</div></div>
                             <div className="item-amt" style={{ color: t.dir === 'in' ? 'var(--green)' : 'var(--red)' }}>{t.dir === 'in' ? '+' : '−'}{inr(t.amount)}</div>
                             <div className="item-actions"><button className="btn btn-sm" onClick={() => { setEditTx(t); setTxOpen(true); }}>Edit</button><button className="btn btn-sm btn-danger" onClick={() => deleteTx(t.id)}>Delete</button></div>
                           </div>
@@ -1897,7 +1977,7 @@ function TxModal({ open, onClose, banks, tx, prefill, onSave }) {
   const [date, setDate] = useState(toISO(new Date()));
   const [affects, setAffects] = useState(true);
 
-  const IN_CATEGORIES = ['Salary', 'Interest', 'Cashback' , 'Upstox Withdrawal', 'UPI', 'Cash', 'Transfer', 'Investment', 'Other'];
+  const IN_CATEGORIES = ['Salary', 'Interest', 'Cashback' ,'Upstox Withdrawal', 'UPI', 'Cash', 'Transfer', 'Investment', 'Other'];
   const OUT_CATEGORIES = ['Food', 'Transportation', 'Rent', 'Shopping', 'Bills', 'Credit Card', 'Loan EMI', 'Travel', 'Medical', 'Investment', 'Transfer', 'Cash', 'Other'];
 
   useEffect(() => {
@@ -1935,7 +2015,11 @@ function TxModal({ open, onClose, banks, tx, prefill, onSave }) {
   const submit = () => { 
     const amt = r2(amount); 
     if (!amt || amt <= 0) return; 
-    onSave({ bankId, dir, amount: amt, note, category, date, affectsBalance: affects }, tx ? tx.id : null); 
+    const payload = { bankId, dir, amount: amt, note, category, date, affectsBalance: affects };
+    // Preserve link if we're editing a linked transaction
+    if (tx && tx.link) payload.link = tx.link;
+    if (prefill && prefill.link) payload.link = prefill.link;
+    onSave(payload, tx ? tx.id : null); 
   };
 
   let activeCategories = dir === 'in' ? IN_CATEGORIES : OUT_CATEGORIES;
@@ -2072,6 +2156,7 @@ function Cards({ data, mut, showToast, sync, openTx }) {
   };
 
   const openPay = (card) => {
+    const cycle = monthKey(nextDueDate(card.dueDay || 10, card.paidCycles));
     openTx({
       bankId: defaultBankId(data.banks),
       dir: 'out',
@@ -2080,14 +2165,7 @@ function Cards({ data, mut, showToast, sync, openTx }) {
       category: 'Credit Card',
       date: toISO(new Date()),
       affectsBalance: true,
-      _onSave: (payload) => {
-        const amt = r2(payload.amount);
-        const cycle = monthKey(nextDueDate(card.dueDay || 10, card.paidCycles));
-        mut(d => {
-          const c = d.cards.find(x => x.id === card.id);
-          if (c) { c.outstanding = r2(Math.max(0, c.outstanding - amt)); c.paidCycles = (c.paidCycles || []).concat([cycle]); }
-        });
-      }
+      link: { type: 'card', id: card.id, cycle }
     });
   };
 
@@ -2236,6 +2314,7 @@ function Loans({ data, mut, showToast, sync, openTx }) {
   };
 
   const openPay = (loan) => {
+    const cycle = monthKey(nextDueDate(loan.dueDay || 5, loan.paidCycles));
     openTx({
       bankId: defaultBankId(data.banks),
       dir: 'out',
@@ -2244,18 +2323,7 @@ function Loans({ data, mut, showToast, sync, openTx }) {
       category: 'Loan EMI',
       date: toISO(new Date()),
       affectsBalance: true,
-      _onSave: (payload) => {
-        const amt = r2(payload.amount);
-        const cycle = monthKey(nextDueDate(loan.dueDay || 5, loan.paidCycles));
-        mut(d => {
-          const l = d.loans.find(x => x.id === loan.id);
-          if (!l) return;
-          l.monthsLeft = Math.max(0, (Number(l.monthsLeft) || 1) - 1);
-          l.remaining = r2((Number(l.emi) || 0) * (Number(l.monthsLeft) || 0));
-          l.paidCycles = (l.paidCycles || []).concat([cycle]);
-          if (l.monthsLeft <= 0) { l.closed = true; l.closedDate = toISO(new Date()); }
-        });
-      }
+      link: { type: 'loan', id: loan.id, cycle, monthsAdvanced: 1 }
     });
   };
 
@@ -2507,6 +2575,7 @@ function Bills({ data, mut, showToast, sync, openTx }) {
   };
 
   const openPay = (bill) => {
+    const cycle = monthKey(nextDueDate(bill.dueDay || 1, bill.paidCycles));
     openTx({
       bankId: defaultBankId(data.banks),
       dir: 'out',
@@ -2515,13 +2584,7 @@ function Bills({ data, mut, showToast, sync, openTx }) {
       category: 'Bills',
       date: toISO(new Date()),
       affectsBalance: true,
-      _onSave: (payload) => {
-        const cycle = monthKey(nextDueDate(bill.dueDay || 1, bill.paidCycles));
-        mut(d => {
-          const b = d.bills.find(x => x.id === bill.id);
-          if (b) b.paidCycles = (b.paidCycles || []).concat([cycle]);
-        });
-      }
+      link: { type: 'bill', id: bill.id, cycle }
     });
   };
 
@@ -2852,17 +2915,55 @@ function Demat({ data, mut, showToast, sync, openTx }) {
       date: toISO(new Date()),
       affectsBalance: true,
       bankId: defaultBankId(data.banks),
-      _onSave: (payload) => {
-        const amt = r2(payload.amount);
-        mut(d => {
-          const a = d.demats.find(x => x.id === item.id);
-          if (!a) return;
-          a.balance = r2(a.balance - amt);
-          a.withdrawals = (a.withdrawals || []).concat([{ date: payload.date || toISO(new Date()), amount: amt }]);
-        });
-      }
+      link: { type: 'demat', id: item.id }
     });
   };
+
+  // Edit a withdrawal from the log — opens the linked bank transaction
+  const editWithdrawal = (w) => {
+    const tx = data.transactions.find(t => t.id === w.txId);
+    if (tx) {
+      openTx({
+        ...tx,
+        _existingTxId: tx.id
+      });
+    }
+  };
+
+  // Delete a withdrawal from the log — also removes the linked bank transaction
+  const deleteWithdrawal = (w, dematId) => {
+    mut(d => {
+      const a = d.demats.find(x => x.id === dematId);
+      if (!a) return;
+      const entry = (a.withdrawals || []).find(x => x.txId === w.txId);
+      if (entry) {
+        a.balance = r2(a.balance + (Number(entry.amount) || 0));
+        a.withdrawals = (a.withdrawals || []).filter(x => x.txId !== w.txId);
+      }
+      // Remove matching bank transaction
+      const tx = d.transactions.find(t => t.id === w.txId);
+      if (tx) {
+        if (tx.affectsBalance && tx.bankId) {
+          const b = d.banks.find(x => x.id === tx.bankId);
+          if (b) b.balance = r2(b.balance - (tx.dir === 'in' ? tx.amount : -tx.amount));
+        }
+        d.transactions = d.transactions.filter(t => t.id !== w.txId);
+      }
+    });
+    showToast('Withdrawal deleted');
+  };
+
+  // Flatten all withdrawals across all demats for the log
+  const allWithdrawals = useMemo(() => {
+    const list = [];
+    data.demats.forEach(a => {
+      (a.withdrawals || []).forEach(w => {
+        list.push({ ...w, dematId: a.id, dematName: a.name });
+      });
+    });
+    list.sort((a, b) => String(b.date).localeCompare(String(a.date)));
+    return list;
+  }, [data.demats]);
 
   return (
     <div>
@@ -2907,6 +3008,37 @@ function Demat({ data, mut, showToast, sync, openTx }) {
             </div>
           </div>
         ))}
+      </div>
+
+      <div className="section-head">
+        <div className="section-title"><span className="dot"></span>Withdrawal Log</div>
+        <span className="pill blue">{allWithdrawals.length} withdrawal{allWithdrawals.length !== 1 ? 's' : ''}</span>
+      </div>
+      <div className="glass" style={{ padding: '14px' }}>
+        {allWithdrawals.length === 0 ? (
+          <EmptyState icon={Ico.up} title="No withdrawals yet" sub="Use the Withdraw button on any demat account. Each withdrawal automatically creates a bank transaction and is synced here." />
+        ) : (
+          <div className="list">
+            {allWithdrawals.map((w, i) => (
+              <div className="item" key={w.txId || i}>
+                <div className="item-ico" style={{ color: 'var(--green)' }}>{Ico.down}</div>
+                <div className="item-body">
+                  <div className="item-name">Withdrawn from {w.dematName}</div>
+                  <div className="item-meta">
+                    <span className="pill blue"><span className="pdot"></span>{fmtDate(w.date)}</span>
+                    <span className="pill green">+{inr(w.amount)}</span>
+                    {w.txId ? <span className="pill">linked to bank</span> : <span className="pill amber">unlinked</span>}
+                  </div>
+                </div>
+                <div className="item-amt" style={{ color: 'var(--green)' }}>+{inr(w.amount)}</div>
+                <div className="item-actions">
+                  {w.txId ? (<button className="btn btn-sm" onClick={() => editWithdrawal(w)}>Edit</button>) : null}
+                  <button className="btn btn-sm btn-danger" onClick={() => deleteWithdrawal(w, w.dematId)}>Delete</button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <Modal open={!!updateTarget} onClose={() => setUpdateTarget(null)} title="Update Today's Balance">
