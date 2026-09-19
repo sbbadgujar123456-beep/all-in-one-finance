@@ -284,7 +284,7 @@ html[data-theme="light"] .toast-action{color:#4f6dff}
 .spotlight.amber::before{background:radial-gradient(circle,rgba(251,191,36,.12),transparent 70%)}
 .nw-chart-wrap{width:100%;height:250px;position:relative;overflow:hidden}
 .nw-chart-wrap svg{width:100%;height:100%;display:block;overflow:visible}
-@media(max-width:640px){.nw-chart-wrap{height:220px}.chat-bubble{max-width:88%}.chat-input-row{align-items:stretch}.chat-input-row .btn{padding-left:11px;padding-right:11px}}
+@media(max-width:640px){.nw-chart-wrap{height:220px}}
 .nw-chart-wrap svg{width:100%;height:100%;display:block;overflow:visible}
 .cal-wrap{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:12px}
 .cal-dow{font-size:10px;font-weight:700;color:var(--muted);text-align:center;padding:6px 0;text-transform:uppercase;letter-spacing:.8px}
@@ -317,26 +317,6 @@ html[data-theme="light"] .toast-action{color:#4f6dff}
 .plan-item:last-child{margin-bottom:0}
 .plan-amt{font-size:20px;font-weight:800;color:var(--amber);letter-spacing:-.6px;font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 .plan-action{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.5}
-/* AI Chat */
-.chat-wrap{display:flex;flex-direction:column;gap:12px;max-height:560px;overflow-y:auto;padding:16px;border-radius:12px;background:var(--glass-2);border:1px solid var(--brd)}
-.chat-msg{display:flex;gap:10px;align-items:flex-start}
-.chat-msg.user{flex-direction:row-reverse}
-.chat-avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;font-size:11px;font-weight:800;color:#fff;letter-spacing:.2px}
-.chat-avatar.user{background:linear-gradient(135deg,#34d399,#059669)}
-.chat-avatar.bot{background:linear-gradient(135deg,var(--accent),var(--accent-2))}
-.chat-bubble{padding:11px 14px;border-radius:14px;font-size:13px;line-height:1.65;max-width:78%;word-wrap:break-word;white-space:pre-wrap}
-.chat-bubble.user{background:linear-gradient(135deg,var(--green),#059669);color:#fff;border-bottom-right-radius:4px}
-.chat-bubble.bot{background:var(--glass-3);border:1px solid var(--brd);color:var(--txt-2);border-bottom-left-radius:4px}
-.chat-bubble.bot b{color:var(--txt);font-weight:700}
-.chat-input-row{display:flex;gap:8px;margin-top:12px}
-.chat-input-row .input{flex:1}
-.chat-suggestions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
-.chat-suggestions .pill{cursor:pointer;transition:all .15s ease}
-.chat-suggestions .pill:hover{background:var(--accent-soft);color:var(--accent);border-color:rgba(124,146,255,.4)}
-.chat-typing{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:3px;animation:typingDot 1.2s infinite}
-.chat-typing:nth-child(2){animation-delay:.2s}
-.chat-typing:nth-child(3){animation-delay:.4s}
-@keyframes typingDot{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
 /* Backup & Restore */
 .backup-drop{border:1px dashed var(--brd-2);border-radius:14px;padding:24px;text-align:center;background:var(--glass-2);transition:all .18s ease}
 .backup-drop:hover{border-color:var(--accent);background:var(--accent-soft)}
@@ -344,6 +324,18 @@ html[data-theme="light"] .toast-action{color:#4f6dff}
 .backup-meta{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
 .backup-warning{padding:12px 14px;border-radius:10px;background:var(--amber-soft);border:1px solid rgba(251,191,36,.2);color:var(--amber);font-size:12px;line-height:1.55}
 .backup-success{padding:12px 14px;border-radius:10px;background:var(--green-soft);border:1px solid rgba(52,211,153,.2);color:var(--green);font-size:12px;line-height:1.55}
+
+/* ===== ShubhVault 2026 visual system ===== */
+:root{--bg:#050506;--bg-2:#0b0b0d;--txt:#f5f5f7;--txt-2:#c7c7cc;--muted:#8a8a92;--muted-2:#55565d;--glass:rgba(255,255,255,.045);--glass-2:rgba(255,255,255,.065);--glass-3:rgba(255,255,255,.095);--brd:rgba(255,255,255,.085);--brd-2:rgba(255,255,255,.14);--accent:#8aa0ff;--accent-2:#b6a0ff;--accent-soft:rgba(138,160,255,.13);--green:#4ade80;--green-soft:rgba(74,222,128,.12);--red:#ff6b6b;--red-soft:rgba(255,107,107,.12);--amber:#f5c451;--amber-soft:rgba(245,196,81,.12);--shadow-sm:0 1px 2px rgba(0,0,0,.25);--shadow-md:0 18px 55px -30px rgba(0,0,0,.9);--shadow-lg:0 40px 100px -40px rgba(0,0,0,.95)}
+html[data-theme="light"]{--bg:#f5f5f7;--bg-2:#fff;--txt:#111114;--txt-2:#44444b;--muted:#77777f;--muted-2:#a4a4aa;--glass:rgba(255,255,255,.72);--glass-2:rgba(255,255,255,.86);--glass-3:#fff;--brd:rgba(17,17,20,.075);--brd-2:rgba(17,17,20,.13);--accent:#586fff;--accent-2:#8d6df4;--accent-soft:rgba(88,111,255,.1);--green:#169b52;--green-soft:rgba(22,155,82,.1);--red:#d93636;--red-soft:rgba(217,54,54,.08);--amber:#b57a00;--amber-soft:rgba(181,122,0,.1)}
+body{letter-spacing:-.01em}
+.glass{border-radius:22px;box-shadow:var(--shadow-md);backdrop-filter:blur(28px) saturate(160%);-webkit-backdrop-filter:blur(28px) saturate(160%)}
+.glass-soft{border-radius:17px}
+.sidebar{width:250px;padding:22px 16px;background:color-mix(in srgb,var(--bg-2) 72%,transparent);border-right:1px solid var(--brd)}
+.brand{padding:4px 12px 24px}.brand-logo,.login-logo{border-radius:14px}.brand-name{font-size:16px}.main{max-width:1380px;padding:34px 34px 130px}.page-title{font-size:27px;letter-spacing:-1px}.page-sub{font-size:13px}.topbar{margin-bottom:30px}.btn{border-radius:12px;padding:10px 15px}.btn-primary{background:linear-gradient(180deg,#8da2ff,#637bff);box-shadow:0 12px 28px -14px rgba(110,130,255,.8)}.input,.select{border-radius:13px;padding:11px 13px;background:var(--glass-2)}.kpi{border-radius:20px;padding:18px 20px}.kpi-val{font-size:24px}.item{border-radius:17px;padding:15px 17px}.section-head{margin:34px 0 14px}.section-title{font-size:14px}.flip{height:230px}.flip-face{border-radius:22px;padding:23px}.chart-headline{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;margin-bottom:6px}.chart-big-value{font-size:30px;font-weight:800;letter-spacing:-1px}.chart-subtle{font-size:11.5px;color:var(--muted);margin-bottom:10px}.chart-empty-note{padding:16px;border:1px solid var(--brd);border-radius:15px;background:var(--glass-2);font-size:12.5px;color:var(--muted);line-height:1.55}.nw-chart-wrap{height:285px;position:relative;overflow:visible}.liquid-chart{touch-action:none}.chart-tooltip{position:absolute;top:8px;transform:translateX(-50%);padding:9px 12px;border:1px solid var(--brd-2);background:color-mix(in srgb,var(--bg-2) 90%,transparent);border-radius:13px;box-shadow:var(--shadow-md);display:flex;flex-direction:column;gap:2px;font-size:11px;pointer-events:none;z-index:4}.chart-axis{display:flex;justify-content:space-between;font-size:10.5px;color:var(--muted);margin-top:5px}.payment-mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.payment-mode{display:flex;align-items:center;justify-content:center;gap:8px;padding:12px;border-radius:14px;border:1px solid var(--brd);background:var(--glass-2);color:var(--muted);cursor:pointer;font-weight:650;transition:.18s}.payment-mode svg{width:17px;height:17px}.payment-mode.active{color:var(--txt);background:var(--accent-soft);border-color:rgba(138,160,255,.35);box-shadow:inset 0 0 0 1px rgba(138,160,255,.12)}.selection-note{margin-top:8px;padding:10px 12px;border-radius:12px;background:var(--accent-soft);border:1px solid rgba(138,160,255,.18);font-size:11.5px;color:var(--muted);display:flex;gap:5px;flex-wrap:wrap}.selection-note b{color:var(--txt)}.card-note{margin-top:10px}.empty-inline{padding:13px;border:1px dashed var(--brd-2);border-radius:13px;color:var(--muted);font-size:12px}.card-history-stack{display:grid;gap:12px}.card-history-card{padding:18px}.card-history-head{display:flex;align-items:flex-start;justify-content:space-between;gap:15px}.card-history-balance{font-size:19px;font-weight:750}.card-history-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:15px 0}.card-history-stats div{padding:10px 12px;border-radius:13px;background:var(--glass-2);border:1px solid var(--brd);display:flex;flex-direction:column;gap:3px}.card-history-stats span{font-size:10px;text-transform:uppercase;letter-spacing:.5px;color:var(--muted)}.card-history-stats b{font-size:13px}.card-history-list{display:flex;flex-direction:column;gap:6px}.card-history-row{display:flex;align-items:center;gap:10px;padding:10px 11px;border-radius:13px;background:var(--glass-2);border:1px solid var(--brd)}.strategy-hero{padding:28px;overflow:hidden;background:radial-gradient(circle at 100% 0,rgba(138,160,255,.16),transparent 38%),var(--glass)}.strategy-kicker{font-size:10px;letter-spacing:1.4px;color:var(--accent);font-weight:800;display:flex;gap:7px;align-items:center}.strategy-pulse{width:7px;height:7px;border-radius:50%;background:var(--accent);box-shadow:0 0 12px var(--accent)}.strategy-hero h2{font-size:29px;line-height:1.14;letter-spacing:-1.2px;margin:14px 0 10px;max-width:780px}.strategy-hero h2 em{font-style:normal;color:var(--accent)}.strategy-hero p{font-size:13px;color:var(--muted);max-width:760px;line-height:1.65}.strategy-primary-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-top:22px}.strategy-primary-grid>div{padding:13px;border-radius:15px;background:rgba(0,0,0,.16);border:1px solid var(--brd)}.strategy-primary-grid span,.planner-card span,.priority-cost span{display:block;font-size:10px;text-transform:uppercase;letter-spacing:.55px;color:var(--muted)}.strategy-primary-grid b{display:block;margin-top:5px;font-size:16px}.priority-item{transition:.2s}.priority-top{border-color:rgba(138,160,255,.28);background:linear-gradient(100deg,var(--accent-soft),var(--glass))}.priority-number{width:34px;height:34px;border-radius:11px;display:grid;place-items:center;background:var(--glass-3);font-weight:800}.priority-top .priority-number{background:var(--accent);color:#fff}.priority-cost{min-width:145px;text-align:right}.priority-cost b{display:block;margin-top:4px}.strategy-input-row{display:grid;grid-template-columns:minmax(240px,320px) 1fr;gap:14px;align-items:end}.strategy-target{padding:13px 15px;border-radius:15px;background:var(--accent-soft);border:1px solid rgba(138,160,255,.2)}.strategy-target span,.strategy-target small{display:block;color:var(--muted);font-size:10.5px}.strategy-target b{display:block;margin:3px 0;font-size:14px}.planner-card{padding:15px}.planner-card b{display:block;font-size:19px;margin-top:5px}.planner-card small{display:block;color:var(--muted);font-size:10.5px;margin-top:3px}.strategy-note{margin-top:15px;padding:12px 14px;border-radius:13px;background:var(--amber-soft);border:1px solid rgba(245,196,81,.17);color:var(--muted);font-size:11.5px;line-height:1.55}.strategy-callout{display:flex;gap:14px;padding:18px;align-items:flex-start}.strategy-callout-icon{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;background:var(--green-soft);color:var(--green);flex-shrink:0}.strategy-callout b{font-size:14px}.strategy-callout p{font-size:12.5px;color:var(--muted);line-height:1.6;margin-top:5px}.strategy-callout small{font-size:11px;color:var(--muted)}.rule-card{padding:18px;display:flex;gap:14px;align-items:flex-start}.rule-num{width:30px;height:30px;border-radius:10px;background:var(--accent-soft);color:var(--accent);display:grid;place-items:center;font-size:10px;font-weight:800;flex-shrink:0}.rule-card b{font-size:13.5px}.rule-card p{font-size:12px;color:var(--muted);line-height:1.55;margin-top:4px}.decision-summary{padding:20px;display:grid;grid-template-columns:1fr 260px;gap:18px;align-items:center;background:linear-gradient(100deg,var(--accent-soft),var(--glass))}.decision-main strong{display:block;font-size:23px;margin:5px 0}.decision-main p{font-size:12.5px;color:var(--muted);line-height:1.6}.decision-side{padding:15px;border-radius:15px;background:var(--glass-2);border:1px solid var(--brd)}.decision-side span{display:block;font-size:10px;color:var(--muted);text-transform:uppercase}.decision-side b{display:block;font-size:20px;margin-top:5px}.profile-hero{padding:22px;display:flex;align-items:center;gap:14px}.profile-avatar{width:50px;height:50px;border-radius:16px;display:grid;place-items:center;font-weight:850;color:#fff;background:linear-gradient(135deg,var(--accent),var(--accent-2));box-shadow:0 14px 35px -16px var(--accent)}.profile-name{font-size:18px;font-weight:750}.profile-sub{font-size:12px;color:var(--muted);margin-top:3px}.theme-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}.theme-option{position:relative;text-align:left;display:grid;grid-template-columns:95px 1fr auto;gap:14px;align-items:center;padding:14px;border-radius:20px;background:var(--glass);border:1px solid var(--brd);cursor:pointer;color:var(--txt);transition:.2s}.theme-option:hover{transform:translateY(-2px);border-color:var(--brd-2)}.theme-option.selected{border-color:rgba(138,160,255,.45);box-shadow:0 0 0 1px var(--accent-soft)}.theme-preview{height:62px;border-radius:13px;padding:8px;position:relative;overflow:hidden}.dark-preview{background:#0a0a0d;border:1px solid #26262c}.light-preview{background:#f4f4f6;border:1px solid #ddd}.theme-preview span,.theme-preview i,.theme-preview b{position:absolute;border-radius:7px}.theme-preview span{left:8px;right:8px;top:8px;height:9px;background:rgba(255,255,255,.16)}.light-preview span{background:rgba(0,0,0,.1)}.theme-preview i{left:8px;top:23px;width:34px;height:28px;background:rgba(255,255,255,.08)}.light-preview i{background:#fff}.theme-preview b{right:8px;top:23px;width:38px;height:28px;background:rgba(138,160,255,.55)}.theme-option-copy strong{display:block;font-size:13px}.theme-option-copy span{display:block;font-size:11px;color:var(--muted);line-height:1.45;margin-top:3px}.theme-check{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;background:var(--accent);color:#fff;font-weight:800;font-size:12px}.profile-metric{padding:17px 18px;display:flex;flex-direction:column;gap:5px}.profile-metric span{font-size:10px;text-transform:uppercase;color:var(--muted);letter-spacing:.55px}.profile-metric b{font-size:19px}.security-card{padding:18px;display:flex;gap:14px;align-items:flex-start}.security-icon{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;background:var(--green-soft);color:var(--green);flex-shrink:0}.security-card b{font-size:13px}.security-card p{font-size:11.5px;color:var(--muted);line-height:1.55;margin-top:5px}.quick-link-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}.quick-link{border:1px solid var(--brd);padding:16px;display:flex;gap:12px;align-items:center;text-align:left;cursor:pointer;color:var(--txt);transition:.2s}.quick-link:hover{transform:translateY(-2px);border-color:var(--brd-2)}.quick-link>svg{width:20px;height:20px;color:var(--accent)}.quick-link span{display:flex;flex-direction:column}.quick-link b{font-size:13px}.quick-link small{font-size:11px;color:var(--muted);margin-top:2px}.login-wrap{background:#050506}.login-card{border-radius:28px;padding:36px 32px}.login-secure-note{text-align:center;font-size:10px;color:#62636b;margin-top:18px;letter-spacing:.25px}.login-card .btn-primary{border-radius:14px}.mobile-nav{padding:9px 8px calc(9px + env(safe-area-inset-bottom));background:color-mix(in srgb,var(--bg-2) 88%,transparent);border-top:1px solid var(--brd)}.mnav{border-radius:13px}.backup-drop{border-radius:18px;padding:28px}.backup-warning{border-radius:14px}
+@media(max-width:900px){.sidebar{display:none}.main{padding:22px 17px 125px}.page-title{font-size:23px}.strategy-primary-grid{grid-template-columns:1fr 1fr}.priority-cost{order:4;text-align:left;width:100%;padding-left:48px}.strategy-input-row{grid-template-columns:1fr}.decision-summary{grid-template-columns:1fr}.theme-grid,.quick-link-grid{grid-template-columns:1fr}.profile-hero{align-items:flex-start}.profile-hero .pill{margin-left:auto!important}.mobile-nav{overflow-x:auto}.mnav{min-width:76px}.nw-chart-wrap{height:240px}}
+@media(max-width:560px){.main{padding-left:13px;padding-right:13px}.g3,.g4{grid-template-columns:1fr}.strategy-hero{padding:20px}.strategy-hero h2{font-size:23px}.strategy-primary-grid{grid-template-columns:1fr 1fr}.chart-big-value{font-size:25px}.nw-chart-wrap{height:215px}.chart-tooltip{font-size:10px}.card-history-stats{grid-template-columns:1fr}.payment-mode-grid{grid-template-columns:1fr 1fr}.theme-option{grid-template-columns:72px 1fr auto}.theme-preview{height:52px}.profile-hero{flex-wrap:wrap}.profile-hero .pill{width:100%;margin-left:0!important}.top-actions{width:100%}.top-actions .sync-badge{order:2}.top-actions .btn-primary{margin-left:auto}.flip{height:205px}.item-amt{margin-left:auto}}
+
 </style>
 </head>
 <body>
@@ -355,12 +347,18 @@ html[data-theme="light"] .toast-action{color:#4f6dff}
 <script id="app-src" type="text/x-jsx">
 const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
-const XOR_KEY = 90;
-const decodeArr = (a) => a.map(n => String.fromCharCode(n ^ XOR_KEY)).join('');
-const CRED = {
-  u: decodeArr([9,50,47,56,50,59,55,5,28,51,52,59,52,57,63]),
-  p: decodeArr([9,50,47,56,50,59,55,26,28,51,52,109,109,109])
+// Authentication uses one-way SHA-256 digests instead of storing the actual
+// username/password in readable source. This prevents casual View Source
+// disclosure. A static GitHub page can never provide server-grade secret
+// protection; production-grade authentication should use Firebase Auth.
+const AUTH_HASH = {
+  u: '97a10e5f2108844dcdc115d52ea094bfbe02215910334da632d463d64d3d8d66',
+  p: 'ce426e14b6a66950fc69f1f8155d86823758e0d4ef833a2f626a48315d677ddd'
 };
+async function sha256Text(value) {
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(String(value)));
+  return Array.from(new Uint8Array(buf)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
 
 const firebaseConfig = {
   apiKey: "AIzaSyDBQS-hcuUTS0ys-q_vvCZkxHuLZjE5NsE",
@@ -619,6 +617,10 @@ function reverseTxLink(d, tx) {
     if (!c) return;
     c.outstanding = r2(c.outstanding + amt);
     if (tx.link.cycle && c.paidCycles) c.paidCycles = c.paidCycles.filter(cy => cy !== tx.link.cycle);
+  } else if (type === 'cardPurchase') {
+    const c = d.cards.find(x => x.id === id);
+    if (!c) return;
+    c.outstanding = r2(Math.max(0, Number(c.outstanding) - amt));
   } else if (type === 'loan') {
     const l = d.loans.find(x => x.id === id);
     if (!l) return;
@@ -648,6 +650,10 @@ function applyTxLink(d, tx) {
     if (!c) return;
     c.outstanding = r2(Math.max(0, c.outstanding - amt));
     if (tx.link.cycle) c.paidCycles = (c.paidCycles || []).concat([tx.link.cycle]);
+  } else if (type === 'cardPurchase') {
+    const c = d.cards.find(x => x.id === id);
+    if (!c) return;
+    c.outstanding = r2((Number(c.outstanding) || 0) + amt);
   } else if (type === 'loan') {
     const l = d.loans.find(x => x.id === id);
     if (!l) return;
@@ -670,6 +676,8 @@ const Ico = {
   loan: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>,
   bill: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M6 3h12v18l-3-2-3 2-3-2-3 2z"/><path d="M9 8h6"/><path d="M9 12h6"/><path d="M9 16h4"/></svg>,
   demat: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 7l6 6 4-4 8 8"/><path d="M15 17h6v-6"/></svg>,
+  user: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/></svg>,
+  lock: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="10" width="16" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg>,
   ai: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M12 3v3"/><path d="M12 18v3"/><path d="M5.6 5.6l2.1 2.1"/><path d="M16.3 16.3l2.1 2.1"/><path d="M3 12h3"/><path d="M18 12h3"/><path d="M5.6 18.4l2.1-2.1"/><path d="M16.3 7.7l2.1-2.1"/><circle cx="12" cy="12" r="3.5"/></svg>,
   logout: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>,
   sun: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="M4.93 4.93l1.41 1.41"/><path d="M17.66 17.66l1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="M4.93 19.07l1.41-1.41"/><path d="M17.66 6.34l1.41-1.41"/></svg>,
@@ -835,222 +843,7 @@ function upcomingDues(data, daysAhead) {
 
 // =============== MAIN AI ===============
 // context: { lastAmount, lastIntent, lastSubject }
-function aiAnswer(question, data, context) {
-  context = context || {};
-  const q = String(question || '').trim();
-  const ql = q.toLowerCase();
-  const s = dataSummary(data);
-  const n = v => Number(v) || 0;
-  const monthlyExpense = n(s.mOut);
-  const monthlyIncome = n(s.mIn);
-  const monthlySurplus = r2(monthlyIncome - monthlyExpense);
-  const amounts = extractAllAmounts(q);
-  let amount = amounts.length ? amounts[amounts.length - 1] : null;
-  const refersToPrevious = /\b(it|that|this|same|same amount|that money|the money|remaining|left)\b/.test(ql);
-  if (!amount && refersToPrevious && n(context.lastAmount) > 0) amount = n(context.lastAmount);
 
-  const keepMatch = q.match(/\b(?:keep|leave|reserve|retain|hold|maintain)\b[^0-9₹]{0,35}(?:₹|rs\.?|inr)?\s*(\d[\d,]*(?:\.\d+)?)\s*(k|thousand|lakh|lakhs|lac|lacs|l|cr|crore|crores)?/i);
-  const keep = keepMatch ? parseAmountToken(keepMatch[1], keepMatch[2]) : null;
-  const words = (...ws) => ws.some(w => ql.includes(w));
-
-  const cards = data.cards.map(c => ({
-    name: c.name || 'Credit card',
-    outstanding: n(c.outstanding),
-    rate: n(c.interestRate) || n(c.rate) || 40
-  })).filter(c => c.outstanding > 0);
-
-  const loans = s.activeLoans.map(l => {
-    const emi = n(l.emi), months = n(l.monthsLeft), balance = loanOutstandingPrincipal(l), scheduled = loanScheduledPayments(l), rate = n(l.rate);
-    return {
-      name: l.name || 'Loan', emi, months, balance, scheduled, rate,
-      foreclosure: n(l.foreclosureAmount),
-      monthlyInterest: r2(balance * rate / 100 / 12)
-    };
-  }).filter(l => l.balance > 0 || l.emi > 0);
-
-  const allDebts = cards.map(c => ({type:'card',name:c.name,balance:c.outstanding,rate:c.rate,emi:0}))
-    .concat(loans.map(l => ({type:'loan',name:l.name,balance:l.balance,rate:l.rate,emi:l.emi})))
-    .sort((a,b) => b.rate - a.rate);
-
-  const totalDebt = r2(allDebts.reduce((x,d) => x + d.balance, 0));
-  const debtPayments = r2(loans.reduce((x,l) => x + l.emi, 0));
-  const threeMonthFund = r2(monthlyExpense * 3);
-  const sixMonthFund = r2(monthlyExpense * 6);
-
-  const asksAllocation = words('where should','where do i','what should i do with','what do i do with',
-    'where to put','put my','put this','put it','invest','allocate','deploy','use my money',
-    'use this money','split','distribute','extra cash','spare cash','money i have','money coming','salary');
-  const asksDebt = words('loan','debt','emi','credit card','card debt','pay off','payoff','prepay','pre-payment','foreclose','foreclosure');
-  const asksEmergency = words('emergency','cushion','buffer','safety fund','rainy day');
-  const asksInvesting = words('invest','investment','stock','stocks','mutual fund','mf','etf','sip','nifty','gold','equity','market');
-  const asksCashflow = words('cash flow','cashflow','income','expense','spending','spend','saving','savings','save enough');
-  const asksSummary = words('summary','overview','financial position','net worth','my finances','how am i doing','status');
-  const asksDebtFree = words('debt free','debt-free','when will i','how long until','clear my debt');
-  const asksForeclose = words('foreclose','foreclosure');
-  const asksCompare = words('compare','versus',' vs ','better between','which one');
-
-  let intent = 'general';
-  if (asksForeclose) intent = 'foreclose';
-  else if (asksDebtFree) intent = 'debtfree';
-  else if (asksAllocation || (amount && (asksInvesting || words('do with','use','best use')))) intent = 'allocate';
-  else if (asksEmergency) intent = 'emergency';
-  else if (asksDebt && !asksAllocation) intent = 'debt';
-  else if (asksCashflow) intent = 'cashflow';
-  else if (asksSummary) intent = 'summary';
-  else if (asksInvesting) intent = 'investing';
-  else if (asksCompare) intent = 'compare';
-  else if (context.lastIntent && refersToPrevious) intent = context.lastIntent;
-
-  if (intent === 'allocate') {
-    let cash = n(amount) || n(context.lastAmount) || n(s.bankTotal);
-    if (cash <= 0) return {text:'Tell me the amount you want to make a decision about, for example "I have ₹20,000 available". I’ll calculate the allocation using your vault data.',context:{...context,lastIntent:'allocate'}};
-
-    const bankReserve = keep !== null && keep > 0
-      ? Math.min(cash, keep)
-      : Math.min(cash, Math.max(5000, Math.min(threeMonthFund || 10000, Math.max(10000, cash * 0.25))));
-    let remaining = r2(cash - bankReserve);
-    const lines = [
-      `I’m treating ${inr(cash)} as the money you want to deploy.`, '',
-      `Your current position:`,
-      `• Bank: ${inr(s.bankTotal)} | Demat: ${inr(s.dematTotal)}`,
-      `• Current net worth: ${inr(s.netWorth)}`,
-      `• Monthly income logged: ${inr(monthlyIncome)} | spending: ${inr(monthlyExpense)}`,
-      `• Debt: ${inr(totalDebt)}${allDebts.length ? `, highest rate ${r2(allDebts[0].rate)}% (${allDebts[0].name})` : ', none'}`, ''
-    ];
-    lines.push(`1. Keep ${inr(bankReserve)} liquid${keep !== null ? ', exactly as requested.' : '.'}`);
-    if (monthlyExpense > 0) lines.push(`   That is about ${r2(bankReserve / monthlyExpense)} month(s) of your currently logged spending.`);
-
-    const cardTotal = r2(cards.reduce((x,c) => x + c.outstanding, 0));
-    if (cardTotal > 0 && remaining > 0) {
-      const pay = Math.min(remaining, cardTotal);
-      lines.push(`2. Reserve ${inr(pay)} for credit-card dues. You have ${inr(cardTotal)} outstanding.`);
-      lines.push(`   Carrying high-cost card debt can overwhelm the expected return of a normal low-risk investment.`);
-      remaining = r2(remaining - pay);
-    }
-
-    const emiReserve = r2(loans.reduce((x,l) => x + l.emi, 0));
-    if (emiReserve > 0 && remaining > 0) {
-      const pay = Math.min(remaining, emiReserve);
-      lines.push(`3. Keep ${inr(pay)} available for upcoming EMIs.`);
-      remaining = r2(remaining - pay);
-    }
-
-    const currentLiquid = r2(s.bankTotal + bankReserve);
-    if (monthlyExpense > 0 && currentLiquid < threeMonthFund && remaining > 0) {
-      const gap = r2(threeMonthFund - currentLiquid);
-      const add = Math.min(remaining, gap);
-      lines.push(`4. Emergency-fund top-up: ${inr(add)} toward a 3-month target of ${inr(threeMonthFund)}.`);
-      lines.push(`   Planned liquid reserve after this: about ${inr(r2(currentLiquid + add))}.`);
-      remaining = r2(remaining - add);
-    }
-
-    const highDebt = allDebts.find(d => d.rate >= 12);
-    if (highDebt && remaining > 0) {
-      const pay = Math.min(remaining, highDebt.balance);
-      lines.push(`5. Consider ${inr(pay)} toward ${highDebt.name} at ${r2(highDebt.rate)}% interest.`);
-      lines.push(`   A ${inr(pay)} principal reduction represents roughly ${inr(r2(pay * highDebt.rate / 100))} of first-year interest avoided, before amortisation effects.`);
-      remaining = r2(remaining - pay);
-    }
-
-    if (remaining > 0.5) {
-      const equity = r2(remaining * 0.70), safe = r2(remaining * 0.20), gold = r2(remaining - equity - safe);
-      lines.push(`6. Remaining ${inr(remaining)} can be invested according to your risk and time horizon:`);
-      lines.push(`   • ${inr(equity)} (70%) diversified equity/index exposure`);
-      lines.push(`   • ${inr(safe)} (20%) liquid/short-duration low-risk bucket`);
-      lines.push(`   • ${inr(gold)} (10%) gold/diversifier`);
-      lines.push(`   These percentages are a starting calculation, not a prediction of returns. Give me your horizon and risk tolerance and I’ll recalculate.`);
-    }
-    lines.push('',`Calculated allocation total: ${inr(cash)}.`);
-    lines.push(`I would not treat the entire ${inr(cash)} as investable if doing so leaves you without liquidity or while expensive debt remains.`);
-    return {text:lines.join('\n'),context:{...context,lastAmount:cash,lastIntent:'allocate',lastSubject:'cash'}};
-  }
-
-  if (intent === 'foreclose') {
-    if (!loans.length) return {text:`I don't see an active loan with a balance in the vault.`,context:{...context,lastIntent:'foreclose'}};
-    let target = loans.find(l => ql.includes(l.name.toLowerCase())) || loans.slice().sort((a,b)=>b.rate-a.rate)[0];
-    const bankAfter = target.foreclosure > 0 ? r2(s.bankTotal - target.foreclosure) : null;
-    const lines = [`Analysis for ${target.name}:`, '',
-      `• Outstanding scheduled balance: ${inr(target.balance)}`,
-      `• EMI: ${inr(target.emi)} × ${target.months} months`,
-      `• Interest rate: ${r2(target.rate)}%`,
-      `• Approx. current monthly interest component: ${inr(target.monthlyInterest)}`];
-    if (target.foreclosure > 0) {
-      lines.push(`• Foreclosure amount entered: ${inr(target.foreclosure)}`);
-      lines.push(`• Difference versus scheduled balance: ${inr(Math.max(0,r2(target.balance-target.foreclosure)))}`);
-      if (s.bankTotal >= target.foreclosure) {
-        lines.push(`• Bank after foreclosure: ${inr(bankAfter)}`);
-        if (monthlyExpense > 0) lines.push(`• That leaves about ${r2(bankAfter/monthlyExpense)} month(s) of current spending in bank.`);
-      } else lines.push(`• Current bank is short by ${inr(r2(target.foreclosure-s.bankTotal))}.`);
-      if (monthlyExpense > 0 && bankAfter < threeMonthFund) lines.push(`• Liquidity check: this would leave you below the 3-month expense buffer of ${inr(threeMonthFund)} based on logged spending.`);
-    } else {
-      lines.push(`• No foreclosure amount is stored, so I cannot calculate the actual saving or any fee/penalty.`);
-      lines.push(`Add the lender’s current foreclosure quote and I can recalculate it.`);
-    }
-    lines.push('',`The calculation is: guaranteed interest avoided versus liquidity lost, plus any foreclosure fee or contractual effect not stored in the vault.`);
-    return {text:lines.join('\n'),context:{...context,lastIntent:'foreclose',lastSubject:target.name}};
-  }
-
-  if (intent === 'debt') {
-    if (!allDebts.length) return {text:`You currently have no card or active-loan debt recorded.`,context:{...context,lastIntent:'debt'}};
-    const lines=[`Debt picture: ${inr(totalDebt)} total recorded debt.`];
-    allDebts.forEach((d,i)=>lines.push(`${i+1}. ${d.name}: ${inr(d.balance)} outstanding at ${r2(d.rate)}% ≈ ${inr(r2(d.balance*d.rate/100))}/year at the current balance, before amortisation.`));
-    const highest=allDebts[0];
-    lines.push('',`For extra repayments, compare each debt’s effective cost with the alternative use of cash. Your highest recorded rate is ${r2(highest.rate)}% on ${highest.name}.`);
-    if (amount && amount > 0 && loans.length) {
-      const normal=simulateLoans(s.activeLoans,0), accelerated=simulateLoans(s.activeLoans,amount);
-      lines.push(`With ${inr(amount)} extra per month, the loan simulation changes from about ${normal.months} months to ${accelerated.months} months, saving roughly ${inr(Math.max(0,normal.totalInterest-accelerated.totalInterest))} in simulated interest.`);
-    }
-    return {text:lines.join('\n'),context:{...context,lastIntent:'debt',lastAmount:amount||context.lastAmount}};
-  }
-
-  if (intent === 'emergency') {
-    if (monthlyExpense <= 0) return {text:`I don't have enough logged monthly spending to calculate your emergency-fund target yet.`,context:{...context,lastIntent:'emergency'}};
-    const liquid=s.bankTotal, gap3=Math.max(0,r2(threeMonthFund-liquid)), gap6=Math.max(0,r2(sixMonthFund-liquid));
-    return {text:`Emergency-fund calculation:\n\n• Monthly spending: ${inr(monthlyExpense)}\n• 3-month target: ${inr(threeMonthFund)}\n• 6-month target: ${inr(sixMonthFund)}\n• Current bank balance: ${inr(liquid)}\n• Gap to 3 months: ${inr(gap3)}\n• Gap to 6 months: ${inr(gap6)}\n\nThese targets use spending currently logged in ShubhVault.`,context:{...context,lastIntent:'emergency'}};
-  }
-
-  if (intent === 'debtfree') {
-    if (!loans.length) return {text:`I don't see active loans in the vault.`,context:{...context,lastIntent:'debtfree'}};
-    const normal=simulateLoans(s.activeLoans,0), extra=amount&&amount>0?amount:0;
-    let text=`Using the loan balances, rates and EMIs stored in the vault, the normal-payment simulation reaches zero in about ${normal.months} months.\n\nEstimated total interest in that simulation: ${inr(normal.totalInterest)}.`;
-    if(extra){const a=simulateLoans(s.activeLoans,extra);text+=`\n\nIf you add ${inr(extra)} every month, the simulation reaches zero in about ${a.months} months, saving about ${Math.max(0,normal.months-a.months)} months and ${inr(Math.max(0,normal.totalInterest-a.totalInterest))} in simulated interest.`;}
-    return {text,context:{...context,lastIntent:'debtfree',lastAmount:extra||context.lastAmount}};
-  }
-
-  if (intent === 'cashflow') {
-    const rate=monthlyIncome>0?r2(monthlySurplus/monthlyIncome*100):null;
-    const lines=[`Current-month cash-flow calculation:`,`• Income logged: ${inr(monthlyIncome)}`,`• Spending logged: ${inr(monthlyExpense)}`,`• Net monthly surplus: ${inr(monthlySurplus)}`];
-    if(rate!==null) lines.push(`• Savings rate: ${rate}%`);
-    lines.push(`• Loan EMIs: ${inr(debtPayments)}`,`• Bank + demat: ${inr(r2(s.bankTotal+s.dematTotal))}`);
-    return {text:lines.join('\n'),context:{...context,lastIntent:'cashflow'}};
-  }
-
-  if (intent === 'investing') {
-    const horizonMatch=ql.match(/(\d+)\s*(?:year|years|yr|yrs|month|months)/);
-    const horizon=horizonMatch?`${horizonMatch[1]} ${horizonMatch[0].includes('month')?'months':'years'}`:'not specified';
-    const risk=words('low risk','conservative','safe')?'low':words('aggressive','high risk','high-risk')?'high':'unspecified';
-    return {text:`I can calculate an investment plan from your vault, but I won't invent current market prices or returns.\n\nCurrent inputs:\n• Bank: ${inr(s.bankTotal)}\n• Demat: ${inr(s.dematTotal)}\n• Net worth: ${inr(s.netWorth)}\n• Debt: ${inr(totalDebt)}\n• Monthly surplus: ${inr(monthlySurplus)}\n• Horizon detected: ${horizon}\n• Risk level detected: ${risk}\n\nGive me the amount, time horizon and risk tolerance and I’ll calculate what is actually investable after liquidity and debt constraints.`,context:{...context,lastIntent:'investing',lastAmount:amount||context.lastAmount}};
-  }
-
-  if (intent === 'summary') {
-    const rate=monthlyIncome>0?r2(monthlySurplus/monthlyIncome*100):null;
-    const lines=[`Your current ShubhVault snapshot:`,`• Assets: ${inr(s.assets)} (${inr(s.bankTotal)} bank + ${inr(s.dematTotal)} demat)`,`• Liabilities: ${inr(s.liabilities)} (${inr(s.loanDebt)} loans + ${inr(s.cardDebt)} cards)`,`• Net worth: ${inr(s.netWorth)}`,`• Current-month income: ${inr(monthlyIncome)}`,`• Current-month spending: ${inr(monthlyExpense)}`,`• Current-month surplus: ${inr(monthlySurplus)}`];
-    if(rate!==null) lines.push(`• Current-month savings rate: ${rate}%`);
-    if(allDebts.length) lines.push(`• Highest recorded debt rate: ${r2(allDebts[0].rate)}% on ${allDebts[0].name}`);
-    if(monthlyExpense>0) lines.push(`• 3-month emergency target: ${inr(threeMonthFund)} | 6-month target: ${inr(sixMonthFund)}`);
-    return {text:lines.join('\n'),context:{...context,lastIntent:'summary'}};
-  }
-
-  if (intent === 'compare') {
-    const mentioned=loans.filter(l=>ql.includes(l.name.toLowerCase()));
-    if(mentioned.length>=2){
-      const [a,b]=mentioned.slice(0,2);
-      return {text:`Loan comparison:\n\n${a.name}\n• Balance: ${inr(a.balance)}\n• Rate: ${r2(a.rate)}%\n• EMI: ${inr(a.emi)}\n\n${b.name}\n• Balance: ${inr(b.balance)}\n• Rate: ${r2(b.rate)}%\n• EMI: ${inr(b.emi)}\n\nIf you give me the amount available for prepayment, I can model the cash impact and simulated interest for each choice.`,context:{...context,lastIntent:'compare'}};
-    }
-  }
-
-  return {text:`I can work through that using your actual vault numbers rather than a fixed FAQ.\n\nRight now I see ${inr(s.bankTotal)} in bank, ${inr(s.dematTotal)} in demat, ${inr(totalDebt)} of recorded debt, and net worth of ${inr(s.netWorth)}.${monthlyExpense>0?` Current-month spending is ${inr(monthlyExpense)}.`:''}\n\nAsk the decision in your own words. I’ll calculate the trade-offs and you can continue with follow-ups such as “what if I add another ₹5k?” without restarting the conversation.`,context:{...context,lastIntent:'general',lastAmount:amount||context.lastAmount}};
-}
 function LightRaysBackground({ theme }) {
   const containerRef = useRef(null);
   const cleanupRef = useRef(null);
@@ -1324,84 +1117,74 @@ function NetWorthChart({ points, onReset }) {
     return Object.keys(map).sort().map(date => ({ date, value: map[date] }));
   }, [points]);
 
-  if (!clean.length) {
-    return <div className="empty"><div className="empty-icon">{Ico.trend}</div><div className="empty-title">Net worth history is starting</div><div className="empty-sub">Your first verified snapshot will appear here. The chart records one clean snapshot per day.</div></div>;
-  }
+  if (!clean.length) return <div className="empty"><div className="empty-icon">{Ico.trend}</div><div className="empty-title">Net worth history is starting</div><div className="empty-sub">Your first verified daily snapshot will appear here.</div></div>;
 
-  const first = clean[0];
-  const last = clean[clean.length - 1];
+  const first = clean[0], last = clean[clean.length - 1];
   const change = r2(last.value - first.value);
   const changePct = Math.abs(first.value) > 0.5 ? r2(change / Math.abs(first.value) * 100) : null;
   const lineColor = last.value >= 0 ? 'var(--green)' : 'var(--red)';
 
-  if (clean.length === 1) {
-    return (
-      <div>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'baseline', flexWrap: 'wrap', marginBottom: '14px' }}>
-          <div style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-.9px', color: lineColor }} className="mono">{inr(last.value)}</div>
-          <span className={'pill ' + (last.value >= 0 ? 'green' : 'red')}><span className="pdot"></span>First snapshot</span>
-        </div>
-        <div className="glass-soft" style={{ padding: '16px', fontSize: '12.5px', color: 'var(--muted)', lineHeight: 1.55 }}>
-          Verified on {fmtDate(last.date)}. A second daily snapshot will create the trend line. Net worth now uses outstanding loan principal rather than adding future loan interest.
-        </div>
-      </div>
-    );
-  }
-
-  const W = 900, H = 270, PX = 46, PY = 24;
-  const vals = clean.map(p => p.value);
-  let min = Math.min(...vals), max = Math.max(...vals);
-  if (min === max) {
-    const spread = Math.max(100, Math.abs(min) * 0.08);
-    min -= spread; max += spread;
-  } else {
-    const spread = Math.max(100, (max - min) * 0.12);
-    min -= spread; max += spread;
-  }
-  const x = i => PX + (i * (W - PX * 2)) / Math.max(1, clean.length - 1);
-  const y = v => H - PY - ((v - min) / (max - min)) * (H - PY * 2);
-  const path = clean.map((p, i) => (i ? 'L' : 'M') + x(i).toFixed(2) + ',' + y(p.value).toFixed(2)).join(' ');
-  const area = path + ' L' + x(clean.length - 1).toFixed(2) + ',' + (H - PY) + ' L' + x(0).toFixed(2) + ',' + (H - PY) + ' Z';
-  const zeroY = 0 >= min && 0 <= max ? y(0) : null;
-  const ticks = [0, 1, 2, 3, 4].map(i => max - (max - min) * i / 4);
-  const hovered = hover !== null ? clean[hover] : null;
-
-  const onMove = e => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
-    const idx = Math.round(ratio * (clean.length - 1));
-    setHover(idx);
-  };
-
-  return (
+  if (clean.length === 1) return (
     <div>
-      <div style={{ display: 'flex', gap: '14px', alignItems: 'baseline', flexWrap: 'wrap', marginBottom: '8px' }}>
-        <div style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-.9px', color: lineColor }} className="mono">{inr(last.value)}</div>
-        <div className={'pill ' + (change >= 0 ? 'green' : 'red')}><span className="pdot"></span>{change >= 0 ? '▲' : '▼'} {inr(Math.abs(change))}{changePct !== null ? ' (' + (changePct >= 0 ? '+' : '') + changePct + '%)' : ''}</div>
-        <div className="pill blue">{clean.length} daily snapshots · since {fmtDate(first.date)}</div>
-        {onReset ? <button className="btn btn-sm" onClick={onReset} style={{ marginLeft: 'auto' }}>{Ico.reset} Reset chart</button> : null}
-      </div>
-      <div style={{ fontSize: '11.5px', color: 'var(--muted)', marginBottom: '10px' }}>Hover the chart to inspect each daily snapshot.</div>
-      <div className="nw-chart-wrap" onMouseMove={onMove} onMouseLeave={() => setHover(null)} style={{ cursor: 'crosshair' }}>
-        <svg viewBox={'0 0 ' + W + ' ' + H} preserveAspectRatio="none" aria-label="Net worth history chart">
-          <defs>
-            <linearGradient id="nwgradGreenV3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--green)" stopOpacity="0.30" /><stop offset="100%" stopColor="var(--green)" stopOpacity="0" /></linearGradient>
-            <linearGradient id="nwgradRedV3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--red)" stopOpacity="0.28" /><stop offset="100%" stopColor="var(--red)" stopOpacity="0" /></linearGradient>
-          </defs>
-          {ticks.map((v, i) => (<React.Fragment key={i}><line x1={PX} x2={W-PX} y1={y(v)} y2={y(v)} stroke="var(--brd)" strokeWidth="1" vectorEffect="non-scaling-stroke" /><text x="4" y={y(v)+4} fill="var(--muted)" fontSize="10" fontFamily="Inter, sans-serif">{money(v).replace('.00','')}</text></React.Fragment>))}
-          {zeroY !== null ? <line x1={PX} x2={W-PX} y1={zeroY} y2={zeroY} stroke="var(--muted-2)" strokeWidth="1" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" opacity=".65" /> : null}
-          <path d={area} fill={'url(#' + (last.value >= 0 ? 'nwgradGreenV3' : 'nwgradRedV3') + ')'} />
-          <path d={path} fill="none" stroke={lineColor} strokeWidth="2.7" vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
-          {clean.map((p, i) => <circle key={i} cx={x(i)} cy={y(p.value)} r={hover === i ? 5 : 3} fill={lineColor} stroke="var(--bg)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />)}
-          {hover !== null ? <line x1={x(hover)} x2={x(hover)} y1={PY} y2={H-PY} stroke="var(--muted-2)" strokeWidth="1" strokeDasharray="3 4" vectorEffect="non-scaling-stroke" opacity=".7" /> : null}
-        </svg>
-        {hovered ? <div className="glass-soft" style={{ position:'absolute', left: Math.min(82, Math.max(2, (hover/(clean.length-1))*100)) + '%', top:'8px', transform:'translateX(-50%)', padding:'8px 10px', fontSize:'11px', pointerEvents:'none', whiteSpace:'nowrap', boxShadow:'var(--shadow-md)', zIndex:3 }}><b style={{ color:'var(--txt)' }}>{fmtDate(hovered.date)}</b><br/><span className="mono" style={{ color: lineColor }}>{inr(hovered.value)}</span></div> : null}
-      </div>
-      <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', color:'var(--muted)', marginTop:'8px' }}><span>{fmtDate(first.date)}</span><span>{fmtDate(last.date)}</span></div>
+      <div className="chart-headline"><div className="chart-big-value mono" style={{ color: lineColor }}>{inr(last.value)}</div><span className={'pill ' + (last.value >= 0 ? 'green' : 'red')}><span className="pdot"></span>First snapshot</span>{onReset ? <button className="btn btn-sm" onClick={onReset} style={{ marginLeft:'auto' }}>{Ico.reset} Reset</button> : null}</div>
+      <div className="chart-empty-note">Verified on {fmtDate(last.date)}. Add another day or change your balances to build the liquid trend.</div>
     </div>
   );
-}
 
+  const W = 1000, H = 300, PX = 54, PY = 28;
+  const vals = clean.map(p => p.value);
+  let min = Math.min(...vals), max = Math.max(...vals);
+  const range = max - min;
+  const padValue = range === 0 ? Math.max(100, Math.abs(max) * 0.08, 100) : Math.max(100, range * 0.16);
+  min -= padValue; max += padValue;
+  const plotW = W - PX * 2, plotH = H - PY * 2;
+  const x = i => PX + (i * plotW) / Math.max(1, clean.length - 1);
+  const y = v => H - PY - ((v - min) / Math.max(1, max - min)) * plotH;
+  const pts = clean.map((p,i) => ({x:x(i), y:y(p.value)}));
+  const smoothPath = () => {
+    if (pts.length === 2) {
+      const dx = (pts[1].x - pts[0].x) * 0.45;
+      return `M ${pts[0].x.toFixed(2)} ${pts[0].y.toFixed(2)} C ${(pts[0].x+dx).toFixed(2)} ${pts[0].y.toFixed(2)}, ${(pts[1].x-dx).toFixed(2)} ${pts[1].y.toFixed(2)}, ${pts[1].x.toFixed(2)} ${pts[1].y.toFixed(2)}`;
+    }
+    let d = `M ${pts[0].x.toFixed(2)} ${pts[0].y.toFixed(2)}`;
+    for (let i=0;i<pts.length-1;i++) {
+      const p0=pts[Math.max(0,i-1)], p1=pts[i], p2=pts[i+1], p3=pts[Math.min(pts.length-1,i+2)];
+      const cp1x=p1.x+(p2.x-p0.x)/6, cp1y=p1.y+(p2.y-p0.y)/6;
+      const cp2x=p2.x-(p3.x-p1.x)/6, cp2y=p2.y-(p3.y-p1.y)/6;
+      d += ` C ${cp1x.toFixed(2)} ${cp1y.toFixed(2)}, ${cp2x.toFixed(2)} ${cp2y.toFixed(2)}, ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+    }
+    return d;
+  };
+  const path = smoothPath();
+  const area = path + ` L ${pts[pts.length-1].x.toFixed(2)} ${H-PY} L ${pts[0].x.toFixed(2)} ${H-PY} Z`;
+  const zeroY = 0 >= min && 0 <= max ? y(0) : null;
+  const ticks = [0,1,2,3,4].map(i => max - (max-min)*i/4);
+  const hovered = hover === null ? null : clean[hover];
+  const onMove = e => { const rect=e.currentTarget.getBoundingClientRect(); const ratio=Math.max(0,Math.min(1,(e.clientX-rect.left)/Math.max(1,rect.width))); setHover(Math.round(ratio*(clean.length-1))); };
+
+  return <div>
+    <div className="chart-headline">
+      <div className="chart-big-value mono" style={{ color: lineColor }}>{inr(last.value)}</div>
+      <span className={'pill ' + (change >= 0 ? 'green' : 'red')}><span className="pdot"></span>{change >= 0 ? '▲' : '▼'} {inr(Math.abs(change))}{changePct !== null ? ` (${changePct >= 0 ? '+' : ''}${changePct}%)` : ''}</span>
+      <span className="pill blue">{clean.length} snapshots</span>
+      {onReset ? <button className="btn btn-sm" onClick={onReset} style={{ marginLeft:'auto' }}>{Ico.reset} Reset chart</button> : null}
+    </div>
+    <div className="chart-subtle">Daily closing snapshots · smooth curve · hover to inspect exact values</div>
+    <div className="nw-chart-wrap liquid-chart" onMouseMove={onMove} onMouseLeave={()=>setHover(null)} onTouchMove={e=>{ const t=e.touches[0]; if(!t)return; const rect=e.currentTarget.getBoundingClientRect(); const ratio=Math.max(0,Math.min(1,(t.clientX-rect.left)/Math.max(1,rect.width))); setHover(Math.round(ratio*(clean.length-1))); }}>
+      <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-label="Net worth history chart">
+        <defs><linearGradient id="nwLiquidFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={lineColor} stopOpacity=".28"/><stop offset="72%" stopColor={lineColor} stopOpacity=".06"/><stop offset="100%" stopColor={lineColor} stopOpacity="0"/></linearGradient><filter id="nwGlow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
+        {ticks.map((v,i)=><React.Fragment key={i}><line x1={PX} x2={W-PX} y1={y(v)} y2={y(v)} stroke="var(--brd)" strokeWidth="1" vectorEffect="non-scaling-stroke"/><text x="4" y={y(v)+4} fill="var(--muted)" fontSize="10" fontFamily="Inter, sans-serif">{money(v).replace('.00','')}</text></React.Fragment>)}
+        {zeroY !== null ? <line x1={PX} x2={W-PX} y1={zeroY} y2={zeroY} stroke="var(--muted-2)" strokeWidth="1" strokeDasharray="4 5" vectorEffect="non-scaling-stroke"/> : null}
+        <path d={area} fill="url(#nwLiquidFill)"/>
+        <path d={path} fill="none" stroke={lineColor} strokeWidth="3" vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" filter="url(#nwGlow)"/>
+        {pts.map((p,i)=><circle key={i} cx={p.x} cy={p.y} r={hover===i?5:2.7} fill={lineColor} stroke="var(--bg)" strokeWidth="1.8" vectorEffect="non-scaling-stroke"/>)}
+        {hover !== null ? <line x1={pts[hover].x} x2={pts[hover].x} y1={PY} y2={H-PY} stroke="var(--muted-2)" strokeWidth="1" strokeDasharray="3 4" vectorEffect="non-scaling-stroke" opacity=".8"/> : null}
+      </svg>
+      {hovered ? <div className="chart-tooltip" style={{left:`${Math.min(88,Math.max(8,(hover/(clean.length-1))*100))}%`}}><b>{fmtDate(hovered.date)}</b><span className="mono" style={{color:lineColor}}>{inr(hovered.value)}</span></div> : null}
+    </div>
+    <div className="chart-axis"><span>{fmtDate(first.date)}</span><span>{fmtDate(last.date)}</span></div>
+  </div>;
+}
 function LineChart({ points }) {
   if (!points || points.length === 0) {
     return <div className="empty"><div className="empty-icon">{Ico.demat}</div><div className="empty-title">No chart data yet</div><div className="empty-sub">Update your demat balance to start tracking progress over time.</div></div>;
@@ -1483,15 +1266,22 @@ function FlipCard({ card, onEdit, onDelete, onPay, onMarkDone, onSkip }) {
   );
 }
 
-function Login({ onOk, theme, toggleTheme }) {
+function Login({ onOk }) {
   const [u, setU] = useState('');
   const [p, setP] = useState('');
   const [err, setErr] = useState('');
+  const [busy, setBusy] = useState(false);
   const [shake, setShake] = useState(false);
-  const submit = (e) => {
+  const submit = async (e) => {
     if (e) e.preventDefault();
-    if (u.trim() === CRED.u && p === CRED.p) { sessionStorage.setItem('fv_auth', '1'); onOk(); }
-    else { setErr('Wrong username or password'); setShake(true); setTimeout(() => setShake(false), 450); }
+    if (busy) return;
+    setBusy(true); setErr('');
+    try {
+      const [uh, ph] = await Promise.all([sha256Text(u.trim()), sha256Text(p)]);
+      if (uh === AUTH_HASH.u && ph === AUTH_HASH.p) { sessionStorage.setItem('fv_auth', '1'); onOk(); }
+      else { setErr('Wrong username or password'); setShake(true); setTimeout(() => setShake(false), 450); }
+    } catch (e) { setErr('Unable to verify credentials in this browser.'); }
+    finally { setBusy(false); }
   };
   return (
     <div className="login-wrap">
@@ -1499,16 +1289,15 @@ function Login({ onOk, theme, toggleTheme }) {
         <div className="login-logo">SV</div>
         <div className="login-title">ShubhVault</div>
         <div className="login-sub">Your private money command centre</div>
-        <div className="field"><label className="label">Username</label><input className="input" value={u} onChange={(e) => setU(e.target.value)} autoComplete="off" placeholder="Enter username" /></div>
-        <div className="field"><label className="label">Password</label><input className="input" type="password" value={p} onChange={(e) => setP(e.target.value)} autoComplete="off" placeholder="Enter password" /></div>
-        <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '6px', padding: '11px' }} type="submit">Unlock Vault</button>
+        <div className="field"><label className="label">Username</label><input className="input" value={u} onChange={(e) => setU(e.target.value)} autoComplete="username" placeholder="Enter username" /></div>
+        <div className="field"><label className="label">Password</label><input className="input" type="password" value={p} onChange={(e) => setP(e.target.value)} autoComplete="current-password" placeholder="Enter password" /></div>
+        <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '6px', padding: '12px' }} type="submit" disabled={busy}>{busy ? 'Verifying…' : 'Unlock Vault'}</button>
         {err ? <div className="err">{err}</div> : null}
-        <div style={{ textAlign: 'center', marginTop: '18px' }}><button type="button" className="btn btn-ghost btn-sm" onClick={toggleTheme}>{theme === 'dark' ? '☀️ Light mode' : '🌙 Dark mode'}</button></div>
+        <div className="login-secure-note">Private vault · encrypted transport · dark login</div>
       </form>
     </div>
   );
 }
-
 function PageHead({ title, sub, children, sync, openTx }) {
   return (
     <div className="topbar">
@@ -1674,9 +1463,37 @@ function BackupRestore({ data, setData, showToast, sync, theme, toggleTheme }) {
 // BackupRestore doesn't need the transaction modal, but PageHead expects the callback.
 function openTxPlaceholder() {}
 
+function Profile({ data, theme, setTheme, showToast, sync, go, openTx }) {
+  const snapshot = financialSnapshot(data);
+  const chooseTheme = value => { setTheme(value); localStorage.setItem('fv_theme', value); document.documentElement.setAttribute('data-theme', value); showToast(value === 'dark' ? 'Dark mode set as default' : 'Light mode set as default'); };
+  const stats = [
+    ['Banks', data.banks.length], ['Credit Cards', data.cards.length], ['Loans', data.loans.filter(l=>!l.closed).length], ['Transactions', data.transactions.length]
+  ];
+  return <div>
+    <PageHead title="Profile" sub="Appearance, vault overview and preferences" sync={sync} openTx={openTx} />
+    <div className="profile-hero glass"><div className="profile-avatar">SV</div><div><div className="profile-name">ShubhVault</div><div className="profile-sub">Private money command centre</div></div><span className="pill green" style={{marginLeft:'auto'}}><span className="pdot"></span>Vault active</span></div>
+    <div className="section-head"><div className="section-title"><span className="dot"></span>Default appearance</div><span className="pill blue">Saved on this device</span></div>
+    <div className="theme-grid">
+      <button className={'theme-option '+(theme==='dark'?'selected':'')} onClick={()=>chooseTheme('dark')}><div className="theme-preview dark-preview"><span></span><i></i><b></b></div><div className="theme-option-copy"><strong>Dark</strong><span>Deep black, glass surfaces and subtle colour.</span></div>{theme==='dark'?<span className="theme-check">✓</span>:null}</button>
+      <button className={'theme-option '+(theme==='light'?'selected':'')} onClick={()=>chooseTheme('light')}><div className="theme-preview light-preview"><span></span><i></i><b></b></div><div className="theme-option-copy"><strong>Light</strong><span>Bright, airy surfaces with soft contrast.</span></div>{theme==='light'?<span className="theme-check">✓</span>:null}</button>
+    </div>
+    <div className="section-head"><div className="section-title"><span className="dot"></span>Vault overview</div></div>
+    <div className="grid g4">{stats.map(x=><div className="kpi glass" key={x[0]}><div className="kpi-label">{x[0]}</div><div className="kpi-val mono">{x[1]}</div></div>)}</div>
+    <div className="grid g3" style={{marginTop:'14px'}}>
+      <div className="glass profile-metric"><span>Net worth</span><b className="mono">{inr(snapshot.netWorth)}</b></div>
+      <div className="glass profile-metric"><span>Total assets</span><b className="mono">{inr(snapshot.assets)}</b></div>
+      <div className="glass profile-metric"><span>Total debt</span><b className="mono">{inr(snapshot.liabilities)}</b></div>
+    </div>
+    <div className="section-head"><div className="section-title"><span className="dot"></span>Security note</div></div>
+    <div className="glass security-card"><div className="security-icon">{Ico.lock}</div><div><b>Login credentials are no longer stored as readable text.</b><p>The static website verifies one-way password digests. For true server-side authentication and protection against determined inspection, use Firebase Authentication instead of client-side credentials.</p></div></div>
+    <div className="section-head"><div className="section-title"><span className="dot"></span>Quick links</div></div>
+    <div className="quick-link-grid"><button className="glass quick-link" onClick={()=>go('backup')}>{Ico.cloud}<span><b>Backup & Restore</b><small>Protect your entire vault</small></span></button><button className="glass quick-link" onClick={()=>go('cards')}>{Ico.card}<span><b>Credit Cards</b><small>View card-specific transactions</small></span></button></div>
+  </div>;
+}
+
 function App() {
   const [authed, setAuthed] = useState(() => sessionStorage.getItem('fv_auth') === '1');
-  const [theme, setTheme] = useState(() => localStorage.getItem('fv_theme') || 'dark');
+  const [theme, setTheme] = useState(() => localStorage.getItem('fv_theme') === 'light' ? 'light' : 'dark');
   const [page, setPage] = useState('home');
   const [data, setData, sync] = useStore();
   const [toast, setToast] = useState({ msg: '', action: null, onAction: null });
@@ -1768,7 +1585,7 @@ function App() {
     });
   }, [currentNetWorth, data, mut, meaningful, sync.state]);
 
-  if (!authed) return <Login onOk={() => setAuthed(true)} theme={theme} toggleTheme={toggleTheme} />;
+  if (!authed) return <Login onOk={() => setAuthed(true)} />;
   if (!data) return (
     <div className="boot">
       <div className="boot-inner" style={{ maxWidth:'440px', padding:'24px', textAlign:'center' }}>
@@ -1778,7 +1595,7 @@ function App() {
     </div>
   );
 
-  const props = { data, setData, mut, showToast, go: setPage, theme, toggleTheme, sync, openTx };
+  const props = { data, setData, mut, showToast, go: setPage, theme, setTheme, toggleTheme, sync, openTx };
   const NAV = [
     { id: 'home', label: 'Home', icon: Ico.home },
     { id: 'banks', label: 'Banks', icon: Ico.bank },
@@ -1786,8 +1603,9 @@ function App() {
     { id: 'loans', label: 'Loans', icon: Ico.loan },
     { id: 'bills', label: 'Bills', icon: Ico.bill },
     { id: 'demat', label: 'Demat', icon: Ico.demat },
-    { id: 'ai', label: 'AI Brain', icon: Ico.ai },
-    { id: 'backup', label: 'Backup & Restore', icon: Ico.cloud }
+    { id: 'ai', label: 'Money Brain', icon: Ico.ai },
+    { id: 'backup', label: 'Backup & Restore', icon: Ico.cloud },
+    { id: 'profile', label: 'Profile', icon: Ico.user }
   ];
 
   return (
@@ -1799,7 +1617,6 @@ function App() {
           {NAV.map(n => (<button key={n.id} className={'nav-item' + (page === n.id ? ' active' : '')} onClick={() => setPage(n.id)}><span className="nav-ico">{n.icon}</span><span>{n.label}</span></button>))}
           <div className="side-foot">
             <div style={{ padding: '10px 12px 6px' }}><SyncBadge sync={sync} /></div>
-            <button className="nav-item" onClick={toggleTheme}><span className="nav-ico">{theme === 'dark' ? Ico.sun : Ico.moon}</span><span>{theme === 'dark' ? 'Light Mode' : 'Dark Mode'}</span></button>
             <button className="nav-item" onClick={() => { sessionStorage.removeItem('fv_auth'); setAuthed(false); }}><span className="nav-ico">{Ico.logout}</span><span>Log Out</span></button>
           </div>
         </aside>
@@ -1812,12 +1629,13 @@ function App() {
           {page === 'demat' && <Demat {...props} />}
           {page === 'ai' && <AiBrain {...props} />}
           {page === 'backup' && <BackupRestore {...props} />}
+          {page === 'profile' && <Profile {...props} />}
         </main>
         <nav className="mobile-nav">
           {NAV.map(n => (<button key={n.id} className={'mnav' + (page === n.id ? ' active' : '')} onClick={() => setPage(n.id)}>{n.icon}<span>{n.label}</span></button>))}
         </nav>
         <Toast msg={toast.msg} action={toast.action} onAction={toast.onAction} />
-        <TxModal open={txOpen} onClose={() => { setTxOpen(false); setTxPrefill(null); }} banks={data.banks} prefill={txPrefill} onSave={saveTx} />
+        <TxModal open={txOpen} onClose={() => { setTxOpen(false); setTxPrefill(null); }} banks={data.banks} cards={data.cards} prefill={txPrefill} onSave={saveTx} />
       </div>
     </React.Fragment>
   );
@@ -2378,7 +2196,7 @@ function Banks({ data, mut, showToast, sync, openTx }) {
       if (id) {
         const old = d.transactions.find(t => t.id === id);
         if (old && old.affectsBalance && old.bankId) { const ob = d.banks.find(b => b.id === old.bankId); if (ob) ob.balance = r2(ob.balance - (old.dir === 'in' ? old.amount : -old.amount)); }
-        if (old) { reverseTxLink(d, old); const newLink = payload.link !== undefined ? payload.link : old.link; Object.assign(old, payload); if (newLink) old.link = newLink; }
+        if (old) { reverseTxLink(d, old); const newLink = payload.link !== undefined ? payload.link : null; Object.assign(old, payload); if (newLink) old.link = newLink; else delete old.link; }
         const t = d.transactions.find(x => x.id === id);
         if (t) {
           if (t.affectsBalance && t.bankId) { const nb = d.banks.find(b => b.id === t.bankId); if (nb) nb.balance = r2(nb.balance + (t.dir === 'in' ? t.amount : -t.amount)); }
@@ -2529,7 +2347,7 @@ function Banks({ data, mut, showToast, sync, openTx }) {
                         return (
                           <div className="tx" key={t.id}>
                             <div className="item-ico" style={{ color: t.dir === 'in' ? 'var(--green)' : 'var(--red)' }}>{I}</div>
-                            <div className="item-body"><div className="item-name">{t.note || t.category || 'Transaction'}</div><div className="item-meta"><span>{bank ? bank.name : 'No bank'}</span>{t.category ? <span className="pill">{t.category}</span> : null}{t.link ? <span className="pill blue">linked</span> : null}{!t.affectsBalance ? <span className="pill amber">balance not changed</span> : null}</div></div>
+                            <div className="item-body"><div className="item-name">{t.note || t.category || 'Transaction'}</div><div className="item-meta"><span>{t.paymentMode === 'card' && t.cardId ? ((data.cards.find(c=>c.id===t.cardId)||{}).name || 'Credit Card') : (bank ? bank.name : 'No bank')}</span>{t.paymentMode === 'card' ? <span className="pill blue">Credit Card</span> : null}{t.category ? <span className="pill">{t.category}</span> : null}{t.link ? <span className="pill blue">linked</span> : null}{!t.affectsBalance ? <span className="pill amber">balance not changed</span> : null}</div></div>
                             <div className="item-amt" style={{ color: t.dir === 'in' ? 'var(--green)' : 'var(--red)' }}>{t.dir === 'in' ? '+' : '−'}{inr(t.amount)}</div>
                             <div className="item-actions"><button className="btn btn-sm" onClick={() => { setEditTx(t); setTxOpen(true); }}>Edit</button><button className="btn btn-sm btn-danger" onClick={() => deleteTx(t.id)}>Delete</button></div>
                           </div>
@@ -2544,7 +2362,7 @@ function Banks({ data, mut, showToast, sync, openTx }) {
         ))
       )}
 
-      <TxModal open={txOpen} onClose={() => { setTxOpen(false); setEditTx(null); }} banks={data.banks} tx={editTx} onSave={saveTx} />
+      <TxModal open={txOpen} onClose={() => { setTxOpen(false); setEditTx(null); }} banks={data.banks} cards={data.cards} tx={editTx} onSave={saveTx} />
       <BankModal open={bankOpen} onClose={() => { setBankOpen(false); setEditBank(null); }} bank={editBank} onSave={saveBank} />
       <TransferModal open={transferOpen} onClose={() => setTransferOpen(false)} banks={data.banks} onTransfer={doTransfer} />
 
@@ -2556,74 +2374,60 @@ function Banks({ data, mut, showToast, sync, openTx }) {
   );
 }
 
-function TxModal({ open, onClose, banks, tx, prefill, onSave }) {
+function TxModal({ open, onClose, banks, cards, tx, prefill, onSave }) {
   const [bankId, setBankId] = useState('');
+  const [cardId, setCardId] = useState('');
+  const [paymentMode, setPaymentMode] = useState('bank');
   const [dir, setDir] = useState('out');
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [category, setCategory] = useState('Food');
   const [date, setDate] = useState(toISO(new Date()));
   const [affects, setAffects] = useState(true);
-
-  const IN_CATEGORIES = ['Salary', 'Interest', 'Cashback' ,'Upstox Withdrawal', 'UPI', 'Cash', 'Transfer', 'Investment', 'Other'];
-  const OUT_CATEGORIES = ['Food', 'Transportation', 'Rent', 'Shopping', 'Bills', 'Credit Card', 'Loan EMI', 'Travel', 'Medical', 'Investment', 'Transfer', 'Cash', 'Other'];
+  const IN_CATEGORIES=['Salary','Interest','Cashback','Upstox Withdrawal','UPI','Cash','Transfer','Investment','Other'];
+  const OUT_CATEGORIES=['Food','Transportation','Rent','Shopping','Bills','Credit Card','Loan EMI','Travel','Medical','Investment','Transfer','Cash','Other'];
 
   useEffect(() => {
-    if (open) {
-      if (tx) {
-        setBankId(tx.bankId || defaultBankId(banks));
-        setDir(tx.dir); setAmount(String(tx.amount)); setNote(tx.note || '');
-        setCategory(tx.category || (tx.dir === 'in' ? 'Salary' : 'Food')); setDate(tx.date); setAffects(tx.affectsBalance !== false);
-      } else if (prefill) {
-        setBankId(prefill.bankId || defaultBankId(banks));
-        setDir(prefill.dir); setAmount(prefill.amount); setNote(prefill.note); setCategory(prefill.category);
-        setDate(prefill.date); setAffects(prefill.affectsBalance !== false);
-      } else {
-        setBankId(defaultBankId(banks)); setDir('out'); setAmount(''); setNote('');
-        setCategory('Food'); setDate(toISO(new Date())); setAffects(true);
-      }
+    if (!open) return;
+    if (tx) {
+      const inferredMode = tx.paymentMode || (tx.cardId ? 'card' : 'bank');
+      setBankId(tx.bankId || defaultBankId(banks)); setCardId(tx.cardId || ''); setPaymentMode(inferredMode);
+      setDir(tx.dir || 'out'); setAmount(String(tx.amount || '')); setNote(tx.note || ''); setCategory(tx.category || (tx.dir === 'in' ? 'Salary' : 'Food')); setDate(tx.date || toISO(new Date())); setAffects(tx.affectsBalance !== false);
+    } else if (prefill) {
+      const inferredMode = prefill.paymentMode || 'bank';
+      setBankId(prefill.bankId || defaultBankId(banks)); setCardId(prefill.cardId || ''); setPaymentMode(inferredMode);
+      setDir(prefill.dir || 'out'); setAmount(prefill.amount || ''); setNote(prefill.note || ''); setCategory(prefill.category || 'Food'); setDate(prefill.date || toISO(new Date())); setAffects(prefill.affectsBalance !== false);
+    } else {
+      setBankId(defaultBankId(banks)); setCardId(cards && cards[0] ? cards[0].id : ''); setPaymentMode('bank'); setDir('out'); setAmount(''); setNote(''); setCategory('Food'); setDate(toISO(new Date())); setAffects(true);
     }
-  }, [open, tx, prefill]);
+  }, [open, tx, prefill, banks, cards]);
 
   if (!open) return null;
-
+  const switchDir = next => { setDir(next); if (next === 'in') { setPaymentMode('bank'); setAffects(true); setCategory('Salary'); } else setCategory('Food'); };
+  const chooseMode = mode => { setPaymentMode(mode); if (mode === 'card') setAffects(false); else setAffects(true); };
   const submit = () => {
-    const amt = r2(amount);
-    if (!amt || amt <= 0) return;
-    const payload = { bankId, dir, amount: amt, note, category, date, affectsBalance: affects };
-    if (tx && tx.link) payload.link = tx.link;
-    if (prefill && prefill.link) payload.link = prefill.link;
+    const amt=r2(amount); if (!amt || amt<=0) return;
+    if (dir === 'out' && paymentMode === 'card' && !cardId) return;
+    const payload={ bankId: paymentMode==='bank' ? bankId : '', cardId: dir==='out' && paymentMode==='card' ? cardId : '', paymentMode: dir==='out' ? paymentMode : 'bank', dir, amount:amt, note, category, date, affectsBalance: dir==='out' && paymentMode==='card' ? false : affects };
+    if (dir==='out' && paymentMode==='card' && cardId) payload.link={ type:'cardPurchase', id:cardId };
+    else if (tx && tx.link) payload.link=tx.link;
+    else if (prefill && prefill.link) payload.link=prefill.link;
     onSave(payload, tx ? tx.id : null);
   };
-
-  let activeCategories = dir === 'in' ? IN_CATEGORIES : OUT_CATEGORIES;
-  if (category && !activeCategories.includes(category)) activeCategories = [...activeCategories, category];
-
-  return (
-    <Modal open={open} onClose={onClose} title={tx ? 'Edit Transaction' : 'Add Transaction'} onSubmit={submit}>
-      <div className="field"><label className="label">Money going</label>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          <button type="button" className={'btn btn-sm'} style={{ flex: 1, justifyContent: 'center', background: dir === 'in' ? 'var(--green)' : 'var(--glass-2)', borderColor: dir === 'in' ? 'var(--green)' : 'var(--brd-2)', color: dir === 'in' ? '#fff' : 'var(--muted)', boxShadow: dir === 'in' ? '0 6px 16px -6px var(--green-soft)' : 'none' }} onClick={() => { setDir('in'); setCategory('Salary'); }}>In ↓</button>
-          <button type="button" className={'btn btn-sm'} style={{ flex: 1, justifyContent: 'center', background: dir === 'out' ? 'var(--red)' : 'var(--glass-2)', borderColor: dir === 'out' ? 'var(--red)' : 'var(--brd-2)', color: dir === 'out' ? '#fff' : 'var(--muted)', boxShadow: dir === 'out' ? '0 6px 16px -6px var(--red-soft)' : 'none' }} onClick={() => { setDir('out'); setCategory('Food'); }}>Out ↑</button>
-        </div>
-      </div>
-      <div className="row2">
-        <div className="field"><label className="label">Amount</label><MoneyInput value={amount} onChange={setAmount} autoFocus /></div>
-        <div className="field"><label className="label">Date</label><input className="input" type="date" value={date} onChange={(e) => setDate(e.target.value)} /></div>
-      </div>
-      <div className="field"><label className="label">Bank</label><select className="select" value={bankId} onChange={(e) => setBankId(e.target.value)}>{banks.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}</select></div>
-      <div className="field"><label className="label">Note</label><input className="input" value={note} onChange={(e) => setNote(e.target.value)} placeholder="What was this for?" /></div>
-      <div className="field"><label className="label">Category</label>
-        <select className="select" value={category} onChange={(e) => setCategory(e.target.value)}>
-          {activeCategories.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
-      </div>
-      <div className="switch" onClick={() => setAffects(a => !a)}><div className={'switch-track' + (affects ? ' on' : '')}><div className="switch-knob"></div></div><div className="switch-lbl">Adjust bank balance with this transaction</div></div>
-      <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '10px', padding: '11px' }} onClick={submit}>{tx ? 'Save Changes' : 'Add Transaction'}</button>
-    </Modal>
-  );
+  let activeCategories=dir==='in'?IN_CATEGORIES:OUT_CATEGORIES;
+  if(category && !activeCategories.includes(category)) activeCategories=[...activeCategories,category];
+  const selectedCard=cards && cards.find(c=>c.id===cardId);
+  return <Modal open={open} onClose={onClose} title={tx?'Edit Transaction':'Add Transaction'} onSubmit={submit}>
+    <div className="field"><label className="label">Money movement</label><div className="seg seg-full"><button type="button" className={'seg-btn'+(dir==='out'?' active':'')} onClick={()=>switchDir('out')}>Expense / Out</button><button type="button" className={'seg-btn'+(dir==='in'?' active':'')} onClick={()=>switchDir('in')}>Income / In</button></div></div>
+    <div className="row2"><div className="field"><label className="label">Amount</label><MoneyInput value={amount} onChange={setAmount} autoFocus /></div><div className="field"><label className="label">Date</label><input className="input" type="date" value={date} onChange={e=>setDate(e.target.value)} /></div></div>
+    {dir==='out' ? <div className="field"><label className="label">Payment mode</label><div className="payment-mode-grid"><button type="button" className={'payment-mode'+(paymentMode==='bank'?' active':'')} onClick={()=>chooseMode('bank')}>{Ico.bank}<span>Bank</span></button><button type="button" className={'payment-mode'+(paymentMode==='card'?' active':'')} onClick={()=>chooseMode('card')}>{Ico.card}<span>Credit Card</span></button></div></div> : null}
+    {dir==='out' && paymentMode==='card' ? <div className="field"><label className="label">Credit card</label>{cards && cards.length ? <><select className="select" value={cardId} onChange={e=>setCardId(e.target.value)}>{cards.map(c=><option key={c.id} value={c.id}>{c.name} · {inr(c.outstanding)} outstanding</option>)}</select>{selectedCard ? <div className="selection-note"><span>New purchase will be added to</span><b>{selectedCard.name}</b><span>· outstanding becomes {inr(r2(Number(selectedCard.outstanding||0)+Number(amount||0)))}</span></div> : null}</> : <div className="empty-inline">Add a credit card first from Credit Cards.</div>}</div> : <div className="field"><label className="label">Bank account</label><select className="select" value={bankId} onChange={e=>setBankId(e.target.value)}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></div>}
+    <div className="field"><label className="label">Note</label><input className="input" value={note} onChange={e=>setNote(e.target.value)} placeholder="What was this for?" /></div>
+    <div className="field"><label className="label">Category</label><select className="select" value={category} onChange={e=>setCategory(e.target.value)}>{activeCategories.map(c=><option key={c} value={c}>{c}</option>)}</select></div>
+    {!(dir==='out' && paymentMode==='card') ? <div className="switch" onClick={()=>setAffects(a=>!a)}><div className={'switch-track'+(affects?' on':'')}><div className="switch-knob"></div></div><div className="switch-lbl">Adjust {dir==='in'?'bank':'bank'} balance with this transaction</div></div> : <div className="selection-note card-note">Credit card purchase does not change bank balance. It increases the selected card's outstanding.</div>}
+    <button className="btn btn-primary" style={{width:'100%',justifyContent:'center',marginTop:'10px',padding:'12px'}} onClick={submit}>{tx?'Save Changes':'Add Transaction'}</button>
+  </Modal>;
 }
-
 function BankModal({ open, onClose, bank, onSave }) {
   const [name, setName] = useState('');
   const [balance, setBalance] = useState('');
@@ -2764,6 +2568,23 @@ function Cards({ data, mut, showToast, sync, openTx }) {
         </React.Fragment>
       )}
 
+
+      <div className="section-head"><div className="section-title"><span className="dot"></span>Card Transaction History</div><span className="pill blue">Tracked separately per card</span></div>
+      <div className="card-history-stack">
+        {sortedCards.map(c => {
+          const txs = data.transactions.filter(t => t.cardId === c.id || (t.link && t.link.type === 'card' && t.link.id === c.id)).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||'') || (b.ts||0)-(a.ts||0));
+          const purchases = txs.filter(t => t.link && t.link.type === 'cardPurchase');
+          const payments = txs.filter(t => t.link && t.link.type === 'card');
+          const purchaseTotal = r2(purchases.reduce((s,t)=>s+(Number(t.amount)||0),0));
+          const paymentTotal = r2(payments.reduce((s,t)=>s+(Number(t.amount)||0),0));
+          return <div className="glass card-history-card" key={c.id}>
+            <div className="card-history-head"><div><div className="item-name">{c.name}</div><div className="item-meta"><span className="pill red">{Number(c.interestRate || c.rate || 40)}% APR</span><span>{txs.length} transaction{txs.length!==1?'s':''}</span></div></div><div className="mono card-history-balance">{inr(c.outstanding)}</div></div>
+            <div className="card-history-stats"><div><span>Purchases</span><b>{inr(purchaseTotal)}</b></div><div><span>Payments</span><b>{inr(paymentTotal)}</b></div><div><span>Outstanding</span><b>{inr(c.outstanding)}</b></div></div>
+            {txs.length===0 ? <div className="empty-inline">No card transactions recorded yet.</div> : <div className="card-history-list">{txs.map(t=><div className="card-history-row" key={t.id}><div className="item-ico">{t.link && t.link.type==='card' ? Ico.down : Ico.up}</div><div className="item-body"><div className="item-name">{t.link && t.link.type==='card' ? 'Card payment' : (t.note || 'Card purchase')}</div><div className="item-meta"><span>{fmtDate(t.date)}</span>{t.category?<span className="pill">{t.category}</span>:null}</div></div><div className="item-amt" style={{color:t.link && t.link.type==='card'?'var(--green)':'var(--red)'}}>{t.link && t.link.type==='card'?'+':'−'}{inr(t.amount)}</div></div>)}</div>}
+          </div>;
+        })}
+      </div>
+
       <CardModal open={formOpen} onClose={() => { setFormOpen(false); setEdit(null); }} card={edit} onSave={save} />
 
       <Modal open={!!adjustTarget} onClose={() => setAdjustTarget(null)} title="Adjust Outstanding" onSubmit={saveAdjust}>
@@ -2787,6 +2608,7 @@ function CardModal({ open, onClose, card, onSave }) {
   const [limit, setLimit] = useState('');
   const [outstanding, setOutstanding] = useState('');
   const [dueDay, setDueDay] = useState('');
+  const [interestRate, setInterestRate] = useState('40');
   useEffect(() => {
     if (open) {
       setName(card ? card.name : '');
@@ -2796,10 +2618,11 @@ function CardModal({ open, onClose, card, onSave }) {
       setLimit(card ? String(card.limit || '') : '');
       setOutstanding(card ? String(card.outstanding || '') : '');
       setDueDay(card ? String(card.dueDay || '') : '');
+      setInterestRate(card ? String(card.interestRate || card.rate || 40) : '40');
     }
   }, [open, card]);
   if (!open) return null;
-  const submit = () => onSave({ name: name.trim() || 'Credit Card', number: number.replace(/\D/g, ''), cvv, expiry, limit: r2(limit), outstanding: r2(outstanding), dueDay: Math.min(31, Math.max(1, Number(dueDay) || 10)) }, card ? card.id : null);
+  const submit = () => onSave({ name: name.trim() || 'Credit Card', number: number.replace(/\D/g, ''), cvv, expiry, limit: r2(limit), outstanding: r2(outstanding), dueDay: Math.min(31, Math.max(1, Number(dueDay) || 10)), interestRate: Math.min(100, Math.max(0, r2(interestRate) || 40)) }, card ? card.id : null);
   return (
     <Modal open={open} onClose={onClose} title={card ? 'Edit Card' : 'Add Credit Card'} onSubmit={submit}>
       <div className="field"><label className="label">Card Name</label><input className="input" value={name} onChange={(e) => { setName(e.target.value); setNumber(formatCardNumber(number, e.target.value)); }} placeholder="e.g. Amazon ICICI, HDFC Millenia" /></div>
@@ -2812,7 +2635,7 @@ function CardModal({ open, onClose, card, onSave }) {
         <div className="field"><label className="label">Credit Limit</label><MoneyInput value={limit} onChange={setLimit} /></div>
         <div className="field"><label className="label">Outstanding</label><MoneyInput value={outstanding} onChange={setOutstanding} /></div>
       </div>
-      <div className="field"><label className="label">Bill Due Day (1-31)</label><DayInput value={dueDay} onChange={setDueDay} /></div>
+      <div className="row2"><div className="field"><label className="label">Bill Due Day (1-31)</label><DayInput value={dueDay} onChange={setDueDay} /></div><div className="field"><label className="label">Interest Rate (APR %)</label><MoneyInput value={interestRate} onChange={setInterestRate} placeholder="40" /></div></div><div style={{fontSize:"10.5px",color:"var(--muted)",marginTop:"-5px",marginBottom:"12px",lineHeight:1.45}}>Enter the actual APR from your card statement. If left unchanged, 40% is used as an estimate for prioritisation.</div>
       <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={submit}>{card ? 'Save Changes' : 'Add Card'}</button>
     </Modal>
   );
@@ -3593,173 +3416,61 @@ function DematModal({ open, onClose, account, onSave }) {
 
 function AiBrain({ data, sync, openTx }) {
   const [extra, setExtra] = useState('5000');
-  const [chatMessages, setChatMessages] = useState([]);
-  const [chatInput, setChatInput] = useState('');
-  const [chatContext, setChatContext] = useState({});
-  const chatEndRef = useRef(null);
-
-  const snapshot = useMemo(() => financialSnapshot(data), [data]);
-  const bankTotal = snapshot.bankTotal;
-  const dematTotal = snapshot.dematTotal;
-  const cardDebt = snapshot.cardDebt;
-  const activeLoans = snapshot.activeLoans;
-  const loanDebt = snapshot.loanDebt;
-  const scheduledLoanPayments = snapshot.scheduledLoanPayments;
-  const assets = snapshot.assets;
-  const liabilities = snapshot.liabilities;
-  const netWorth = snapshot.netWorth;
-
-  const mk = monthKey(new Date());
-  const monthTx = data.transactions.filter(t => String(t.date).startsWith(mk));
-  const mIn = r2(monthTx.filter(t => t.dir === 'in').reduce((s, t) => s + (Number(t.amount) || 0), 0));
-  const mOut = r2(monthTx.filter(t => t.dir === 'out').reduce((s, t) => s + (Number(t.amount) || 0), 0));
-
-  const sortedLoans = activeLoans.slice().sort((a, b) => (Number(b.rate) || 0) - (Number(a.rate) || 0));
-  const smallest = activeLoans.slice().sort((a, b) => loanOutstandingPrincipal(a) - loanOutstandingPrincipal(b));
-  const sortedCards = data.cards.slice().sort((a, b) => (Number(b.outstanding) || 0) - (Number(a.outstanding) || 0));
-
-  const base = useMemo(() => simulateLoans(activeLoans, 0), [activeLoans]);
-  const withExtra = useMemo(() => simulateLoans(activeLoans, r2(extra) || 0), [activeLoans, extra]);
-  const monthsSaved = Math.max(0, base.months - withExtra.months);
-  const interestSaved = r2(Math.max(0, base.totalInterest - withExtra.totalInterest));
-
-  const insights = [];
-  if (liabilities === 0) insights.push({ icon: Ico.check, title: 'You are debt free', text: 'No active loans and no credit card outstanding. Keep building your investments.' });
-  if (cardDebt > 0) insights.push({ icon: Ico.card, title: 'Credit cards first', text: 'Credit card interest is usually 36% to 42% a year, way higher than most loans. Clear ' + (sortedCards[0] ? sortedCards[0].name : 'your card') + ' (' + inr(sortedCards[0] ? sortedCards[0].outstanding : 0) + ') before making extra payments on loans.' });
-  if (sortedLoans.length > 0) {
-    const top = sortedLoans[0];
-    insights.push({ icon: Ico.loan, title: 'Attack this loan first', text: top.name + ' has the highest interest at ' + top.rate + '% a year. Put any extra money here first.' });
-    const small = smallest[0];
-    if (small !== top) {
-      const smallRemaining = loanOutstandingPrincipal(small);
-      insights.push({ icon: Ico.sparkle, title: 'Or try the quick win', text: 'If you need motivation, close ' + small.name + ' first. Only ' + inr(smallRemaining) + ' left.' });
-    }
-  }
-  if (bankTotal > 0 && bankTotal < mOut) insights.push({ icon: Ico.bank, title: 'Thin cushion', text: 'Your bank balance is less than one month of spending. Try to keep at least 3 months of expenses (' + inr(r2(mOut * 3)) + ') as an emergency fund.' });
-  else if (mOut > 0) insights.push({ icon: Ico.bank, title: 'Emergency fund check', text: 'A safe cushion is about 3 to 6 months of expenses. For you that is ' + inr(r2(mOut * 3)) + ' to ' + inr(r2(mOut * 6)) + '.' });
-  if (mIn > 0) {
-    const rate = r2(((mIn - mOut) / mIn) * 100);
-    insights.push({ icon: Ico.sparkle, title: 'This month savings rate: ' + rate + '%', text: rate >= 20 ? 'Great going. You are keeping ' + inr(r2(mIn - mOut)) + ' this month.' : rate >= 0 ? 'You are saving ' + inr(r2(mIn - mOut)) + '. Try to push this above 20%.' : 'You spent more than you earned by ' + inr(Math.abs(r2(mIn - mOut))) + '.' });
-  }
-  const catTotals = {};
-  monthTx.filter(t => t.dir === 'out').forEach(t => { const c = t.category || 'Other'; catTotals[c] = r2((catTotals[c] || 0) + (Number(t.amount) || 0)); });
-  const topCats = Object.keys(catTotals).map(k => ({ k, v: catTotals[k] })).sort((a, b) => b.v - a.v).slice(0, 3);
-  if (topCats.length) insights.push({ icon: Ico.bill, title: 'Where your money went this month', text: topCats.map(c => c.k + ' ' + inr(c.v)).join(' · ') });
-  if (base.months > 0) insights.push({ icon: Ico.sparkle, title: 'Debt free in about ' + base.months + ' months', text: 'If you keep paying your normal EMIs, you will be debt free around ' + fmtDate(new Date(new Date().getFullYear(), new Date().getMonth() + base.months, 1)) + '.' });
-
-  const foreclosable = activeLoans.filter(l => Number(l.foreclosureAmount) > 0);
-  const bestForeclose = foreclosable.slice().sort((a, b) => (Number(b.rate) || 0) - (Number(a.rate) || 0))[0];
-
-  useEffect(() => { if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: 'smooth' }); }, [chatMessages]);
-
-  const sendChat = (text) => {
-    const q = String(text || chatInput).trim();
-    if (!q) return;
-    const res = aiAnswer(q, data, chatContext);
-    const answer = typeof res === 'string' ? res : res.text;
-    const newCtx = (res && typeof res === 'object' && res.context) ? res.context : chatContext;
-    setChatMessages(m => m.concat([{ role: 'user', text: q }, { role: 'bot', text: answer }]));
-    setChatContext(newCtx);
-    setChatInput('');
+  const snapshot = useMemo(()=>financialSnapshot(data),[data]);
+  const activeLoans=snapshot.activeLoans;
+  const cards=data.cards.filter(c=>(Number(c.outstanding)||0)>0);
+  const debts=[
+    ...cards.map(c=>({type:'card',id:c.id,name:c.name||'Credit Card',balance:Number(c.outstanding)||0,rate:Number(c.interestRate||c.rate||40),estimated:!c.interestRate&&!c.rate})),
+    ...activeLoans.map(l=>({type:'loan',id:l.id,name:l.name||'Loan',balance:loanOutstandingPrincipal(l),rate:Number(l.rate)||0,estimated:false}))
+  ].filter(d=>d.balance>0.5).sort((a,b)=>(b.rate-a.rate)||(b.balance-a.balance));
+  const primary=debts[0]||null;
+  const base=useMemo(()=>simulateLoans(activeLoans,0),[activeLoans]);
+  const withExtra=useMemo(()=>simulateLoans(activeLoans,r2(extra)||0),[activeLoans,extra]);
+  const monthsSaved=Math.max(0,base.months-withExtra.months);
+  const interestSaved=r2(Math.max(0,base.totalInterest-withExtra.totalInterest));
+  const monthlyCost=primary? r2(primary.balance*primary.rate/100/12):0;
+  const cashAvailable=r2(snapshot.bankTotal);
+  const allocateExtra=()=>{
+    const x=r2(extra); if(!primary||x<=0)return null;
+    const pay=Math.min(x,primary.balance);
+    return {pay,after:r2(primary.balance-pay),savedMonthly:r2(pay*primary.rate/100/12)};
   };
-
-  const clearChat = () => {
-    setChatMessages([]);
-    setChatContext({});
-    setChatInput('');
-  };
-
-  return (
-    <div>
-      <PageHead title="AI Brain" sub="Smart money analysis based on your real data" sync={sync} openTx={openTx} />
-      <div className="grid g3" style={{ marginBottom: '18px' }}>
-        <div className="kpi glass"><div className="kpi-head"><span className="kpi-dot green"></span><span className="kpi-label">Assets</span></div><div className="kpi-val" style={{ color: 'var(--green)' }}>{inr(assets)}</div><div className="kpi-note">Banks {inr(bankTotal)} + Demat {inr(dematTotal)}</div></div>
-        <div className="kpi glass"><div className="kpi-head"><span className="kpi-dot red"></span><span className="kpi-label">Debts</span></div><div className="kpi-val" style={{ color: 'var(--red)' }}>{inr(liabilities)}</div><div className="kpi-note">Loan principal {inr(loanDebt)} + Cards {inr(cardDebt)}</div></div>
-        <div className="kpi glass"><div className="kpi-head"><span className="kpi-dot amber"></span><span className="kpi-label">Net Worth</span></div><div className="kpi-val">{inr(netWorth)}</div><div className="kpi-note">{inr(assets)} − {inr(liabilities)}</div></div>
-      </div>
-
-      <div className="section-head">
-        <div className="section-title"><span className="dot"></span>Ask the AI</div>
-        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
-          <span className="pill blue">Powered by your real data</span>
-          {chatMessages.length > 0 ? (<button className="btn btn-sm btn-danger" onClick={clearChat}>{Ico.trash} Clear chat</button>) : null}
-        </div>
-      </div>
-      <div className="glass" style={{ padding: '20px' }}>
-        <div className="chat-wrap">
-          {chatMessages.length === 0 ? (
-            <div className="chat-msg">
-              <div className="chat-avatar bot">AI</div>
-              <div className="chat-bubble bot">
-                Hi! I'm your money brain. I read your real numbers — balances, EMIs, card dues, this month's spending — and give you a specific plan.{'\n\n'}Ask me anything. Examples:{'\n'}• "I'll get 1.3L this month — where should I put it? Keep 5k in bank"{'\n'}• "Should I foreclose my Navi loan?"{'\n'}• "Which loan should I pay first?"
-              </div>
-            </div>
-          ) : (
-            chatMessages.map((m, i) => (
-              <div key={i} className={'chat-msg ' + m.role}>
-                <div className={'chat-avatar ' + m.role}>{m.role === 'user' ? 'You' : 'AI'}</div>
-                <div className={'chat-bubble ' + m.role} dangerouslySetInnerHTML={{ __html: String(m.text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>') }} />
-              </div>
-            ))
-          )}
-          <div ref={chatEndRef} />
-        </div>
-        <div className="chat-input-row">
-          <input className="input" placeholder="Ask anything… e.g. I'll get 1.3L this month, where should I put it? Keep 2k in bank"
-            value={chatInput}
-            onChange={(e) => setChatInput(e.target.value)}
-            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); } }} />
-          <button className="btn btn-primary" onClick={() => sendChat()} style={{ padding: '10px 14px' }}>{Ico.send}<span style={{ marginLeft: 4 }}>Send</span></button>
-        </div>
-      </div>
-
-      <div className="section-head"><div className="section-title"><span className="dot"></span>What the AI sees</div></div>
-      <div className="list">
-        {insights.map((ins, i) => (
-          <div className="item" key={i}><div className="item-ico" style={{ color: 'var(--accent)' }}>{ins.icon}</div><div className="item-body"><div className="item-name">{ins.title}</div><div style={{ fontSize: '12.5px', color: 'var(--muted)', marginTop: '6px', lineHeight: 1.55 }}>{ins.text}</div></div></div>
-        ))}
-      </div>
-
-      <div className="section-head"><div className="section-title"><span className="dot"></span>Extra Payment Planner</div></div>
-      <div className="glass" style={{ padding: '20px' }}>
-        <div className="field" style={{ maxWidth: '320px' }}><label className="label">If I put this much extra every month</label><MoneyInput value={extra} onChange={setExtra} /></div>
-        <div className="grid g3" style={{ marginTop: '6px' }}>
-          <div className="glass-soft" style={{ padding: '14px' }}><div className="kpi-label">Debt free in</div><div style={{ fontSize: '19px', fontWeight: 700, marginTop: '6px', letterSpacing: '-.4px' }} className="mono">{withExtra.months} months</div><div style={{ fontSize: '11.5px', color: 'var(--muted)', marginTop: '4px' }}>Normal EMI: {base.months} months</div></div>
-          <div className="glass-soft" style={{ padding: '14px' }}><div className="kpi-label">Months saved</div><div style={{ fontSize: '19px', fontWeight: 700, marginTop: '6px', letterSpacing: '-.4px', color: 'var(--green)' }} className="mono">{monthsSaved}</div><div style={{ fontSize: '11.5px', color: 'var(--muted)', marginTop: '4px' }}>That is {r2(monthsSaved / 12)} years faster</div></div>
-          <div className="glass-soft" style={{ padding: '14px' }}><div className="kpi-label">Interest saved</div><div style={{ fontSize: '19px', fontWeight: 700, marginTop: '6px', letterSpacing: '-.4px', color: 'var(--green)' }} className="mono">{inr(interestSaved)}</div><div style={{ fontSize: '11.5px', color: 'var(--muted)', marginTop: '4px' }}>Total interest now {inr(base.totalInterest)}</div></div>
-        </div>
-        {sortedLoans.length > 0 && r2(extra) > 0 ? (<div style={{ marginTop: '16px', fontSize: '12.5px', color: 'var(--muted)', lineHeight: 1.6 }}>Put the extra <b style={{ color: 'var(--txt)' }}>{inr(extra)}</b> into <b style={{ color: 'var(--txt)' }}>{sortedLoans[0].name}</b> first because it charges the highest interest at {sortedLoans[0].rate}% a year.</div>) : null}
-      </div>
-
-      {bestForeclose ? (
-        <React.Fragment>
-          <div className="section-head"><div className="section-title"><span className="dot"></span>Foreclosure Advice</div></div>
-          <div className="glass" style={{ padding: '20px', fontSize: '13px', lineHeight: 1.7 }}>
-            <b>{bestForeclose.name}</b> has an estimated principal outstanding of <b>{inr(loanOutstandingPrincipal(bestForeclose))}</b> and <b>{bestForeclose.monthsLeft || 0} months</b> left at <b>{bestForeclose.rate}%</b>. The lender's foreclosure quote is <b>{inr(bestForeclose.foreclosureAmount)}</b>. Future scheduled EMI payments total about <b>{inr(loanScheduledPayments(bestForeclose))}</b>, so paying the quote instead of those scheduled payments would reduce future cash outflow by roughly <b>{inr(r2(Math.max(0, loanScheduledPayments(bestForeclose) - Number(bestForeclose.foreclosureAmount))))}</b> before any fees, taxes or other contractual charges. {Number(bankTotal) >= Number(bestForeclose.foreclosureAmount) ? ' You have enough in the bank to do this right now.' : ' You need ' + inr(r2(Number(bestForeclose.foreclosureAmount) - bankTotal)) + ' more in the bank to do this today.'}
-          </div>
-        </React.Fragment>
-      ) : null}
-
-      <div className="section-head"><div className="section-title"><span className="dot"></span>Payoff Order</div></div>
-      <div className="list">
-        {sortedLoans.length === 0 && sortedCards.length === 0 ? (<div className="glass"><EmptyState icon={Ico.check} title="Nothing to pay off" sub="You are debt free. Nice." /></div>) : null}
-        {sortedLoans.map((l, i) => (
-          <div className="item" key={l.id}>
-            <div className="item-ico" style={{ fontWeight: 700, fontSize: '14px' }}>{i + 1}</div>
-            <div className="item-body"><div className="item-name">{l.name}</div><div className="item-meta"><span className="pill amber">{l.rate}% interest</span><span className="pill">{l.monthsLeft || 0} months left</span><span className="pill blue">EMI {inr(l.emi)}</span></div></div>
-            <div className="item-amt">{inr(loanOutstandingPrincipal(l))}</div>
-          </div>
-        ))}
-        {sortedCards.map((c) => (
-          <div className="item" key={c.id}>
-            <div className="item-ico">{Ico.card}</div>
-            <div className="item-body"><div className="item-name">{c.name} (credit card)</div><div className="item-meta"><span className="pill red">very high interest</span><span className="pill">due day {c.dueDay || 10}</span></div></div>
-            <div className="item-amt">{inr(c.outstanding)}</div>
-          </div>
-        ))}
-      </div>
+  const plan=allocateExtra();
+  const foreclosable=activeLoans.filter(l=>Number(l.foreclosureAmount)>0).map(l=>({loan:l,saving:r2(Math.max(0,loanScheduledPayments(l)-Number(l.foreclosureAmount))),quote:Number(l.foreclosureAmount)||0})).sort((a,b)=>b.saving-a.saving);
+  const bestForeclose=foreclosable[0]||null;
+  const emergency=r2((data.transactions.filter(t=>String(t.date).startsWith(monthKey(new Date()))&&t.dir==='out').reduce((s,t)=>s+(Number(t.amount)||0),0))*3);
+  const remainingAfterEmergency=Math.max(0,r2(cashAvailable-emergency));
+  return <div>
+    <PageHead title="Money Brain" sub="A calculation engine focused on one objective: minimise avoidable interest cost" sync={sync} openTx={openTx} />
+    <div className="strategy-hero glass">
+      <div className="strategy-kicker"><span className="strategy-pulse"></span> COST-FIRST MONEY ENGINE</div>
+      <h2>{primary ? <>Your current highest-cost debt is <em>{primary.name}</em></> : <>Your vault currently has no outstanding high-cost debt</>}</h2>
+      <p>{primary ? <>Every extra rupee is evaluated against the debt that costs you the most. {primary.type==='card'?'Credit-card interest is treated as '+primary.rate+'% APR'+(primary.estimated?' estimate':'')+'.':'The stored loan rate is '+primary.rate+'%.'}</> : 'Once debt is recorded, this page will automatically calculate which balance is costing you the most.'}</p>
+      {primary ? <div className="strategy-primary-grid"><div><span>Outstanding</span><b className="mono">{inr(primary.balance)}</b></div><div><span>Annual cost</span><b className="mono">{primary.rate}%</b></div><div><span>Approx. monthly interest</span><b className="mono">{inr(monthlyCost)}</b></div><div><span>Bank cash</span><b className="mono">{inr(cashAvailable)}</b></div></div>:null}
     </div>
-  );
+
+    <div className="section-head"><div className="section-title"><span className="dot"></span>Priority order</div><span className="pill amber">Highest cost first</span></div>
+    <div className="list">
+      {debts.length===0?<div className="glass"><EmptyState icon={Ico.check} title="No debt recorded" sub="There is nothing to prioritise right now." /></div>:debts.map((d,i)=><div className={'item priority-item '+(i===0?'priority-top':'')} key={d.type+d.id}><div className="priority-number">{i+1}</div><div className="item-body"><div className="item-name">{d.name}</div><div className="item-meta"><span className={'pill '+(d.type==='card'?'red':'amber')}>{d.rate}% {d.estimated?'estimated ':''}interest</span><span className="pill">{d.type==='card'?'Credit card':'Loan'}</span></div></div><div className="priority-cost"><span>Approx. monthly interest</span><b className="mono">{inr(r2(d.balance*d.rate/100/12))}</b></div><div className="item-amt mono">{inr(d.balance)}</div></div>)}
+    </div>
+
+    <div className="section-head"><div className="section-title"><span className="dot"></span>Extra payment calculator</div></div>
+    <div className="glass" style={{padding:'20px'}}>
+      <div className="strategy-input-row"><div><div className="kpi-label">Extra money available now / monthly</div><MoneyInput value={extra} onChange={setExtra}/></div>{primary?<div className="strategy-target"><span>Target</span><b>{primary.name}</b><small>{primary.rate}% APR · {inr(primary.balance)} outstanding</small></div>:null}</div>
+      {primary && plan ? <div className="grid g3" style={{marginTop:'14px'}}><div className="glass-soft planner-card"><span>Payment to priority</span><b className="mono">{inr(plan.pay)}</b><small>Applied to {primary.name}</small></div><div className="glass-soft planner-card"><span>Monthly interest avoided</span><b className="mono">{inr(plan.savedMonthly)}</b><small>Approx. at current balance</small></div><div className="glass-soft planner-card"><span>Balance after payment</span><b className="mono">{inr(plan.after)}</b><small>Before new interest/charges</small></div></div>:null}
+      <div className="strategy-note">The engine does not spread extra money across debts when a higher-cost debt remains. The objective here is to reduce avoidable interest cost first.</div>
+    </div>
+
+    <div className="section-head"><div className="section-title"><span className="dot"></span>Loan acceleration</div></div>
+    <div className="grid g3"><div className="kpi glass"><div className="kpi-label">Normal payoff</div><div className="kpi-val mono">{base.months} mo</div><div className="kpi-note">Estimated interest {inr(base.totalInterest)}</div></div><div className="kpi glass"><div className="kpi-label">With extra</div><div className="kpi-val mono">{withExtra.months} mo</div><div className="kpi-note">Extra {inr(r2(extra))}/month</div></div><div className="kpi glass"><div className="kpi-label">Interest saved</div><div className="kpi-val mono" style={{color:'var(--green)'}}>{inr(interestSaved)}</div><div className="kpi-note">{monthsSaved} months faster</div></div></div>
+
+    {bestForeclose ? <><div className="section-head"><div className="section-title"><span className="dot"></span>Foreclosure opportunity</div><span className="pill green">Largest scheduled saving</span></div><div className="glass strategy-callout"><div className="strategy-callout-icon">{Ico.sparkle}</div><div><b>{bestForeclose.loan.name}</b><p>Foreclosure quote {inr(bestForeclose.quote)} versus future scheduled payments of {inr(loanScheduledPayments(bestForeclose.loan))}. The raw future cash-flow difference is about <strong>{inr(bestForeclose.saving)}</strong>, before foreclosure fees, taxes or other lender charges.</p><small>{cashAvailable>=bestForeclose.quote?'Your current bank balance can cover the stored quote.':'Your bank balance is below the stored quote by '+inr(r2(bestForeclose.quote-cashAvailable))+'.'}</small></div></div></>:null}
+
+    <div className="section-head"><div className="section-title"><span className="dot"></span>Cash decision rules</div></div>
+    <div className="grid g2"><div className="glass rule-card"><span className="rule-num">01</span><div><b>Protect minimum liquidity</b><p>Current bank: <strong>{inr(cashAvailable)}</strong>. A 3-month buffer based on current-month logged spending is <strong>{inr(emergency)}</strong>.</p></div></div><div className="glass rule-card"><span className="rule-num">02</span><div><b>Then attack the highest cost</b><p>{primary?<>Current target: <strong>{primary.name}</strong> at <strong>{primary.rate}%</strong>. Approximate monthly interest is <strong>{inr(monthlyCost)}</strong>.</>:<>No target yet.</>}</p></div></div></div>
+    <div className="section-head"><div className="section-title"><span className="dot"></span>Decision summary</div></div>
+    <div className="glass decision-summary"><div className="decision-main"><span className="kpi-label">If you give the engine extra money today</span><strong>{primary?primary.name:'No debt target'}</strong><p>{primary?`Keep your chosen liquidity reserve first, then direct remaining extra cash toward ${primary.name}. This is the debt with the highest recorded/estimated interest cost in the vault.`:'There is currently no outstanding balance to prioritise.'}</p></div><div className="decision-side"><span>Remaining bank after 3-month buffer</span><b className="mono">{inr(remainingAfterEmergency)}</b></div></div>
+  </div>;
 }
 
 ReactDOM.createRoot(document.getElementById('root')).render(<App />);
