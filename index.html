@@ -738,318 +738,217 @@ function aiAnswer(question, data, context) {
   const q = String(question || '').trim();
   const ql = q.toLowerCase();
   const s = dataSummary(data);
+  const n = v => Number(v) || 0;
+  const monthlyExpense = n(s.mOut);
+  const monthlyIncome = n(s.mIn);
+  const monthlySurplus = r2(monthlyIncome - monthlyExpense);
+  const amounts = extractAllAmounts(q);
+  let amount = amounts.length ? amounts[amounts.length - 1] : null;
+  const refersToPrevious = /\b(it|that|this|same|same amount|that money|the money|remaining|left)\b/.test(ql);
+  if (!amount && refersToPrevious && n(context.lastAmount) > 0) amount = n(context.lastAmount);
 
-  // -- Parse amounts
-  const allAmounts = extractAllAmounts(q);
-  let amt = allAmounts.length ? allAmounts[allAmounts.length - 1] : null;
-  // Context fallback: "this X" / "it" / "that" refers to previous
-  const refersToPrev = /\b(this|that|it|the same|same amount|that amount|that money)\b/.test(ql);
-  if (!amt && refersToPrev && context.lastAmount) amt = context.lastAmount;
+  const keepMatch = q.match(/\b(?:keep|leave|reserve|retain|hold|maintain)\b[^0-9₹]{0,35}(?:₹|rs\.?|inr)?\s*(\d[\d,]*(?:\.\d+)?)\s*(k|thousand|lakh|lakhs|lac|lacs|l|cr|crore|crores)?/i);
+  const keep = keepMatch ? parseAmountToken(keepMatch[1], keepMatch[2]) : null;
+  const words = (...ws) => ws.some(w => ql.includes(w));
 
-  // -- Parse constraints
-  const keepInBank = parseKeepInBank(q);
-  const mustPayList = parseMustPay(q);
+  const cards = data.cards.map(c => ({
+    name: c.name || 'Credit card',
+    outstanding: n(c.outstanding),
+    rate: n(c.interestRate) || n(c.rate) || 40
+  })).filter(c => c.outstanding > 0);
 
-  const has = (...words) => words.some(w => ql.includes(w));
-  const score = (words) => words.reduce((n, w) => n + (ql.includes(w) ? 1 : 0), 0);
-
-  // -- Intent scoring
-  const intentScores = {
-    allocate: score([
-      'where should i put','where to put','where should i','where do i put','invest','allocate','put my','put this','put it','deploy',
-      'use my','use this','do with','what should i do with','receiv','get','got','incoming','extra money','spare','leftover',
-      'what to do with','how to use','what should i do','best use','optimal','split','distribute'
-    ]),
-    foreclose: score(['foreclose','close my loan','close the loan','close loan','pay off my loan','payoff my loan','settle','pay off','prepay','pre-pay','pre payment','prepayment']),
-    emergency: score(['emergency','buffer','cushion','rainy','safety fund','safety net']),
-    debtfree: score(['debt free','debtfree','how long','when will i be','clear all my debt','pay off all debt','debt-free']),
-    savings: score(['saving','savings rate','am i saving','save enough','how much am i saving','saving enough']),
-    order: score(['which loan','pay first','priority','payoff order','highest interest','pay first','attack first']),
-    summary: score(['summary','overview','how am i doing','status','net worth','where am i','finances','financial position']),
-    help: score(['help','what can you','what can i ask','what do you do','how do you work'])
-  };
-
-  let intent = 'help';
-  let best = 0;
-  for (const k in intentScores) { if (intentScores[k] > best) { best = intentScores[k]; intent = k; } }
-
-  // If no amount but "this/that/it" refers to previous intent, keep the same intent
-  if (best === 0 && refersToPrev && context.lastIntent) intent = context.lastIntent;
-
-  // If it's a question about money and we have an amount, prefer allocate
-  if (best === 0 && amt && has('where','how','put','invest','do','save','allocate','use','best')) intent = 'allocate';
-  // If amount + "save" → allocate
-  if (amt && has('save')) { if (intentScores.allocate >= intentScores.savings) intent = 'allocate'; }
-
-  // ================= ALLOCATE =================
-  if (intent === 'allocate') {
-    let cash = amt;
-    if (!cash || cash <= 0) cash = s.bankTotal;
-    if (!cash || cash <= 0) {
-      return `Tell me how much you have (e.g. "I'll get 1.3L this month") and I'll give you a full plan.`;
-    }
-
-    const lines = [];
-    lines.push(`Okay, you have ${inr(cash)} to deploy. Here's the exact plan based on your real numbers.`);
-    lines.push('');
-
-    let remaining = cash;
-    let step = 0;
-
-    // 1. Bank buffer
-    let buffer = keepInBank;
-    if (buffer === null || buffer === undefined) {
-      // Auto-suggest a buffer: 2 weeks of spending or 5% of the cash, capped at 10k
-      buffer = Math.min(10000, Math.max(2000, r2((s.mOut || 4000) * 0.5)));
-      if (buffer > cash * 0.5) buffer = r2(cash * 0.1);
-    }
-    if (buffer > cash) buffer = cash;
-    if (buffer > 0) {
-      step++;
-      lines.push(`${step}. Keep ${inr(buffer)} in the bank${keepInBank !== null ? ' (as you asked)' : ' as a small buffer for the next 2-3 weeks'}.`);
-      remaining = r2(remaining - buffer);
-    }
-
-    if (remaining <= 0.5) {
-      lines.push('');
-      lines.push(`That uses everything. Nothing further to allocate.`);
-      return { text: lines.join('\n'), context: { lastAmount: cash, lastIntent: 'allocate', lastSubject: 'cash' } };
-    }
-
-    // 2. Upcoming dues (next 30 days)
-    const dues = upcomingDues(data, 30);
-
-    // Card dues — highest priority (40% annualised)
-    if (dues.cards.length > 0 && remaining > 0.5) {
-      const totalCardDue = dues.cards.reduce((s2, c) => s2 + c.amount, 0);
-      const take = Math.min(remaining, totalCardDue);
-      step++;
-      lines.push(`${step}. Card dues in the next 30 days: ${inr(totalCardDue)} (${dues.cards.map(c => c.name).join(', ')}).`);
-      lines.push(`   Reserve ${inr(take)} for these. Card interest is ~40%/year — the worst kind of debt to carry.`);
-      remaining = r2(remaining - take);
-    }
-
-    // Loan EMIs
-    if (dues.loans.length > 0 && remaining > 0.5) {
-      const totalLoan = dues.loans.reduce((s2, c) => s2 + c.amount, 0);
-      const take = Math.min(remaining, totalLoan);
-      step++;
-      lines.push(`${step}. Loan EMIs in the next 30 days: ${inr(totalLoan)} across ${dues.loans.length} loan${dues.loans.length > 1 ? 's' : ''}.`);
-      lines.push(`   Reserve ${inr(take)} — missing an EMI hurts your CIBIL score.`);
-      remaining = r2(remaining - take);
-    }
-
-    // Bills
-    if (dues.bills.length > 0 && remaining > 0.5) {
-      const totalBills = dues.bills.reduce((s2, c) => s2 + c.amount, 0);
-      const take = Math.min(remaining, totalBills);
-      step++;
-      lines.push(`${step}. Recurring bills due: ${inr(totalBills)}.`);
-      lines.push(`   Reserve ${inr(take)}.`);
-      remaining = r2(remaining - take);
-    }
-
-    // 3. Emergency fund top-up
-    const monthlyExpense = s.mOut > 0 ? s.mOut : 5000;
-    const ef3 = r2(monthlyExpense * 3);
-    const bankAfterAll = r2(s.bankTotal + buffer - (dues.cards.reduce((a,c)=>a+c.amount,0) > remaining ? remaining : dues.cards.reduce((a,c)=>a+c.amount,0)));
-    // simpler: if after reserving the buffers, bank+remaining < ef3, top up
-    const projectedBank = r2(s.bankTotal + buffer);
-    if (projectedBank < ef3 && remaining > 0.5 && dues.cards.length === 0) {
-      const gap = r2(ef3 - projectedBank);
-      const take = Math.min(remaining, gap);
-      step++;
-      lines.push(`${step}. Emergency fund top-up. Your monthly spend is about ${inr(monthlyExpense)}, so 3 months of expenses = ${inr(ef3)}. You're at ${inr(projectedBank)} — that's ${inr(gap)} short.`);
-      lines.push(`   Put ${inr(take)} into a liquid fund and label it "emergency".`);
-      remaining = r2(remaining - take);
-    }
-
-    // 4. Pre-pay the highest interest debt
-    if (remaining > 0.5) {
-      const allDebt = [];
-      s.activeLoans.forEach(l => {
-        const rem = r2((Number(l.emi) || 0) * (Number(l.monthsLeft) || 0));
-        allDebt.push({ type: 'loan', name: l.name, rate: Number(l.rate) || 0, rem, ref: l });
-      });
-      data.cards.forEach(c => {
-        allDebt.push({ type: 'card', name: c.name, rate: 40, rem: Number(c.outstanding) || 0, ref: c });
-      });
-      allDebt.sort((a, b) => b.rate - a.rate);
-
-      if (allDebt.length > 0) {
-        let idx = 0;
-        while (remaining > 0.5 && idx < allDebt.length) {
-          const target = allDebt[idx];
-          const put = Math.min(remaining, target.rem);
-          step++;
-          if (target.rate >= 30) {
-            lines.push(`${step}. Clear ${target.name} (${target.rate}% interest). Pre-pay ${inr(put)} — that's ~${inr(r2(put * target.rate / 100))} saved in a year.`);
-          } else if (target.rate >= 15) {
-            lines.push(`${step}. Pre-pay ${target.name} (${target.rate}%). Put ${inr(put)} here. Saves ~${inr(r2(put * target.rate / 100))}/year.`);
-          } else {
-            lines.push(`${step}. Pre-pay ${target.name} (${target.rate}%). Put ${inr(put)} here for guaranteed ~${target.rate}% return.`);
-          }
-          remaining = r2(remaining - put);
-          idx++;
-        }
-      } else {
-        // No debt → invest
-        step++;
-        lines.push(`${step}. You have zero debt. Invest the remaining ${inr(remaining)}.`);
-        lines.push(`   Suggested split for a moderate profile:`);
-        lines.push(`   • 60% — ${inr(r2(remaining * 0.6))} in a Nifty 50 index fund SIP`);
-        lines.push(`   • 25% — ${inr(r2(remaining * 0.25))} in a short-duration debt fund`);
-        lines.push(`   • 15% — ${inr(r2(remaining * 0.15))} in a liquid fund for flexibility`);
-        remaining = 0;
-      }
-    }
-
-    if (remaining > 0.5) {
-      step++;
-      lines.push(`${step}. Remaining ${inr(remaining)}: park in a liquid fund or high-yield savings. Don't let it sit idle.`);
-    }
-
-    lines.push('');
-    lines.push(`— Summary —`);
-    lines.push(`• Total deployed: ${inr(cash)}`);
-    lines.push(`• Bank buffer kept: ${inr(buffer)}`);
-    lines.push(`• Debt clearing: ${inr(r2(cash - buffer - remaining))}`);
-
-    // Tail message for follow-up
-    if (dues.cards.length > 0 || dues.loans.length > 0) {
-      lines.push('');
-      lines.push(`If you have specific must-pay amounts (like "minimum 5k on my card"), tell me and I'll rework the plan.`);
-    }
-
+  const loans = s.activeLoans.map(l => {
+    const emi = n(l.emi), months = n(l.monthsLeft), balance = r2(emi * months), rate = n(l.rate);
     return {
-      text: lines.join('\n'),
-      context: { lastAmount: cash, lastIntent: 'allocate', lastSubject: 'cash' }
+      name: l.name || 'Loan', emi, months, balance, rate,
+      foreclosure: n(l.foreclosureAmount),
+      monthlyInterest: r2(balance * rate / 100 / 12)
     };
+  }).filter(l => l.balance > 0 || l.emi > 0);
+
+  const allDebts = cards.map(c => ({type:'card',name:c.name,balance:c.outstanding,rate:c.rate,emi:0}))
+    .concat(loans.map(l => ({type:'loan',name:l.name,balance:l.balance,rate:l.rate,emi:l.emi})))
+    .sort((a,b) => b.rate - a.rate);
+
+  const totalDebt = r2(allDebts.reduce((x,d) => x + d.balance, 0));
+  const debtPayments = r2(loans.reduce((x,l) => x + l.emi, 0));
+  const threeMonthFund = r2(monthlyExpense * 3);
+  const sixMonthFund = r2(monthlyExpense * 6);
+
+  const asksAllocation = words('where should','where do i','what should i do with','what do i do with',
+    'where to put','put my','put this','put it','invest','allocate','deploy','use my money',
+    'use this money','split','distribute','extra cash','spare cash','money i have','money coming','salary');
+  const asksDebt = words('loan','debt','emi','credit card','card debt','pay off','payoff','prepay','pre-payment','foreclose','foreclosure');
+  const asksEmergency = words('emergency','cushion','buffer','safety fund','rainy day');
+  const asksInvesting = words('invest','investment','stock','stocks','mutual fund','mf','etf','sip','nifty','gold','equity','market');
+  const asksCashflow = words('cash flow','cashflow','income','expense','spending','spend','saving','savings','save enough');
+  const asksSummary = words('summary','overview','financial position','net worth','my finances','how am i doing','status');
+  const asksDebtFree = words('debt free','debt-free','when will i','how long until','clear my debt');
+  const asksForeclose = words('foreclose','foreclosure');
+  const asksCompare = words('compare','versus',' vs ','better between','which one');
+
+  let intent = 'general';
+  if (asksForeclose) intent = 'foreclose';
+  else if (asksDebtFree) intent = 'debtfree';
+  else if (asksAllocation || (amount && (asksInvesting || words('do with','use','best use')))) intent = 'allocate';
+  else if (asksEmergency) intent = 'emergency';
+  else if (asksDebt && !asksAllocation) intent = 'debt';
+  else if (asksCashflow) intent = 'cashflow';
+  else if (asksSummary) intent = 'summary';
+  else if (asksInvesting) intent = 'investing';
+  else if (asksCompare) intent = 'compare';
+  else if (context.lastIntent && refersToPrevious) intent = context.lastIntent;
+
+  if (intent === 'allocate') {
+    let cash = n(amount) || n(context.lastAmount) || n(s.bankTotal);
+    if (cash <= 0) return {text:'Tell me the amount you want to make a decision about, for example "I have ₹20,000 available". I’ll calculate the allocation using your vault data.',context:{...context,lastIntent:'allocate'}};
+
+    const bankReserve = keep !== null && keep > 0
+      ? Math.min(cash, keep)
+      : Math.min(cash, Math.max(5000, Math.min(threeMonthFund || 10000, Math.max(10000, cash * 0.25))));
+    let remaining = r2(cash - bankReserve);
+    const lines = [
+      `I’m treating ${inr(cash)} as the money you want to deploy.`, '',
+      `Your current position:`,
+      `• Bank: ${inr(s.bankTotal)} | Demat: ${inr(s.dematTotal)}`,
+      `• Current net worth: ${inr(s.netWorth)}`,
+      `• Monthly income logged: ${inr(monthlyIncome)} | spending: ${inr(monthlyExpense)}`,
+      `• Debt: ${inr(totalDebt)}${allDebts.length ? `, highest rate ${r2(allDebts[0].rate)}% (${allDebts[0].name})` : ', none'}`, ''
+    ];
+    lines.push(`1. Keep ${inr(bankReserve)} liquid${keep !== null ? ', exactly as requested.' : '.'}`);
+    if (monthlyExpense > 0) lines.push(`   That is about ${r2(bankReserve / monthlyExpense)} month(s) of your currently logged spending.`);
+
+    const cardTotal = r2(cards.reduce((x,c) => x + c.outstanding, 0));
+    if (cardTotal > 0 && remaining > 0) {
+      const pay = Math.min(remaining, cardTotal);
+      lines.push(`2. Reserve ${inr(pay)} for credit-card dues. You have ${inr(cardTotal)} outstanding.`);
+      lines.push(`   Carrying high-cost card debt can overwhelm the expected return of a normal low-risk investment.`);
+      remaining = r2(remaining - pay);
+    }
+
+    const emiReserve = r2(loans.reduce((x,l) => x + l.emi, 0));
+    if (emiReserve > 0 && remaining > 0) {
+      const pay = Math.min(remaining, emiReserve);
+      lines.push(`3. Keep ${inr(pay)} available for upcoming EMIs.`);
+      remaining = r2(remaining - pay);
+    }
+
+    const currentLiquid = r2(s.bankTotal + bankReserve);
+    if (monthlyExpense > 0 && currentLiquid < threeMonthFund && remaining > 0) {
+      const gap = r2(threeMonthFund - currentLiquid);
+      const add = Math.min(remaining, gap);
+      lines.push(`4. Emergency-fund top-up: ${inr(add)} toward a 3-month target of ${inr(threeMonthFund)}.`);
+      lines.push(`   Planned liquid reserve after this: about ${inr(r2(currentLiquid + add))}.`);
+      remaining = r2(remaining - add);
+    }
+
+    const highDebt = allDebts.find(d => d.rate >= 12);
+    if (highDebt && remaining > 0) {
+      const pay = Math.min(remaining, highDebt.balance);
+      lines.push(`5. Consider ${inr(pay)} toward ${highDebt.name} at ${r2(highDebt.rate)}% interest.`);
+      lines.push(`   A ${inr(pay)} principal reduction represents roughly ${inr(r2(pay * highDebt.rate / 100))} of first-year interest avoided, before amortisation effects.`);
+      remaining = r2(remaining - pay);
+    }
+
+    if (remaining > 0.5) {
+      const equity = r2(remaining * 0.70), safe = r2(remaining * 0.20), gold = r2(remaining - equity - safe);
+      lines.push(`6. Remaining ${inr(remaining)} can be invested according to your risk and time horizon:`);
+      lines.push(`   • ${inr(equity)} (70%) diversified equity/index exposure`);
+      lines.push(`   • ${inr(safe)} (20%) liquid/short-duration low-risk bucket`);
+      lines.push(`   • ${inr(gold)} (10%) gold/diversifier`);
+      lines.push(`   These percentages are a starting calculation, not a prediction of returns. Give me your horizon and risk tolerance and I’ll recalculate.`);
+    }
+    lines.push('',`Calculated allocation total: ${inr(cash)}.`);
+    lines.push(`I would not treat the entire ${inr(cash)} as investable if doing so leaves you without liquidity or while expensive debt remains.`);
+    return {text:lines.join('\n'),context:{...context,lastAmount:cash,lastIntent:'allocate',lastSubject:'cash'}};
   }
 
-  // ================= FORECLOSE =================
   if (intent === 'foreclose') {
-    if (s.activeLoans.length === 0) {
-      return { text: `You have no active loans — nothing to foreclose. 🎉`, context: { lastIntent: 'foreclose' } };
-    }
-    // Try to match a loan by name
-    const named = s.activeLoans.find(l => ql.includes(String(l.name).toLowerCase().split(/\s+/)[0].toLowerCase()));
-    const candidates = named ? [named] : s.activeLoans.filter(l => Number(l.foreclosureAmount) > 0);
-    if (!candidates.length) {
-      return { text: `None of your loans have a foreclosure amount set. Add it on the loan's edit screen and I'll tell you whether to close it.`, context: { lastIntent: 'foreclose' } };
-    }
-    const best = [...candidates].sort((a, b) => (Number(b.rate) || 0) - (Number(a.rate) || 0))[0];
-    const rem = r2((Number(best.emi) || 0) * (Number(best.monthsLeft) || 0));
-    const saved = r2(Math.max(0, rem - Number(best.foreclosureAmount || 0)));
-    const lines = [];
-    lines.push(`Looking at ${best.name} (${best.rate}% interest):`);
-    lines.push('');
-    lines.push(`• Remaining: ${inr(rem)} over ${best.monthsLeft || 0} months`);
-    lines.push(`• Foreclosure amount today: ${inr(best.foreclosureAmount || 0)}`);
-    lines.push(`• Future payments saved: ${inr(saved)}`);
-    lines.push('');
-    if (s.bankTotal >= Number(best.foreclosureAmount)) {
-      lines.push(`You have ${inr(s.bankTotal)} in the bank — that covers it. After paying you'd keep ${inr(r2(s.bankTotal - Number(best.foreclosureAmount)))}.`);
-      if (r2(s.bankTotal - Number(best.foreclosureAmount)) < s.mOut * 3) {
-        lines.push(`Caution: that's below your 3-month cushion (${inr(r2(s.mOut * 3))}). Build that first.`);
-      } else {
-        lines.push(`Verdict: GO AHEAD. You save ${inr(saved)} and keep a healthy buffer.`);
-      }
+    if (!loans.length) return {text:`I don't see an active loan with a balance in the vault.`,context:{...context,lastIntent:'foreclose'}};
+    let target = loans.find(l => ql.includes(l.name.toLowerCase())) || loans.slice().sort((a,b)=>b.rate-a.rate)[0];
+    const bankAfter = target.foreclosure > 0 ? r2(s.bankTotal - target.foreclosure) : null;
+    const lines = [`Analysis for ${target.name}:`, '',
+      `• Outstanding scheduled balance: ${inr(target.balance)}`,
+      `• EMI: ${inr(target.emi)} × ${target.months} months`,
+      `• Interest rate: ${r2(target.rate)}%`,
+      `• Approx. current monthly interest component: ${inr(target.monthlyInterest)}`];
+    if (target.foreclosure > 0) {
+      lines.push(`• Foreclosure amount entered: ${inr(target.foreclosure)}`);
+      lines.push(`• Difference versus scheduled balance: ${inr(Math.max(0,r2(target.balance-target.foreclosure)))}`);
+      if (s.bankTotal >= target.foreclosure) {
+        lines.push(`• Bank after foreclosure: ${inr(bankAfter)}`);
+        if (monthlyExpense > 0) lines.push(`• That leaves about ${r2(bankAfter/monthlyExpense)} month(s) of current spending in bank.`);
+      } else lines.push(`• Current bank is short by ${inr(r2(target.foreclosure-s.bankTotal))}.`);
+      if (monthlyExpense > 0 && bankAfter < threeMonthFund) lines.push(`• Liquidity check: this would leave you below the 3-month expense buffer of ${inr(threeMonthFund)} based on logged spending.`);
     } else {
-      lines.push(`You're short by ${inr(r2(Number(best.foreclosureAmount) - s.bankTotal))}. Withdraw from demat (${inr(s.dematTotal)} available) or accumulate more first.`);
+      lines.push(`• No foreclosure amount is stored, so I cannot calculate the actual saving or any fee/penalty.`);
+      lines.push(`Add the lender’s current foreclosure quote and I can recalculate it.`);
     }
-    return { text: lines.join('\n'), context: { lastIntent: 'foreclose', lastSubject: best.name } };
+    lines.push('',`The calculation is: guaranteed interest avoided versus liquidity lost, plus any foreclosure fee or contractual effect not stored in the vault.`);
+    return {text:lines.join('\n'),context:{...context,lastIntent:'foreclose',lastSubject:target.name}};
   }
 
-  // ================= EMERGENCY =================
+  if (intent === 'debt') {
+    if (!allDebts.length) return {text:`You currently have no card or active-loan debt recorded.`,context:{...context,lastIntent:'debt'}};
+    const lines=[`Debt picture: ${inr(totalDebt)} total recorded debt.`];
+    allDebts.forEach((d,i)=>lines.push(`${i+1}. ${d.name}: ${inr(d.balance)} at ${r2(d.rate)}% ≈ ${inr(r2(d.balance*d.rate/100))}/year at the current balance, before amortisation.`));
+    const highest=allDebts[0];
+    lines.push('',`For extra repayments, compare each debt’s effective cost with the alternative use of cash. Your highest recorded rate is ${r2(highest.rate)}% on ${highest.name}.`);
+    if (amount && amount > 0 && loans.length) {
+      const normal=simulateLoans(s.activeLoans,0), accelerated=simulateLoans(s.activeLoans,amount);
+      lines.push(`With ${inr(amount)} extra per month, the loan simulation changes from about ${normal.months} months to ${accelerated.months} months, saving roughly ${inr(Math.max(0,normal.totalInterest-accelerated.totalInterest))} in simulated interest.`);
+    }
+    return {text:lines.join('\n'),context:{...context,lastIntent:'debt',lastAmount:amount||context.lastAmount}};
+  }
+
   if (intent === 'emergency') {
-    const monthly = s.mOut > 0 ? s.mOut : 0;
-    if (monthly === 0) return { text: `I don't see any spending this month yet. Log some transactions and I'll tell you how much you need for a safe emergency fund.`, context: { lastIntent: 'emergency' } };
-    const need3 = r2(monthly * 3);
-    const need6 = r2(monthly * 6);
-    const have = s.bankTotal;
-    const pct = r2((have / need6) * 100);
-    const lines = [];
-    lines.push(`Your monthly spending this month: ${inr(monthly)}.`);
-    lines.push(`• 3-month cushion: ${inr(need3)}`);
-    lines.push(`• 6-month cushion: ${inr(need6)}`);
-    lines.push(`• Cash in bank: ${inr(have)}`);
-    lines.push('');
-    lines.push(`That's ${pct}% of a 6-month fund. ${pct >= 100 ? 'You are fully covered.' : pct >= 50 ? 'Halfway there. Keep going.' : 'Under-covered. Prioritise this before investing.'}`);
-    if (s.dematTotal > 0) lines.push(`Note: your ${inr(s.dematTotal)} in demat isn't a substitute for cash. Keep at least ${inr(need3)} liquid.`);
-    return { text: lines.join('\n'), context: { lastIntent: 'emergency' } };
+    if (monthlyExpense <= 0) return {text:`I don't have enough logged monthly spending to calculate your emergency-fund target yet.`,context:{...context,lastIntent:'emergency'}};
+    const liquid=s.bankTotal, gap3=Math.max(0,r2(threeMonthFund-liquid)), gap6=Math.max(0,r2(sixMonthFund-liquid));
+    return {text:`Emergency-fund calculation:\n\n• Monthly spending: ${inr(monthlyExpense)}\n• 3-month target: ${inr(threeMonthFund)}\n• 6-month target: ${inr(sixMonthFund)}\n• Current bank balance: ${inr(liquid)}\n• Gap to 3 months: ${inr(gap3)}\n• Gap to 6 months: ${inr(gap6)}\n\nThese targets use spending currently logged in ShubhVault.`,context:{...context,lastIntent:'emergency'}};
   }
 
-  // ================= DEBT FREE =================
   if (intent === 'debtfree') {
-    if (s.activeLoans.length === 0 && s.cardDebt === 0) return { text: `You have zero loans and zero card debt. You're already debt-free. 🎉`, context: { lastIntent: 'debtfree' } };
-    const base = simulateLoans(s.activeLoans, 0);
-    const lines = [];
-    lines.push(`At current EMIs and no extra payments: about ${base.months} months (${r2(base.months / 12)} years).`);
-    const plan = simulateLoans(s.activeLoans, 5000);
-    lines.push(`With an extra ${inr(5000)} per month: ${plan.months} months — ${base.months - plan.months} months faster, ${inr(Math.max(0, base.totalInterest - plan.totalInterest))} interest saved.`);
-    lines.push(`Try the Extra Payment Planner above with your own number.`);
-    return { text: lines.join('\n'), context: { lastIntent: 'debtfree' } };
+    if (!loans.length) return {text:`I don't see active loans in the vault.`,context:{...context,lastIntent:'debtfree'}};
+    const normal=simulateLoans(s.activeLoans,0), extra=amount&&amount>0?amount:0;
+    let text=`Using the loan balances, rates and EMIs stored in the vault, the normal-payment simulation reaches zero in about ${normal.months} months.\n\nEstimated total interest in that simulation: ${inr(normal.totalInterest)}.`;
+    if(extra){const a=simulateLoans(s.activeLoans,extra);text+=`\n\nIf you add ${inr(extra)} every month, the simulation reaches zero in about ${a.months} months, saving about ${Math.max(0,normal.months-a.months)} months and ${inr(Math.max(0,normal.totalInterest-a.totalInterest))} in simulated interest.`;}
+    return {text,context:{...context,lastIntent:'debtfree',lastAmount:extra||context.lastAmount}};
   }
 
-  // ================= SAVINGS =================
-  if (intent === 'savings') {
-    if (s.mIn === 0) return { text: `No income logged this month yet. Add your salary and I'll compute your savings rate.`, context: { lastIntent: 'savings' } };
-    const rate = r2(((s.mIn - s.mOut) / s.mIn) * 100);
-    const lines = [];
-    lines.push(`Income: ${inr(s.mIn)}   ·   Expenses: ${inr(s.mOut)}   ·   Saved: ${inr(r2(s.mIn - s.mOut))}`);
-    lines.push(`Savings rate: ${rate}%.`);
-    lines.push('');
-    if (rate >= 30) lines.push(`Excellent — well above the 20% benchmark. Consider bumping your SIP by ${inr(r2(s.mIn * 0.05))}.`);
-    else if (rate >= 20) lines.push(`Solid. You're hitting the 20% benchmark.`);
-    else if (rate >= 0) lines.push(`Below 20%. To reach it, cut about ${inr(r2(s.mIn * 0.2 - (s.mIn - s.mOut)))} of discretionary spending.`);
-    else lines.push(`You spent more than you earned by ${inr(Math.abs(r2(s.mIn - s.mOut)))}. Review the largest categories on the Banks page.`);
-    return { text: lines.join('\n'), context: { lastIntent: 'savings' } };
+  if (intent === 'cashflow') {
+    const rate=monthlyIncome>0?r2(monthlySurplus/monthlyIncome*100):null;
+    const lines=[`Current-month cash-flow calculation:`,`• Income logged: ${inr(monthlyIncome)}`,`• Spending logged: ${inr(monthlyExpense)}`,`• Net monthly surplus: ${inr(monthlySurplus)}`];
+    if(rate!==null) lines.push(`• Savings rate: ${rate}%`);
+    lines.push(`• Loan EMIs: ${inr(debtPayments)}`,`• Bank + demat: ${inr(r2(s.bankTotal+s.dematTotal))}`);
+    return {text:lines.join('\n'),context:{...context,lastIntent:'cashflow'}};
   }
 
-  // ================= ORDER =================
-  if (intent === 'order') {
-    const items = [];
-    s.activeLoans.forEach(l => items.push({ name: l.name, rate: Number(l.rate) || 0, rem: r2((Number(l.emi) || 0) * (Number(l.monthsLeft) || 0)) }));
-    data.cards.forEach(c => items.push({ name: c.name + ' (card)', rate: 40, rem: Number(c.outstanding) || 0 }));
-    if (!items.length) return { text: `Nothing to prioritise — no active debt. 🎉`, context: { lastIntent: 'order' } };
-    items.sort((a, b) => b.rate - a.rate);
-    const lines = [`Pay in this order (highest interest first):`];
-    items.forEach((it, i) => lines.push(`${i + 1}. ${it.name} — ${it.rate}% interest, ${inr(it.rem)} remaining`));
-    lines.push('');
-    lines.push(`Why: ₹100 toward a 40% card saves ₹40/year. Same ₹100 toward a 9% loan saves only ₹9/year. Always chase the highest rate.`);
-    return { text: lines.join('\n'), context: { lastIntent: 'order' } };
+  if (intent === 'investing') {
+    const horizonMatch=ql.match(/(\d+)\s*(?:year|years|yr|yrs|month|months)/);
+    const horizon=horizonMatch?`${horizonMatch[1]} ${horizonMatch[0].includes('month')?'months':'years'}`:'not specified';
+    const risk=words('low risk','conservative','safe')?'low':words('aggressive','high risk','high-risk')?'high':'unspecified';
+    return {text:`I can calculate an investment plan from your vault, but I won't invent current market prices or returns.\n\nCurrent inputs:\n• Bank: ${inr(s.bankTotal)}\n• Demat: ${inr(s.dematTotal)}\n• Net worth: ${inr(s.netWorth)}\n• Debt: ${inr(totalDebt)}\n• Monthly surplus: ${inr(monthlySurplus)}\n• Horizon detected: ${horizon}\n• Risk level detected: ${risk}\n\nGive me the amount, time horizon and risk tolerance and I’ll calculate what is actually investable after liquidity and debt constraints.`,context:{...context,lastIntent:'investing',lastAmount:amount||context.lastAmount}};
   }
 
-  // ================= SUMMARY =================
   if (intent === 'summary') {
-    const lines = [];
-    lines.push(`Here's where you stand today:`);
-    lines.push(`• Net worth: ${inr(s.netWorth)}`);
-    lines.push(`• Assets: ${inr(s.assets)} (${inr(s.bankTotal)} bank + ${inr(s.dematTotal)} demat)`);
-    lines.push(`• Debts: ${inr(s.liabilities)} (${inr(s.cardDebt)} cards + ${inr(s.loanDebt)} loans)`);
-    lines.push(`• This month: in ${inr(s.mIn)}, out ${inr(s.mOut)}, net ${inr(r2(s.mIn - s.mOut))}`);
-    lines.push('');
-    if (s.cardDebt > 0) lines.push(`Top priority: clear your ${inr(s.cardDebt)} card balance first.`);
-    else if (s.activeLoans.length > 0) lines.push(`Top priority: keep paying EMIs, and pre-pay ${s.activeLoans[0].name} when you have extra.`);
-    else lines.push(`You're debt-free. Focus on growing the demat side with regular SIPs.`);
-    return { text: lines.join('\n'), context: { lastIntent: 'summary' } };
+    const rate=monthlyIncome>0?r2(monthlySurplus/monthlyIncome*100):null;
+    const lines=[`Your current ShubhVault snapshot:`,`• Assets: ${inr(s.assets)} (${inr(s.bankTotal)} bank + ${inr(s.dematTotal)} demat)`,`• Liabilities: ${inr(s.liabilities)} (${inr(s.loanDebt)} loans + ${inr(s.cardDebt)} cards)`,`• Net worth: ${inr(s.netWorth)}`,`• Current-month income: ${inr(monthlyIncome)}`,`• Current-month spending: ${inr(monthlyExpense)}`,`• Current-month surplus: ${inr(monthlySurplus)}`];
+    if(rate!==null) lines.push(`• Current-month savings rate: ${rate}%`);
+    if(allDebts.length) lines.push(`• Highest recorded debt rate: ${r2(allDebts[0].rate)}% on ${allDebts[0].name}`);
+    if(monthlyExpense>0) lines.push(`• 3-month emergency target: ${inr(threeMonthFund)} | 6-month target: ${inr(sixMonthFund)}`);
+    return {text:lines.join('\n'),context:{...context,lastIntent:'summary'}};
   }
 
-  // ================= DEFAULT / HELP =================
-  // If we still have an amount and a "money" verb, force allocate
-  if (amt && has('where', 'how', 'put', 'invest', 'do', 'save', 'allocate', 'use', 'best')) {
-    return aiAnswer('where should I put ' + amt, data, { lastAmount: amt });
+  if (intent === 'compare') {
+    const mentioned=loans.filter(l=>ql.includes(l.name.toLowerCase()));
+    if(mentioned.length>=2){
+      const [a,b]=mentioned.slice(0,2);
+      return {text:`Loan comparison:\n\n${a.name}\n• Balance: ${inr(a.balance)}\n• Rate: ${r2(a.rate)}%\n• EMI: ${inr(a.emi)}\n\n${b.name}\n• Balance: ${inr(b.balance)}\n• Rate: ${r2(b.rate)}%\n• EMI: ${inr(b.emi)}\n\nIf you give me the amount available for prepayment, I can model the cash impact and simulated interest for each choice.`,context:{...context,lastIntent:'compare'}};
+    }
   }
 
-  return {
-    text: `I'm not sure what you're asking — but I read your real numbers, so be specific and I'll give you a number-driven plan.\n\nTry one of these:\n• "I'll get 1.3L this month — where should I put it? Keep 5k in bank."\n• "Should I foreclose my Navi loan?"\n• "How long until I'm debt free?"\n• "Am I saving enough this month?"\n• "How is my emergency fund?"\n• "Which loan should I pay first?"\n• "Give me a summary of my finances"\n\nThe more specific you are (amounts, constraints like "minimum pay on card"), the sharper my plan.`,
-    context: context
-  };
+  return {text:`I can work through that using your actual vault numbers rather than a fixed FAQ.\n\nRight now I see ${inr(s.bankTotal)} in bank, ${inr(s.dematTotal)} in demat, ${inr(totalDebt)} of recorded debt, and net worth of ${inr(s.netWorth)}.${monthlyExpense>0?` Current-month spending is ${inr(monthlyExpense)}.`:''}\n\nAsk the decision in your own words. I’ll calculate the trade-offs and you can continue with follow-ups such as “what if I add another ₹5k?” without restarting the conversation.`,context:{...context,lastIntent:'general',lastAmount:amount||context.lastAmount}};
 }
-
-/* ======================================================================== */
-
 function LightRaysBackground({ theme }) {
   const containerRef = useRef(null);
   const cleanupRef = useRef(null);
@@ -3496,16 +3395,6 @@ function AiBrain({ data, sync, openTx }) {
     setChatInput('');
   };
 
-  const suggestions = [
-    'I will get 1.3L this month end. Where should I put it? Keep 5k in bank',
-    'Should I foreclose my loan?',
-    'How long until I am debt free?',
-    'Am I saving enough this month?',
-    'How is my emergency fund?',
-    'Which loan should I pay first?',
-    'Give me a summary of my finances'
-  ];
-
   return (
     <div>
       <PageHead title="AI Brain" sub="Smart money analysis based on your real data" sync={sync} openTx={openTx} />
@@ -3540,9 +3429,6 @@ function AiBrain({ data, sync, openTx }) {
             ))
           )}
           <div ref={chatEndRef} />
-        </div>
-        <div className="chat-suggestions">
-          {suggestions.map(s => (<span key={s} className="pill" onClick={() => sendChat(s)}>{s}</span>))}
         </div>
         <div className="chat-input-row">
           <input className="input" placeholder="Ask anything… e.g. I'll get 1.3L this month, where should I put it? Keep 2k in bank"
