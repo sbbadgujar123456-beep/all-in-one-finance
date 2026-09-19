@@ -567,6 +567,102 @@ html[data-theme="light"] .decision-summary{background:linear-gradient(100deg,rgb
   .chart-tooltip{background:var(--bg-2)}
 }
 
+
+/* FINAL CLEAN UI: remove non-essential helper copy and guarantee button legibility. */
+.btn,
+.btn:hover,
+.btn:focus-visible,
+.btn:active{
+  color:var(--txt) !important;
+  -webkit-text-fill-color:var(--txt);
+}
+.btn-primary,
+.btn-primary:hover,
+.btn-primary:focus-visible,
+.btn-primary:active{
+  color:#fff !important;
+  -webkit-text-fill-color:#fff;
+  background:linear-gradient(180deg,#8ea4ff 0%,#647dff 100%) !important;
+  border-color:rgba(255,255,255,.16) !important;
+}
+html[data-theme="light"] .btn{
+  color:#111114 !important;
+  -webkit-text-fill-color:#111114;
+  background:#fff;
+}
+html[data-theme="light"] .btn-primary,
+html[data-theme="light"] .btn-primary:hover,
+html[data-theme="light"] .btn-primary:focus-visible,
+html[data-theme="light"] .btn-primary:active{
+  color:#fff !important;
+  -webkit-text-fill-color:#fff;
+  background:linear-gradient(180deg,#6f86ff 0%,#526cff 100%) !important;
+}
+.page-sub,
+.kpi-note,
+.chart-subtle,
+.chart-empty-note,
+.empty-sub,
+.selection-note,
+.strategy-note,
+.strategy-hero > p,
+.strategy-callout p,
+.strategy-callout small,
+.rule-card p,
+.decision-main p,
+.planner-card small,
+.strategy-target small,
+.profile-sub,
+.login-sub,
+.login-secure-note,
+.theme-option-copy span,
+.quick-link small,
+.security-card p,
+.backup-warning{
+  display:none !important;
+}
+
+
+/* FINAL HEADER LAYOUT */
+.top-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.top-actions .btn{min-height:40px;justify-content:center}
+@media(max-width:600px){
+  .top-actions{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);width:100%;gap:8px}
+  .top-actions .sync-badge{grid-column:1/-1;justify-self:start;width:auto}
+  .top-actions .btn{width:100%;min-width:0}
+  .top-actions .btn-primary{grid-column:auto;margin-left:0}
+}
+@media(max-width:380px){
+  .top-actions{grid-template-columns:1fr}
+  .top-actions .sync-badge,.top-actions .btn{width:100%}
+}
+
+</style>
+
+<style id="shubhvaul-final-fixes">
+/* Final theme-safe controls */
+.btn{color:var(--txt)!important;background:var(--glass-2);-webkit-text-fill-color:var(--txt);opacity:1!important;}
+.btn-primary,.btn-primary:hover,.btn-primary:focus,.btn-primary:active{color:#fff!important;-webkit-text-fill-color:#fff!important;background:linear-gradient(180deg,#8da2ff,#637bff)!important;opacity:1!important;}
+.btn-danger,.btn-danger:hover,.btn-danger:focus,.btn-danger:active{color:var(--red)!important;-webkit-text-fill-color:var(--red)!important;}
+.btn-warn,.btn-warn:hover,.btn-warn:focus,.btn-warn:active{color:var(--amber)!important;-webkit-text-fill-color:var(--amber)!important;}
+html[data-theme="light"] .btn:not(.btn-primary){background:#fff!important;border-color:rgba(17,17,20,.13)!important;color:#17171b!important;-webkit-text-fill-color:#17171b!important;}
+html[data-theme="light"] .btn-primary{background:linear-gradient(180deg,#6f86ff,#566fff)!important;color:#fff!important;-webkit-text-fill-color:#fff!important;}
+html[data-theme="light"] .top-actions .btn-primary{box-shadow:0 10px 24px -12px rgba(86,111,255,.75);}
+html[data-theme="light"] .input,html[data-theme="light"] .select{color:#17171b!important;-webkit-text-fill-color:#17171b!important;background:#fff!important;border-color:rgba(17,17,20,.13)!important;}
+html[data-theme="light"] .input::placeholder{color:#8b8b93!important;-webkit-text-fill-color:#8b8b93!important;}
+@media (max-width:560px){
+  .topbar{gap:12px;}
+  .top-actions{display:grid!important;grid-template-columns:auto minmax(0,1fr);gap:8px!important;align-items:center;}
+  .top-actions .sync-badge{min-width:0!important;justify-content:center;}
+  .top-actions .btn-primary{margin-left:0!important;width:100%;min-height:42px;}
+  .btn{min-height:40px;}
+  .item-actions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px!important;width:100%;}
+  .item-actions .btn{width:100%;}
+}
+@media (max-width:380px){
+  .top-actions{grid-template-columns:1fr!important;}
+  .top-actions .sync-badge,.top-actions .btn-primary{width:100%!important;}
+}
 </style>
 </head>
 <body>
@@ -1348,7 +1444,7 @@ function NetWorthChart({ points, onReset }) {
     return Object.keys(map).sort().map(date => ({ date, value: map[date] }));
   }, [points]);
 
-  if (!clean.length) return <div className="empty"><div className="empty-icon">{Ico.trend}</div><div className="empty-title">Net worth history is starting</div><div className="empty-sub">Your first verified daily snapshot will appear here.</div></div>;
+  if (!clean.length) return <div className="empty"><div className="empty-icon">{Ico.trend}</div><div className="empty-title">Net worth history is starting</div></div>;
 
   const first = clean[0], last = clean[clean.length - 1];
   const change = r2(last.value - first.value);
@@ -1357,8 +1453,8 @@ function NetWorthChart({ points, onReset }) {
 
   if (clean.length === 1) return (
     <div>
-      <div className="chart-headline"><div className="chart-big-value mono" style={{ color: lineColor }}>{inr(last.value)}</div><span className={'pill ' + (last.value >= 0 ? 'green' : 'red')}><span className="pdot"></span>First snapshot</span>{onReset ? <button className="btn btn-sm" onClick={onReset} style={{ marginLeft:'auto' }}>{Ico.reset} Reset</button> : null}</div>
-      <div className="chart-empty-note">Verified on {fmtDate(last.date)}. Add another day or change your balances to build the liquid trend.</div>
+      <div className="chart-headline"><div className="chart-big-value mono" style={{ color: lineColor }}>{inr(last.value)}</div>{null}</div>
+      
     </div>
   );
 
@@ -1397,10 +1493,10 @@ function NetWorthChart({ points, onReset }) {
     <div className="chart-headline">
       <div className="chart-big-value mono" style={{ color: lineColor }}>{inr(last.value)}</div>
       <span className={'pill ' + (change >= 0 ? 'green' : 'red')}><span className="pdot"></span>{change >= 0 ? '▲' : '▼'} {inr(Math.abs(change))}{changePct !== null ? ` (${changePct >= 0 ? '+' : ''}${changePct}%)` : ''}</span>
-      <span className="pill blue">{clean.length} snapshots</span>
-      {onReset ? <button className="btn btn-sm" onClick={onReset} style={{ marginLeft:'auto' }}>{Ico.reset} Reset chart</button> : null}
+      
+      
     </div>
-    <div className="chart-subtle">Daily closing snapshots · smooth curve · hover to inspect exact values</div>
+    
     <div className="nw-chart-wrap liquid-chart" onMouseMove={onMove} onMouseLeave={()=>setHover(null)} onTouchMove={e=>{ const t=e.touches[0]; if(!t)return; const rect=e.currentTarget.getBoundingClientRect(); const ratio=Math.max(0,Math.min(1,(t.clientX-rect.left)/Math.max(1,rect.width))); setHover(Math.round(ratio*(clean.length-1))); }}>
       <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" aria-label="Net worth history chart">
         <defs><linearGradient id="nwLiquidFill" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor={lineColor} stopOpacity=".28"/><stop offset="72%" stopColor={lineColor} stopOpacity=".06"/><stop offset="100%" stopColor={lineColor} stopOpacity="0"/></linearGradient><filter id="nwGlow" x="-30%" y="-30%" width="160%" height="160%"><feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>
@@ -1519,20 +1615,20 @@ function Login({ onOk }) {
       <form className={'login-card glass' + (shake ? ' shake' : '')} onSubmit={submit}>
         <div className="login-logo">SV</div>
         <div className="login-title">ShubhVault</div>
-        <div className="login-sub">Your private money command centre</div>
-        <div className="field"><label className="label">Username</label><input className="input" value={u} onChange={(e) => setU(e.target.value)} autoComplete="username" placeholder="Enter username" /></div>
-        <div className="field"><label className="label">Password</label><input className="input" type="password" value={p} onChange={(e) => setP(e.target.value)} autoComplete="current-password" placeholder="Enter password" /></div>
+        
+        <div className="field"><label className="label">Username</label><input className="input" value={u} onChange={(e) => setU(e.target.value)} autoComplete="username" /></div>
+        <div className="field"><label className="label">Password</label><input className="input" type="password" value={p} onChange={(e) => setP(e.target.value)} autoComplete="current-password" /></div>
         <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', marginTop: '6px', padding: '12px' }} type="submit" disabled={busy}>{busy ? 'Verifying…' : 'Unlock Vault'}</button>
         {err ? <div className="err">{err}</div> : null}
-        <div className="login-secure-note">Private vault · encrypted transport · dark login</div>
+        
       </form>
     </div>
   );
 }
-function PageHead({ title, sub, children, sync, openTx }) {
+function PageHead({ title, children, sync, openTx }) {
   return (
     <div className="topbar">
-      <div><div className="page-title">{title}</div>{sub ? <div className="page-sub">{sub}</div> : null}</div>
+      <div className="page-title">{title}</div>
       <div className="top-actions">
         <SyncBadge sync={sync} />
         <button className="btn btn-sm btn-primary" onClick={() => openTx()}>+ Add Transaction</button>
@@ -1546,7 +1642,7 @@ function EmptyState({ icon, title, sub, action }) {
   return (
     <div className="empty">
       <div className="empty-icon">{icon}</div>
-      <div><div className="empty-title">{title}</div>{sub ? <div className="empty-sub" style={{ marginTop: '6px' }}>{sub}</div> : null}</div>
+      <div className="empty-title">{title}</div>
       {action ? action : null}
     </div>
   );
@@ -1650,21 +1746,13 @@ function BackupRestore({ data, setData, showToast, sync, theme, toggleTheme }) {
 
   return (
     <div>
-      <PageHead title="Backup & Restore" sub="Protect and move your complete ShubhVault data" sync={sync} openTx={openTxPlaceholder} />
+      <PageHead title="Backup & Restore" sync={sync} openTx={openTxPlaceholder} />
       <div className="grid g2">
         <div className="glass" style={{ padding: '20px' }}>
           <div className="section-title"><span className="dot"></span>Backup entire vault</div>
           <div className="backup-drop" style={{ marginTop: '14px' }}>
             <div className="backup-icon">{Ico.down}</div>
-            <div style={{ fontSize: '14px', fontWeight: 700 }}>Download a complete backup</div>
-            <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '6px', lineHeight: 1.55 }}>Includes banks, transactions, demat, cards, loans, bills, inflows, net-worth history and your theme preference.</div>
             <button className="btn btn-primary" onClick={downloadBackup} style={{ marginTop: '16px' }}>{Ico.down}<span style={{ marginLeft: 4 }}>Download Backup</span></button>
-            {lastBackup ? <div className="backup-success" style={{ marginTop: '12px' }}>Backup created at {lastBackup.toLocaleTimeString()}.</div> : null}
-          </div>
-          <div className="backup-meta">
-            <span className="pill blue">{count} records · schema v3</span>
-            <span className="pill">JSON backup</span>
-            <span className="pill green">Local safety copy enabled</span>
           </div>
         </div>
 
@@ -1672,20 +1760,11 @@ function BackupRestore({ data, setData, showToast, sync, theme, toggleTheme }) {
           <div className="section-title"><span className="dot"></span>Restore from backup</div>
           <div className="backup-drop" style={{ marginTop: '14px' }}>
             <div className="backup-icon">{Ico.up}</div>
-            <div style={{ fontSize: '14px', fontWeight: 700 }}>Upload a ShubhVault backup</div>
-            <div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '6px', lineHeight: 1.55 }}>Choose a previously downloaded <b>.json</b> backup. The current data is automatically saved locally before restoration.</div>
             <input ref={fileRef} type="file" accept="application/json,.json" style={{ display: 'none' }} onChange={(e) => restoreFile(e.target.files && e.target.files[0])} />
             <button className="btn btn-primary" onClick={() => fileRef.current && fileRef.current.click()} disabled={restoring} style={{ marginTop: '16px' }}>{Ico.up}<span style={{ marginLeft: 4 }}>{restoring ? 'Restoring…' : 'Choose Backup File'}</span></button>
           </div>
-          <div className="backup-warning" style={{ marginTop: '12px' }}>Restore replaces the current vault data. Always download a backup of your current data before restoring an older file.</div>
           <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}><button className="btn btn-sm" onClick={restoreLocalSafety}>Restore automatic pre-restore safety copy</button><button className="btn btn-sm" onClick={() => { try { const raw = localStorage.getItem('finvault_data'); if (!raw) { showToast('No browser recovery copy available'); return; } const payload = { app:'ShubhVault', backupVersion:3, createdAt:new Date().toISOString(), source:'browser-recovery', theme:localStorage.getItem('fv_theme') || theme, data:normalize(JSON.parse(raw)) }; const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='ShubhVault-browser-recovery.json'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000); showToast('Browser recovery backup downloaded'); } catch(e){ showToast('Could not export recovery copy'); } }}>Export browser recovery</button></div>
         </div>
-      </div>
-
-      <div className="section-head"><div className="section-title"><span className="dot"></span>Backup status</div></div>
-      <div className="list">
-        <div className="item"><div className="item-ico" style={{ color: 'var(--green)' }}>{Ico.check}</div><div className="item-body"><div className="item-name">Your browser keeps a recovery copy</div><div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '5px' }}>ShubhVault stores a local copy of the current data whenever the vault changes. This is separate from the downloadable backup file.</div></div></div>
-        <div className="item"><div className="item-ico" style={{ color: 'var(--accent)' }}>{Ico.cloud}</div><div className="item-body"><div className="item-name">Firebase remains the cloud source</div><div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '5px' }}>The backup feature does not clear Firebase data by itself. Restoring a file intentionally replaces the current in-app dataset; the change is then synced to the same vault. If cloud sync is unavailable, the browser recovery copy remains available.</div></div></div>
       </div>
     </div>
   );
@@ -1701,12 +1780,12 @@ function Profile({ data, theme, setTheme, showToast, sync, go, openTx }) {
     ['Banks', data.banks.length], ['Credit Cards', data.cards.length], ['Loans', data.loans.filter(l=>!l.closed).length], ['Transactions', data.transactions.length]
   ];
   return <div>
-    <PageHead title="Profile" sub="Appearance, vault overview and preferences" sync={sync} openTx={openTx} />
-    <div className="profile-hero glass"><div className="profile-avatar">SV</div><div><div className="profile-name">ShubhVault</div><div className="profile-sub">Private money command centre</div></div><span className="pill green" style={{marginLeft:'auto'}}><span className="pdot"></span>Vault active</span></div>
-    <div className="section-head"><div className="section-title"><span className="dot"></span>Default appearance</div><span className="pill blue">Saved on this device</span></div>
+    <PageHead title="Profile" sync={sync} openTx={openTx} />
+    <div className="profile-hero glass"><div className="profile-avatar">SV</div><div><div className="profile-name">ShubhVault</div></div><span className="pill green" style={{marginLeft:'auto'}}><span className="pdot"></span>Vault active</span></div>
+    <div className="section-head"><div className="section-title"><span className="dot"></span>Default appearance</div></div>
     <div className="theme-grid">
-      <button className={'theme-option '+(theme==='dark'?'selected':'')} onClick={()=>chooseTheme('dark')}><div className="theme-preview dark-preview"><span></span><i></i><b></b></div><div className="theme-option-copy"><strong>Dark</strong><span>Deep black, glass surfaces and subtle colour.</span></div>{theme==='dark'?<span className="theme-check">✓</span>:null}</button>
-      <button className={'theme-option '+(theme==='light'?'selected':'')} onClick={()=>chooseTheme('light')}><div className="theme-preview light-preview"><span></span><i></i><b></b></div><div className="theme-option-copy"><strong>Light</strong><span>Bright, airy surfaces with soft contrast.</span></div>{theme==='light'?<span className="theme-check">✓</span>:null}</button>
+      <button className={'theme-option '+(theme==='dark'?'selected':'')} onClick={()=>chooseTheme('dark')}><div className="theme-preview dark-preview"><span></span><i></i><b></b></div><div className="theme-option-copy"><strong>Dark</strong></div>{theme==='dark'?<span className="theme-check">✓</span>:null}</button>
+      <button className={'theme-option '+(theme==='light'?'selected':'')} onClick={()=>chooseTheme('light')}><div className="theme-preview light-preview"><span></span><i></i><b></b></div><div className="theme-option-copy"><strong>Light</strong></div>{theme==='light'?<span className="theme-check">✓</span>:null}</button>
     </div>
     <div className="section-head"><div className="section-title"><span className="dot"></span>Vault overview</div></div>
     <div className="grid g4">{stats.map(x=><div className="kpi glass" key={x[0]}><div className="kpi-label">{x[0]}</div><div className="kpi-val mono">{x[1]}</div></div>)}</div>
@@ -1715,10 +1794,8 @@ function Profile({ data, theme, setTheme, showToast, sync, go, openTx }) {
       <div className="glass profile-metric"><span>Total assets</span><b className="mono">{inr(snapshot.assets)}</b></div>
       <div className="glass profile-metric"><span>Total debt</span><b className="mono">{inr(snapshot.liabilities)}</b></div>
     </div>
-    <div className="section-head"><div className="section-title"><span className="dot"></span>Security note</div></div>
-    <div className="glass security-card"><div className="security-icon">{Ico.lock}</div><div><b>Login credentials are no longer stored as readable text.</b><p>The static website verifies one-way password digests. For true server-side authentication and protection against determined inspection, use Firebase Authentication instead of client-side credentials.</p></div></div>
-    <div className="section-head"><div className="section-title"><span className="dot"></span>Quick links</div></div>
-    <div className="quick-link-grid"><button className="glass quick-link" onClick={()=>go('backup')}>{Ico.cloud}<span><b>Backup & Restore</b><small>Protect your entire vault</small></span></button><button className="glass quick-link" onClick={()=>go('cards')}>{Ico.card}<span><b>Credit Cards</b><small>View card-specific transactions</small></span></button></div>
+<div className="section-head"><div className="section-title"><span className="dot"></span>Quick links</div></div>
+    <div className="quick-link-grid"><button className="glass quick-link" onClick={()=>go('backup')}>{Ico.cloud}<span><b>Backup & Restore</b></span></button><button className="glass quick-link" onClick={()=>go('cards')}>{Ico.card}<span><b>Credit Cards</b></span></button></div>
   </div>;
 }
 
@@ -2184,7 +2261,7 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
 
   return (
     <div>
-      <PageHead title="Home" sub={'Today is ' + fmtDateLong(new Date())} sync={sync} openTx={openTx} />
+      <PageHead title="Home" sync={sync} openTx={openTx} />
 
       <div className="grid g4">
         <div className="kpi glass"><div className="kpi-head"><span className="kpi-dot accent"></span><span className="kpi-label">Total Bank Balance</span></div><div className="kpi-val">{inr(bankTotal)}</div><div className="kpi-note">{data.banks.length} bank account{data.banks.length > 1 ? 's' : ''}</div></div>
@@ -2196,8 +2273,8 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
       <div className="section-head">
         <div className="section-title"><span className="dot"></span>Net Worth Progress</div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span className="pill blue">{nwPoints.length} snapshot{nwPoints.length !== 1 ? 's' : ''}</span>
-          {nwPoints.length > 1 ? (<button className="btn btn-sm" onClick={resetNwHistory}>{Ico.reset} Reset chart</button>) : null}
+          
+          
         </div>
       </div>
       <div className="glass" style={{ padding: '20px' }}><NetWorthChart points={nwPoints} onReset={nwPoints.length > 1 ? resetNwHistory : null} /></div>
@@ -2240,17 +2317,17 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
 
       <div className="section-head"><div className="section-title"><span className="dot"></span>Notifications — everything coming up</div><span className="pill blue">{feed.length} item{feed.length !== 1 ? 's' : ''} · {groupedFeed.length} group{groupedFeed.length !== 1 ? 's' : ''}</span></div>
       <div className="glass" style={{ padding: '14px' }}>
-        {feed.length === 0 ? (<EmptyState icon={Ico.inbox} title="Nothing coming up" sub="Add loans, credit cards or bills and they will show up here sorted by due date." />) : (<div className="list">{groupedFeed.map(renderGroup)}</div>)}
+        {feed.length === 0 ? (<EmptyState icon={Ico.inbox} title="Nothing coming up" />) : (<div className="list">{groupedFeed.map(renderGroup)}</div>)}
       </div>
 
       <div className="section-head"><div className="section-title"><span className="dot"></span>Loans — principal <b>{inr(loanDebt)}</b></div><button className="btn btn-sm" onClick={() => go('loans')}>Manage</button></div>
       <div className="glass" style={{ padding: '14px' }}>
-        {loanItems.length === 0 ? (<EmptyState icon={Ico.loan} title="No loans added yet" sub="Track EMIs, remaining months and payoff progress." action={<button className="btn btn-sm btn-primary" onClick={() => go('loans')}>Add your first loan</button>} />) : (<div className="list">{loanItems.map(renderItem)}</div>)}
+        {loanItems.length === 0 ? (<EmptyState icon={Ico.loan} title="No loans added yet" action={<button className="btn btn-sm btn-primary" onClick={() => go('loans')}>Add your first loan</button>} />) : (<div className="list">{loanItems.map(renderItem)}</div>)}
       </div>
 
       <div className="section-head"><div className="section-title"><span className="dot"></span>Credit Cards — total <b>{inr(cardDebt)}</b></div><button className="btn btn-sm" onClick={() => go('cards')}>Manage</button></div>
       <div className="glass" style={{ padding: '14px' }}>
-        {cardItems.length === 0 ? (<EmptyState icon={Ico.card} title="No credit cards added yet" sub="Add your cards to keep an eye on bills and due dates." action={<button className="btn btn-sm btn-primary" onClick={() => go('cards')}>Add your first card</button>} />) : (<div className="list">{cardItems.map(renderItem)}</div>)}
+        {cardItems.length === 0 ? (<EmptyState icon={Ico.card} title="No credit cards added yet" action={<button className="btn btn-sm btn-primary" onClick={() => go('cards')}>Add your first card</button>} />) : (<div className="list">{cardItems.map(renderItem)}</div>)}
       </div>
 
       {billItems.length > 0 && (
@@ -2262,7 +2339,7 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
 
       <div className="section-head"><div className="section-title"><span className="dot"></span>Money Coming In</div><button className="btn btn-sm" onClick={() => go('bills')}>Manage</button></div>
       <div className="glass" style={{ padding: '14px' }}>
-        {inflowItems.length === 0 ? (<EmptyState icon={Ico.down} title="No incoming payments yet" sub="Add your salary or any expected payments so you get a reminder on the day." action={<button className="btn btn-sm btn-primary" onClick={() => go('bills')}>Add income</button>} />) : (<div className="list">{inflowItems.map(renderItem)}</div>)}
+        {inflowItems.length === 0 ? (<EmptyState icon={Ico.down} title="No incoming payments yet" action={<button className="btn btn-sm btn-primary" onClick={() => go('bills')}>Add income</button>} />) : (<div className="list">{inflowItems.map(renderItem)}</div>)}
       </div>
 
       <div className="section-head"><div className="section-title"><span className="dot"></span>This Month</div><span className="pill">{MONTHS_FULL[new Date().getMonth()] + ' ' + new Date().getFullYear()}</span></div>
@@ -2472,7 +2549,7 @@ function Banks({ data, mut, showToast, sync, openTx }) {
 
   return (
     <div>
-      <PageHead title="Bank Accounts" sub={data.banks.length + ' account' + (data.banks.length > 1 ? 's' : '') + ' connected'} sync={sync} openTx={openTx}>
+      <PageHead title="Bank Accounts" sync={sync} openTx={openTx}>
         <button className="btn btn-sm" onClick={() => setTransferOpen(true)}>Transfer</button>
         <button className="btn btn-sm" onClick={() => { setEditBank(null); setBankOpen(true); }}>Add Bank</button>
       </PageHead>
@@ -2552,7 +2629,7 @@ function Banks({ data, mut, showToast, sync, openTx }) {
       </div>
 
       {grouped.length === 0 ? (
-        <div className="glass"><EmptyState icon={Ico.inbox} title={search ? 'No matching transactions' : 'No transactions yet'} sub={search ? 'Try a different search term.' : 'Add your first transaction to start keeping a record.'} action={!search ? <button className="btn btn-sm btn-primary" onClick={() => openTx()}>Add transaction</button> : null} /></div>
+        <div className="glass"><EmptyState icon={Ico.inbox} title={search ? 'No matching transactions' : 'No transactions yet'} action={!search ? <button className="btn btn-sm btn-primary" onClick={() => openTx()}>Add transaction</button> : null} /></div>
       ) : (
         grouped.map(ydata => (
           <div className="log-year" key={ydata.year}>
@@ -2652,10 +2729,10 @@ function TxModal({ open, onClose, banks, cards, tx, prefill, onSave }) {
     <div className="field"><label className="label">Money movement</label><div className="seg seg-full"><button type="button" className={'seg-btn'+(dir==='out'?' active':'')} onClick={()=>switchDir('out')}>Expense / Out</button><button type="button" className={'seg-btn'+(dir==='in'?' active':'')} onClick={()=>switchDir('in')}>Income / In</button></div></div>
     <div className="row2"><div className="field"><label className="label">Amount</label><MoneyInput value={amount} onChange={setAmount} autoFocus /></div><div className="field"><label className="label">Date</label><input className="input" type="date" value={date} onChange={e=>setDate(e.target.value)} /></div></div>
     {dir==='out' ? <div className="field"><label className="label">Payment mode</label><div className="payment-mode-grid"><button type="button" className={'payment-mode'+(paymentMode==='bank'?' active':'')} onClick={()=>chooseMode('bank')}>{Ico.bank}<span>Bank</span></button><button type="button" className={'payment-mode'+(paymentMode==='card'?' active':'')} onClick={()=>chooseMode('card')}>{Ico.card}<span>Credit Card</span></button></div></div> : null}
-    {dir==='out' && paymentMode==='card' ? <div className="field"><label className="label">Credit card</label>{cards && cards.length ? <><select className="select" value={cardId} onChange={e=>setCardId(e.target.value)}>{cards.map(c=><option key={c.id} value={c.id}>{c.name} · {inr(c.outstanding)} outstanding</option>)}</select>{selectedCard ? <div className="selection-note"><span>New purchase will be added to</span><b>{selectedCard.name}</b><span>· outstanding becomes {inr(r2(Number(selectedCard.outstanding||0)+Number(amount||0)))}</span></div> : null}</> : <div className="empty-inline">Add a credit card first from Credit Cards.</div>}</div> : <div className="field"><label className="label">Bank account</label><select className="select" value={bankId} onChange={e=>setBankId(e.target.value)}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></div>}
-    <div className="field"><label className="label">Note</label><input className="input" value={note} onChange={e=>setNote(e.target.value)} placeholder="What was this for?" /></div>
+    {dir==='out' && paymentMode==='card' ? <div className="field"><label className="label">Credit card</label>{cards && cards.length ? <><select className="select" value={cardId} onChange={e=>setCardId(e.target.value)}>{cards.map(c=><option key={c.id} value={c.id}>{c.name} · {inr(c.outstanding)} outstanding</option>)}</select></> : <div className="empty-inline">Add a credit card first from Credit Cards.</div>}</div> : <div className="field"><label className="label">Bank account</label><select className="select" value={bankId} onChange={e=>setBankId(e.target.value)}>{banks.map(b=><option key={b.id} value={b.id}>{b.name}</option>)}</select></div>}
+    <div className="field"><label className="label">Note</label><input className="input" value={note} onChange={e=>setNote(e.target.value)} /></div>
     <div className="field"><label className="label">Category</label><select className="select" value={category} onChange={e=>setCategory(e.target.value)}>{activeCategories.map(c=><option key={c} value={c}>{c}</option>)}</select></div>
-    {!(dir==='out' && paymentMode==='card') ? <div className="switch" onClick={()=>setAffects(a=>!a)}><div className={'switch-track'+(affects?' on':'')}><div className="switch-knob"></div></div><div className="switch-lbl">Adjust {dir==='in'?'bank':'bank'} balance with this transaction</div></div> : <div className="selection-note card-note">Credit card purchase does not change bank balance. It increases the selected card's outstanding.</div>}
+    {!(dir==='out' && paymentMode==='card') ? <div className="switch" onClick={()=>setAffects(a=>!a)}><div className={'switch-track'+(affects?' on':'')}><div className="switch-knob"></div></div><div className="switch-lbl">Adjust {dir==='in'?'bank':'bank'} balance with this transaction</div></div> : null}
     <button className="btn btn-primary" style={{width:'100%',justifyContent:'center',marginTop:'10px',padding:'12px'}} onClick={submit}>{tx?'Save Changes':'Add Transaction'}</button>
   </Modal>;
 }
@@ -2770,12 +2847,12 @@ function Cards({ data, mut, showToast, sync, openTx }) {
 
   return (
     <div>
-      <PageHead title="Credit Cards" sub={'Total outstanding ' + inr(totalOut)} sync={sync} openTx={openTx}>
+      <PageHead title="Credit Cards" sync={sync} openTx={openTx}>
         <button className="btn btn-sm btn-primary" onClick={() => { setEdit(null); setFormOpen(true); }}>+ Add Card</button>
       </PageHead>
 
       {data.cards.length === 0 ? (
-        <div className="glass"><EmptyState icon={Ico.card} title="No credit cards yet" sub="Add a card to track bills, due dates and outstanding." action={<button className="btn btn-sm btn-primary" onClick={() => { setEdit(null); setFormOpen(true); }}>Add your first card</button>} /></div>
+        <div className="glass"><EmptyState icon={Ico.card} title="No credit cards yet" action={<button className="btn btn-sm btn-primary" onClick={() => { setEdit(null); setFormOpen(true); }}>Add your first card</button>} /></div>
       ) : (
         <div className="grid g2">
           {sortedCards.map(c => (<FlipCard key={c.id} card={c} onEdit={() => { setEdit(c); setFormOpen(true); }} onDelete={() => setConfirmDel(c)} onMarkDone={() => markDone(c)} onSkip={() => skipCard(c)} onPay={() => openPay(c)} />))}
@@ -2866,7 +2943,7 @@ function CardModal({ open, onClose, card, onSave }) {
         <div className="field"><label className="label">Credit Limit</label><MoneyInput value={limit} onChange={setLimit} /></div>
         <div className="field"><label className="label">Outstanding</label><MoneyInput value={outstanding} onChange={setOutstanding} /></div>
       </div>
-      <div className="row2"><div className="field"><label className="label">Bill Due Day (1-31)</label><DayInput value={dueDay} onChange={setDueDay} /></div><div className="field"><label className="label">Interest Rate (APR %)</label><MoneyInput value={interestRate} onChange={setInterestRate} placeholder="40" /></div></div><div style={{fontSize:"10.5px",color:"var(--muted)",marginTop:"-5px",marginBottom:"12px",lineHeight:1.45}}>Enter the actual APR from your card statement. If left unchanged, 40% is used as an estimate for prioritisation.</div>
+      <div className="row2"><div className="field"><label className="label">Bill Due Day (1-31)</label><DayInput value={dueDay} onChange={setDueDay} /></div><div className="field"><label className="label">Interest Rate (APR %)</label><MoneyInput value={interestRate} onChange={setInterestRate} placeholder="40" /></div></div>
       <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={submit}>{card ? 'Save Changes' : 'Add Card'}</button>
     </Modal>
   );
@@ -2952,7 +3029,7 @@ function Loans({ data, mut, showToast, sync, openTx }) {
 
   return (
     <div>
-      <PageHead title="Loans" sub={'Principal outstanding ' + inr(total) + ' · Future scheduled payments ' + inr(scheduledTotal) + ' · Monthly EMI ' + inr(totalEmi)} sync={sync} openTx={openTx}>
+      <PageHead title="Loans" sync={sync} openTx={openTx}>
         <div className="seg">
           <button className={'seg-btn' + (sortBy === 'name' ? ' active' : '')} onClick={() => setSortBy('name')}>By name</button>
           <button className={'seg-btn' + (sortBy === 'due' ? ' active' : '')} onClick={() => setSortBy('due')}>By due date</button>
@@ -2961,7 +3038,7 @@ function Loans({ data, mut, showToast, sync, openTx }) {
       </PageHead>
 
       {activeLoans.length === 0 ? (
-        <div className="glass"><EmptyState icon={Ico.loan} title="No active loans" sub="Add a loan to track EMIs, months left, interest and payoff progress." action={<button className="btn btn-sm btn-primary" onClick={() => { setEdit(null); setFormOpen(true); }}>Add your first loan</button>} /></div>
+        <div className="glass"><EmptyState icon={Ico.loan} title="No active loans" action={<button className="btn btn-sm btn-primary" onClick={() => { setEdit(null); setFormOpen(true); }}>Add your first loan</button>} /></div>
       ) : (
         <div className="list">
           {sortedActive.map(l => {
@@ -3186,14 +3263,14 @@ function Bills({ data, mut, showToast, sync, openTx }) {
 
   return (
     <div>
-      <PageHead title="Bills & Subscriptions" sub={'Total monthly ' + inr(totalBills)} sync={sync} openTx={openTx}>
+      <PageHead title="Bills & Subscriptions" sync={sync} openTx={openTx}>
         <button className="btn btn-sm" onClick={() => { setEditInflow(null); setInflowOpen(true); }}>+ Money In</button>
         <button className="btn btn-sm btn-primary" onClick={() => { setEdit(null); setFormOpen(true); }}>+ Add Bill</button>
       </PageHead>
 
       <div className="section-head"><div className="section-title"><span className="dot"></span>Recurring Bills</div></div>
       {data.bills.length === 0 ? (
-        <div className="glass"><EmptyState icon={Ico.bill} title="No bills yet" sub="Add OTT, rent, wifi or any other recurring payments." action={<button className="btn btn-sm btn-primary" onClick={() => { setEdit(null); setFormOpen(true); }}>Add a bill</button>} /></div>
+        <div className="glass"><EmptyState icon={Ico.bill} title="No bills yet" action={<button className="btn btn-sm btn-primary" onClick={() => { setEdit(null); setFormOpen(true); }}>Add a bill</button>} /></div>
       ) : (
         <div className="list">
           {sortedBills.map(b => {
@@ -3219,7 +3296,7 @@ function Bills({ data, mut, showToast, sync, openTx }) {
 
       <div className="section-head"><div className="section-title"><span className="dot"></span>Money Coming In</div></div>
       {sortedInflows.length === 0 ? (
-        <div className="glass"><EmptyState icon={Ico.down} title="No incoming payments yet" sub="Add your salary or any expected payments." action={<button className="btn btn-sm btn-primary" onClick={() => { setEditInflow(null); setInflowOpen(true); }}>Add income</button>} /></div>
+        <div className="glass"><EmptyState icon={Ico.down} title="No incoming payments yet" action={<button className="btn btn-sm btn-primary" onClick={() => { setEditInflow(null); setInflowOpen(true); }}>Add income</button>} /></div>
       ) : (
         <div className="list">
           {sortedInflows.map(({ f, due }) => {
@@ -3541,7 +3618,7 @@ function Demat({ data, mut, showToast, sync, openTx }) {
 
   return (
     <div>
-      <PageHead title="Demat Accounts" sub={'Total value ' + inr(total)} sync={sync} openTx={openTx}>
+      <PageHead title="Demat Accounts" sync={sync} openTx={openTx}>
         <button className="btn btn-sm btn-primary" onClick={() => { setEdit(null); setFormOpen(true); }}>+ Add Demat</button>
       </PageHead>
 
@@ -3590,7 +3667,7 @@ function Demat({ data, mut, showToast, sync, openTx }) {
       </div>
       <div className="glass" style={{ padding: '14px' }}>
         {allWithdrawals.length === 0 ? (
-          <EmptyState icon={Ico.up} title="No withdrawals yet" sub="Use the Withdraw button on any demat account. Each withdrawal automatically creates a bank transaction and is synced here." />
+          <EmptyState icon={Ico.up} title="No withdrawals yet" />
         ) : (
           <div className="list">
             {allWithdrawals.map((w, i) => (
@@ -3672,24 +3749,23 @@ function AiBrain({ data, sync, openTx }) {
   const emergency=r2((data.transactions.filter(t=>String(t.date).startsWith(monthKey(new Date()))&&t.dir==='out').reduce((s,t)=>s+(Number(t.amount)||0),0))*3);
   const remainingAfterEmergency=Math.max(0,r2(cashAvailable-emergency));
   return <div>
-    <PageHead title="Money Brain" sub="A calculation engine focused on one objective: minimise avoidable interest cost" sync={sync} openTx={openTx} />
+    <PageHead title="Money Brain" sync={sync} openTx={openTx} />
     <div className="strategy-hero glass">
       <div className="strategy-kicker"><span className="strategy-pulse"></span> COST-FIRST MONEY ENGINE</div>
       <h2>{primary ? <>Your current highest-cost debt is <em>{primary.name}</em></> : <>Your vault currently has no outstanding high-cost debt</>}</h2>
-      <p>{primary ? <>Every extra rupee is evaluated against the debt that costs you the most. {primary.type==='card'?'Credit-card interest is treated as '+primary.rate+'% APR'+(primary.estimated?' estimate':'')+'.':'The stored loan rate is '+primary.rate+'%.'}</> : 'Once debt is recorded, this page will automatically calculate which balance is costing you the most.'}</p>
       {primary ? <div className="strategy-primary-grid"><div><span>Outstanding</span><b className="mono">{inr(primary.balance)}</b></div><div><span>Annual cost</span><b className="mono">{primary.rate}%</b></div><div><span>Approx. monthly interest</span><b className="mono">{inr(monthlyCost)}</b></div><div><span>Bank cash</span><b className="mono">{inr(cashAvailable)}</b></div></div>:null}
     </div>
 
     <div className="section-head"><div className="section-title"><span className="dot"></span>Priority order</div><span className="pill amber">Highest cost first</span></div>
     <div className="list">
-      {debts.length===0?<div className="glass"><EmptyState icon={Ico.check} title="No debt recorded" sub="There is nothing to prioritise right now." /></div>:debts.map((d,i)=><div className={'item priority-item '+(i===0?'priority-top':'')} key={d.type+d.id}><div className="priority-number">{i+1}</div><div className="item-body"><div className="item-name">{d.name}</div><div className="item-meta"><span className={'pill '+(d.type==='card'?'red':'amber')}>{d.rate}% {d.estimated?'estimated ':''}interest</span><span className="pill">{d.type==='card'?'Credit card':'Loan'}</span></div></div><div className="priority-cost"><span>Approx. monthly interest</span><b className="mono">{inr(r2(d.balance*d.rate/100/12))}</b></div><div className="item-amt mono">{inr(d.balance)}</div></div>)}
+      {debts.length===0?<div className="glass"><EmptyState icon={Ico.check} title="No debt recorded" /></div>:debts.map((d,i)=><div className={'item priority-item '+(i===0?'priority-top':'')} key={d.type+d.id}><div className="priority-number">{i+1}</div><div className="item-body"><div className="item-name">{d.name}</div><div className="item-meta"><span className={'pill '+(d.type==='card'?'red':'amber')}>{d.rate}% {d.estimated?'estimated ':''}interest</span><span className="pill">{d.type==='card'?'Credit card':'Loan'}</span></div></div><div className="priority-cost"><span>Approx. monthly interest</span><b className="mono">{inr(r2(d.balance*d.rate/100/12))}</b></div><div className="item-amt mono">{inr(d.balance)}</div></div>)}
     </div>
 
     <div className="section-head"><div className="section-title"><span className="dot"></span>Extra payment calculator</div></div>
     <div className="glass" style={{padding:'20px'}}>
       <div className="strategy-input-row"><div><div className="kpi-label">Extra money available now / monthly</div><MoneyInput value={extra} onChange={setExtra}/></div>{primary?<div className="strategy-target"><span>Target</span><b>{primary.name}</b><small>{primary.rate}% APR · {inr(primary.balance)} outstanding</small></div>:null}</div>
       {primary && plan ? <div className="grid g3" style={{marginTop:'14px'}}><div className="glass-soft planner-card"><span>Payment to priority</span><b className="mono">{inr(plan.pay)}</b><small>Applied to {primary.name}</small></div><div className="glass-soft planner-card"><span>Monthly interest avoided</span><b className="mono">{inr(plan.savedMonthly)}</b><small>Approx. at current balance</small></div><div className="glass-soft planner-card"><span>Balance after payment</span><b className="mono">{inr(plan.after)}</b><small>Before new interest/charges</small></div></div>:null}
-      <div className="strategy-note">The engine does not spread extra money across debts when a higher-cost debt remains. The objective here is to reduce avoidable interest cost first.</div>
+      
     </div>
 
     <div className="section-head"><div className="section-title"><span className="dot"></span>Loan acceleration</div></div>
