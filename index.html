@@ -336,6 +336,237 @@ body{letter-spacing:-.01em}
 @media(max-width:900px){.sidebar{display:none}.main{padding:22px 17px 125px}.page-title{font-size:23px}.strategy-primary-grid{grid-template-columns:1fr 1fr}.priority-cost{order:4;text-align:left;width:100%;padding-left:48px}.strategy-input-row{grid-template-columns:1fr}.decision-summary{grid-template-columns:1fr}.theme-grid,.quick-link-grid{grid-template-columns:1fr}.profile-hero{align-items:flex-start}.profile-hero .pill{margin-left:auto!important}.mobile-nav{overflow-x:auto}.mnav{min-width:76px}.nw-chart-wrap{height:240px}}
 @media(max-width:560px){.main{padding-left:13px;padding-right:13px}.g3,.g4{grid-template-columns:1fr}.strategy-hero{padding:20px}.strategy-hero h2{font-size:23px}.strategy-primary-grid{grid-template-columns:1fr 1fr}.chart-big-value{font-size:25px}.nw-chart-wrap{height:215px}.chart-tooltip{font-size:10px}.card-history-stats{grid-template-columns:1fr}.payment-mode-grid{grid-template-columns:1fr 1fr}.theme-option{grid-template-columns:72px 1fr auto}.theme-preview{height:52px}.profile-hero{flex-wrap:wrap}.profile-hero .pill{width:100%;margin-left:0!important}.top-actions{width:100%}.top-actions .sync-badge{order:2}.top-actions .btn-primary{margin-left:auto}.flip{height:205px}.item-amt{margin-left:auto}}
 
+
+/* ================================================================
+   SHUBHVAULT FINAL SHIP UI PATCH
+   Responsive layout, light-mode refinement, touch targets and
+   component-safe hover states.  No data/logic changes.
+   ================================================================ */
+
+/* Buttons: never allow generic hover to erase primary actions. */
+.btn-primary,
+.btn-primary:hover,
+.btn-primary:focus-visible,
+.btn-primary:active{
+  color:#fff;
+  background:linear-gradient(180deg,#8ea4ff 0%,#647dff 100%);
+  border-color:rgba(255,255,255,.16);
+}
+.btn-primary:hover{transform:translateY(-1px);box-shadow:0 14px 30px -14px rgba(88,111,255,.62),inset 0 1px 0 rgba(255,255,255,.22)}
+.btn-primary:active{transform:translateY(0);box-shadow:0 7px 16px -12px rgba(88,111,255,.55),inset 0 1px 0 rgba(255,255,255,.16)}
+.btn:disabled{opacity:.55;cursor:not-allowed;transform:none!important}
+.btn:focus-visible,.icon-btn:focus-visible,.nav-item:focus-visible,.mnav:focus-visible,.input:focus-visible,.select:focus-visible{outline:3px solid var(--accent-soft);outline-offset:2px}
+
+/* Light mode: clean Apple-like surfaces instead of translucent grey-on-grey. */
+html[data-theme="light"] body{background:#f5f5f7;color:#111114}
+html[data-theme="light"] .bg-base{background:
+  radial-gradient(900px 500px at 50% -8%,rgba(88,111,255,.075),transparent 64%),
+  radial-gradient(700px 500px at 95% 100%,rgba(141,109,244,.045),transparent 62%),#f5f5f7}
+html[data-theme="light"] .glass{background:rgba(255,255,255,.92);border-color:rgba(17,17,20,.075);box-shadow:0 14px 40px -28px rgba(20,25,45,.24)}
+html[data-theme="light"] .glass::before{background:linear-gradient(180deg,rgba(255,255,255,.95),transparent 45%)}
+html[data-theme="light"] .glass-soft{background:#fff;border-color:rgba(17,17,20,.075)}
+html[data-theme="light"] .sidebar{background:rgba(255,255,255,.82);border-right-color:rgba(17,17,20,.07)}
+html[data-theme="light"] .nav-item:hover{background:#f3f4f8;color:#20222a}
+html[data-theme="light"] .nav-item.active{background:rgba(88,111,255,.09);border-color:rgba(88,111,255,.15)}
+html[data-theme="light"] .btn{background:#fff;border-color:rgba(17,17,20,.11);box-shadow:0 1px 2px rgba(17,17,20,.03)}
+html[data-theme="light"] .btn:hover:not(.btn-primary){background:#f7f7f9;border-color:rgba(17,17,20,.15)}
+html[data-theme="light"] .btn-ghost{background:transparent;box-shadow:none}
+html[data-theme="light"] .input,html[data-theme="light"] .select{background:#fff;border-color:rgba(17,17,20,.12);box-shadow:0 1px 2px rgba(17,17,20,.02)}
+html[data-theme="light"] .input:focus,html[data-theme="light"] .select:focus{background:#fff}
+html[data-theme="light"] .item,html[data-theme="light"] .tx{background:rgba(255,255,255,.78);border-color:rgba(17,17,20,.075);box-shadow:0 8px 24px -24px rgba(20,25,45,.3)}
+html[data-theme="light"] .item:hover,html[data-theme="light"] .tx:hover{background:#fff;border-color:rgba(17,17,20,.12)}
+html[data-theme="light"] .item-ico{background:#f6f7fa;border-color:rgba(17,17,20,.065)}
+html[data-theme="light"] .seg{background:#eceef3;border-color:rgba(17,17,20,.06)}
+html[data-theme="light"] .seg .seg-btn.active{background:#586fff}
+html[data-theme="light"] .pill{background:#f7f7f9;border-color:rgba(17,17,20,.07);color:#6d7280}
+html[data-theme="light"] .payment-mode{background:#fff;border-color:rgba(17,17,20,.1)}
+html[data-theme="light"] .payment-mode.active{background:rgba(88,111,255,.08);border-color:rgba(88,111,255,.28)}
+html[data-theme="light"] .mobile-nav{background:rgba(255,255,255,.94);border-top-color:rgba(17,17,20,.08);box-shadow:0 -10px 30px -25px rgba(20,25,45,.35)}
+html[data-theme="light"] .mnav.active{background:rgba(88,111,255,.09)}
+html[data-theme="light"] .cal-cell{background:#fff;border-color:rgba(17,17,20,.075)}
+html[data-theme="light"] .cal-cell.has-value{background:rgba(88,111,255,.07);border-color:rgba(88,111,255,.2)}
+html[data-theme="light"] .cal-cell:hover{background:#fff}
+html[data-theme="light"] .strategy-primary-grid>div{background:rgba(255,255,255,.58)}
+html[data-theme="light"] .strategy-hero{background:radial-gradient(circle at 100% 0,rgba(88,111,255,.09),transparent 40%),#fff}
+html[data-theme="light"] .decision-summary{background:linear-gradient(100deg,rgba(88,111,255,.07),rgba(255,255,255,.95))}
+
+/* Page header */
+.topbar{align-items:center;min-width:0}
+.topbar>div:first-child{min-width:0}
+.page-title,.page-sub{overflow-wrap:anywhere}
+.top-actions{min-width:0}
+
+/* Transaction rows: use a real grid on narrow screens so amount never overlaps text. */
+.tx{min-width:0}
+.tx .item-body{min-width:0}
+.tx .item-name,.tx .item-meta{min-width:0}
+.tx .item-meta{line-height:1.35}
+.tx .item-meta>span{max-width:100%;overflow-wrap:anywhere}
+.tx .item-amt{flex-shrink:0}
+
+/* Credit-card history rows get the same protection. */
+.card-history-row{min-width:0}
+.card-history-row .item-body{min-width:0}
+.card-history-row .item-name{overflow-wrap:anywhere;white-space:normal}
+
+/* Calendar values should wrap instead of colliding with the neighbouring day. */
+.cal-cell{min-width:0}
+.cal-val{white-space:normal;overflow:hidden;text-overflow:clip;line-height:1.15;overflow-wrap:anywhere}
+.cal-pnl{line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+/* Modal and forms */
+.modal-bg{padding:max(14px,env(safe-area-inset-top)) max(14px,env(safe-area-inset-right)) max(14px,env(safe-area-inset-bottom)) max(14px,env(safe-area-inset-left))}
+.modal{border-radius:24px}
+
+/* Touch-first defaults */
+@media (hover:none){
+  .btn:hover,.item:hover,.tx:hover,.quick-link:hover,.theme-option:hover,.cal-cell:hover{transform:none}
+}
+
+@media (max-width:900px){
+  .main{max-width:none;width:100%;padding:22px 18px calc(112px + env(safe-area-inset-bottom))}
+  .topbar{display:grid;grid-template-columns:minmax(0,1fr);gap:14px;margin-bottom:24px;align-items:start}
+  .top-actions{width:100%;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .top-actions .sync-badge{order:0}
+  .top-actions .btn-primary{order:1;margin-left:auto}
+  .top-actions>.btn:not(.btn-primary){order:2}
+  .top-actions>.btn{max-width:100%}
+  .section-head{margin-top:28px}
+  .grid{gap:12px}
+  .item{gap:11px}
+  .item-actions{gap:7px}
+  .item-actions .btn{min-height:38px}
+  .strategy-hero h2{max-width:100%}
+  .priority-item{align-items:flex-start}
+  .theme-option{min-height:76px}
+}
+
+@media (max-width:600px){
+  body{font-size:14px}
+  .main{padding:18px 12px calc(106px + env(safe-area-inset-bottom))}
+  .page-title{font-size:22px;letter-spacing:-.7px}
+  .page-sub{font-size:12px;line-height:1.45}
+  .topbar{gap:12px;margin-bottom:20px}
+  .top-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+  .top-actions .sync-badge{grid-column:1/-1;justify-self:start;align-self:center}
+  .top-actions .btn-primary{margin-left:0;width:100%;justify-content:center}
+  .top-actions>.btn:not(.btn-primary){width:100%;justify-content:center}
+  .top-actions>.btn-primary:only-child{grid-column:1/-1}
+
+  .glass{border-radius:19px}
+  .section-head{align-items:flex-start;gap:10px;margin:26px 2px 11px}
+  .section-title{font-size:13px;line-height:1.35;min-width:0}
+  .section-head>.select,.section-head>.seg{max-width:48%;min-width:0}
+  .kpi{padding:16px;border-radius:18px}
+  .kpi-val{font-size:20px}
+  .kpi-note{font-size:10.5px}
+
+  /* Transaction list */
+  .tx{display:grid;grid-template-columns:38px minmax(0,1fr) auto;grid-template-areas:"icon body amount" "actions actions actions";align-items:start;gap:10px 10px;padding:13px;border-radius:16px;margin-bottom:8px}
+  .tx>.item-ico{grid-area:icon;width:38px;height:38px}
+  .tx>.item-body{grid-area:body;padding-top:1px}
+  .tx>.item-amt{grid-area:amount;align-self:start;padding-top:1px;font-size:13px}
+  .tx>.item-actions{grid-area:actions;width:100%;display:flex;gap:7px;padding-top:2px;border-top:1px solid var(--brd);margin-top:1px}
+  .tx>.item-actions .btn{flex:0 0 auto;min-height:36px}
+  .tx .item-name{font-size:12.5px;white-space:normal;line-height:1.35}
+  .tx .item-meta{font-size:10.5px;margin-top:6px;gap:5px;line-height:1.35}
+  .tx .item-meta>span:first-child{max-width:100%;overflow-wrap:anywhere}
+
+  .log-year-head{margin-top:18px}
+  .log-month-head{gap:7px;flex-wrap:wrap}
+  .log-month-count{font-size:10px}
+  .log-day-head{font-size:10.5px;margin:9px 2px 7px}
+
+  /* Other generic rows */
+  .item{align-items:flex-start;padding:13px;border-radius:16px}
+  .item-body{padding-top:1px}
+  .item-name{font-size:12.5px;white-space:normal;line-height:1.35}
+  .item-meta{font-size:10.5px;line-height:1.35}
+  .item-amt{font-size:13px;align-self:flex-start}
+  .item-actions{width:100%;padding-top:3px}
+  .item-actions .btn{min-height:36px}
+
+  /* Card history */
+  .card-history-card{padding:14px}
+  .card-history-head{gap:10px}
+  .card-history-balance{font-size:17px}
+  .card-history-stats{grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin:12px 0}
+  .card-history-stats div{padding:9px 8px;min-width:0}
+  .card-history-stats span{font-size:8.5px;white-space:normal}
+  .card-history-stats b{font-size:11.5px;overflow-wrap:anywhere}
+  .card-history-row{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:8px;padding:10px}
+  .card-history-row .item-ico{width:34px;height:34px}
+  .card-history-row .item-amt{font-size:12px}
+
+  /* Calendar */
+  .cal-wrap{gap:4px;margin-top:9px}
+  .cal-dow{font-size:8.5px;padding:5px 0;letter-spacing:.5px}
+  .cal-cell{aspect-ratio:auto;min-height:62px;height:62px;padding:5px 4px;border-radius:10px}
+  .cal-day-num{font-size:9px}
+  .cal-val{font-size:8px;line-height:1.1;max-height:19px}
+  .cal-pnl{font-size:7.5px;line-height:1.05}
+  .cal-month-stats{gap:10px;margin-top:12px;padding-top:12px}
+  .cal-stat{min-width:80px}
+  .cal-stat-label{font-size:8.5px}
+  .cal-stat-val{font-size:13px}
+
+  /* Charts */
+  .nw-chart-wrap{height:205px}
+  .chart-big-value{font-size:23px}
+  .chart-axis{font-size:9px}
+  .chart-tooltip{max-width:150px;padding:8px 9px;font-size:9.5px}
+
+  /* Strategy / profile */
+  .strategy-hero{padding:18px}
+  .strategy-hero h2{font-size:22px;margin-top:11px}
+  .strategy-hero p{font-size:12px;line-height:1.55}
+  .strategy-primary-grid{gap:7px;margin-top:16px}
+  .strategy-primary-grid>div{padding:10px}
+  .strategy-primary-grid span{font-size:8.5px}
+  .strategy-primary-grid b{font-size:13px}
+  .priority-cost{padding-left:44px}
+  .strategy-input-row{gap:10px}
+  .decision-summary{padding:16px}
+  .decision-main strong{font-size:19px}
+  .theme-option{grid-template-columns:64px minmax(0,1fr) 22px;gap:10px;padding:11px;border-radius:17px}
+  .theme-preview{height:48px}
+  .theme-option-copy strong{font-size:12px}
+  .theme-option-copy span{font-size:10px}
+  .profile-hero{padding:16px}
+  .profile-avatar{width:44px;height:44px}
+  .quick-link{padding:13px}
+
+  /* Mobile nav: exactly five full-width slots, remaining items scroll cleanly. */
+  .mobile-nav{padding:7px 8px calc(7px + env(safe-area-inset-bottom));gap:4px}
+  .mnav{flex:0 0 calc((100vw - 32px) / 5);min-width:0;max-width:calc((100vw - 32px) / 5);padding:7px 3px;border-radius:12px;font-size:8.5px;gap:3px}
+  .mnav svg{width:18px;height:18px}
+
+  .modal-bg{padding:10px}
+  .modal{max-height:92vh;border-radius:22px;padding:18px}
+  .modal-head{margin-bottom:15px}
+  .modal-head h3{font-size:15px}
+  .field{margin-bottom:12px}
+  .label{font-size:9.5px}
+  .input,.select{min-height:44px;font-size:13px}
+  .payment-mode{min-height:46px}
+}
+
+@media (max-width:380px){
+  .main{padding-left:10px;padding-right:10px}
+  .top-actions{grid-template-columns:1fr}
+  .top-actions .sync-badge,.top-actions .btn-primary,.top-actions>.btn:not(.btn-primary){width:100%;justify-content:center}
+  .cal-cell{min-height:57px;height:57px;padding:4px 3px}
+  .cal-val{font-size:7.5px}
+  .cal-pnl{font-size:7px}
+  .mnav{flex-basis:calc((100vw - 28px) / 5);max-width:calc((100vw - 28px) / 5)}
+}
+
+@supports not (background:color-mix(in srgb, white 50%, transparent)){
+  .sidebar{background:var(--bg-2)}
+  .mobile-nav{background:var(--bg-2)}
+  .chart-tooltip{background:var(--bg-2)}
+}
+
 </style>
 </head>
 <body>
