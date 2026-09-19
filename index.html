@@ -315,13 +315,13 @@ html[data-theme="light"] .toast-action{color:#4f6dff}
 .plan-amt{font-size:20px;font-weight:800;color:var(--amber);letter-spacing:-.6px;font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 .plan-action{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.5}
 /* AI Chat */
-.chat-wrap{display:flex;flex-direction:column;gap:12px;max-height:520px;overflow-y:auto;padding:16px;border-radius:12px;background:var(--glass-2);border:1px solid var(--brd)}
+.chat-wrap{display:flex;flex-direction:column;gap:12px;max-height:560px;overflow-y:auto;padding:16px;border-radius:12px;background:var(--glass-2);border:1px solid var(--brd)}
 .chat-msg{display:flex;gap:10px;align-items:flex-start}
 .chat-msg.user{flex-direction:row-reverse}
-.chat-avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff}
+.chat-avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;font-size:11px;font-weight:800;color:#fff;letter-spacing:.2px}
 .chat-avatar.user{background:linear-gradient(135deg,#34d399,#059669)}
 .chat-avatar.bot{background:linear-gradient(135deg,var(--accent),var(--accent-2))}
-.chat-bubble{padding:11px 14px;border-radius:14px;font-size:13px;line-height:1.6;max-width:78%;word-wrap:break-word;white-space:pre-wrap}
+.chat-bubble{padding:11px 14px;border-radius:14px;font-size:13px;line-height:1.65;max-width:78%;word-wrap:break-word;white-space:pre-wrap}
 .chat-bubble.user{background:linear-gradient(135deg,var(--green),#059669);color:#fff;border-bottom-right-radius:4px}
 .chat-bubble.bot{background:var(--glass-3);border:1px solid var(--brd);color:var(--txt-2);border-bottom-left-radius:4px}
 .chat-bubble.bot b{color:var(--txt);font-weight:700}
@@ -330,6 +330,10 @@ html[data-theme="light"] .toast-action{color:#4f6dff}
 .chat-suggestions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
 .chat-suggestions .pill{cursor:pointer;transition:all .15s ease}
 .chat-suggestions .pill:hover{background:var(--accent-soft);color:var(--accent);border-color:rgba(124,146,255,.4)}
+.chat-typing{display:inline-block;width:6px;height:6px;border-radius:50%;background:var(--accent);margin-right:3px;animation:typingDot 1.2s infinite}
+.chat-typing:nth-child(2){animation-delay:.2s}
+.chat-typing:nth-child(3){animation-delay:.4s}
+@keyframes typingDot{0%,60%,100%{opacity:.3;transform:translateY(0)}30%{opacity:1;transform:translateY(-3px)}}
 </style>
 </head>
 <body>
@@ -387,18 +391,8 @@ function relDays(n) { if (n < 0) return Math.abs(n) + ' days ago'; if (n === 0) 
 function timeAgo(ts) { const s = Math.round((Date.now() - ts) / 1000); if (s < 5) return 'just now'; if (s < 60) return s + 's ago'; const m = Math.round(s / 60); if (m < 60) return m + 'm ago'; const h = Math.round(m / 60); if (h < 24) return h + 'h ago'; return fmtDate(new Date(ts)); }
 
 function naturalCompare(a, b) { return String(a || '').localeCompare(String(b || ''), undefined, { numeric: true, sensitivity: 'base' }); }
-
-function stripTrailingNumber(name) {
-  const s = String(name || '').trim();
-  const m = s.match(/^(.*?)\s+\d+$/);
-  return m ? m[1].trim() : null;
-}
-
-function defaultBankId(banks) {
-  if (!banks || !banks.length) return '';
-  const kotak = banks.find(b => /kotak/i.test(b.name || ''));
-  return kotak ? kotak.id : banks[0].id;
-}
+function stripTrailingNumber(name) { const s = String(name || '').trim(); const m = s.match(/^(.*?)\s+\d+$/); return m ? m[1].trim() : null; }
+function defaultBankId(banks) { if (!banks || !banks.length) return ''; const kotak = banks.find(b => /kotak/i.test(b.name || '')); return kotak ? kotak.id : banks[0].id; }
 
 function nextDueDate(dueDay, paidCycles) {
   const today = startOfToday();
@@ -411,7 +405,6 @@ function nextDueDate(dueDay, paidCycles) {
   while ((paidCycles || []).indexOf(monthKey(cand)) !== -1 && guard++ < 60) { m++; cand = new Date(y, m, Math.min(dd, daysInMonth(y, m))); }
   return cand;
 }
-
 function nextInflowDueDate(f) {
   if (f.recurring === false && f.date) {
     if ((f.receivedCycles || []).indexOf(f.date) !== -1) return null;
@@ -603,7 +596,8 @@ const Ico = {
   trend: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>,
   repeat: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:13,height:13}}><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>,
   onetime: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:13,height:13}}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>,
-  send: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2 11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg>,
+  send: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:14,height:14}}><path d="M22 2 11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg>,
+  trash: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" style={{width:14,height:14}}><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6"/><path d="M14 11v6"/></svg>,
   search: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
 };
 
@@ -614,21 +608,36 @@ function CategoryIcon({ kind }) {
 
 const PIE_COLORS = ['#7c92ff', '#34d399', '#fbbf24', '#f87171', '#a78bfa', '#22d3ee', '#fb923c', '#ec4899', '#10b981', '#f472b6', '#64748b', '#94a3b8', '#facc15', '#60a5fa', '#84cc16'];
 
-/* ============================================================
-   AI CHAT ENGINE — rule-based analyzer that uses real data
-   ============================================================ */
+/* ========================================================================
+   AI CHAT ENGINE v2 — context-aware, constraint-parsing, calculation-driven
+   ======================================================================== */
+
+function parseAmountToken(numStr, unitStr) {
+  let v = Number(String(numStr).replace(/,/g, ''));
+  if (!isFinite(v)) return null;
+  const unit = String(unitStr || '').toLowerCase();
+  if (unit === 'k') v *= 1000;
+  else if (['lakh','lakhs','lac','lacs','l'].includes(unit)) v *= 100000;
+  else if (['cr','crore','crores'].includes(unit)) v *= 10000000;
+  return Math.round(v);
+}
+
+// Extract ALL amounts from a string, return the last (most likely the subject) plus a list
+function extractAllAmounts(q) {
+  const s = String(q || '');
+  const re = /(?:₹|rs\.?|inr)?\s*(\d{1,3}(?:,\d{2,3})+|\d+(?:\.\d+)?)\s*(k|lakh|lakhs|lac|lacs|l|cr|crore|crores)?\b/gi;
+  const results = [];
+  let m;
+  while ((m = re.exec(s)) !== null) {
+    const amt = parseAmountToken(m[1], m[2]);
+    if (amt && amt > 0) results.push(amt);
+  }
+  return results;
+}
+
 function extractAmount(q) {
-  const s = String(q || '').toLowerCase();
-  // 1L / 1 lakh / 1.5lakh
-  let m = s.match(/(\d+(?:\.\d+)?)\s*(?:lakh|lac|l\b)/i);
-  if (m) return Math.round(Number(m[1]) * 100000);
-  // 20k / 500k
-  m = s.match(/(\d+(?:\.\d+)?)\s*k\b/i);
-  if (m) return Math.round(Number(m[1]) * 1000);
-  // Plain number with optional commas
-  m = s.match(/(\d[\d,]{1,})/);
-  if (m) return Number(m[1].replace(/,/g, ''));
-  return null;
+  const all = extractAllAmounts(q);
+  return all.length ? all[all.length - 1] : null;
 }
 
 function dataSummary(data) {
@@ -669,87 +678,293 @@ function simulateLoans(loans, extra) {
   return { months, totalInterest: r2(totalInterest) };
 }
 
-function aiAnswer(question, data) {
-  const q = String(question || '').trim().toLowerCase();
-  const s = dataSummary(data);
-  const amt = extractAmount(q);
+// Parse "keep X in bank" from natural language
+function parseKeepInBank(q) {
+  const s = String(q || '');
+  // "keep 2k in bank" / "keep around 5000 in my bank" / "leave 1L as buffer"
+  const m = s.match(/\b(?:keep|leave|reserve|retain|hold)\b[^0-9]{0,20}(?:₹|rs\.?|inr)?\s*(\d{1,3}(?:,\d{2,3})+|\d+(?:\.\d+)?)\s*(k|lakh|lakhs|lac|lacs|l|cr|crore|crores)?/i);
+  if (m) {
+    const amt = parseAmountToken(m[1], m[2]);
+    if (amt && amt > 0 && amt < 1e8) return amt;
+  }
+  return null;
+}
 
-  // ----- Intent: where to put money / allocate / invest
-  if (/\b(where|what|how)\b.*\b(put|invest|do|allocate|use|place)\b/i.test(q) || /\b(allocate|invest)\b/i.test(q) || (amt && /(spare|extra|left|sitting)/.test(q))) {
-    const cash = amt || s.bankTotal;
+// Parse all "must-pay" numbers explicitly stated by user (e.g., "minimum 5k on card")
+// Returns list of { target, amount }
+function parseMustPay(q) {
+  const s = String(q || '');
+  const out = [];
+  // "minimum pay" / "min pay" on cards
+  const re = /\b(?:minimum|min|card bill|cc bill|emi|regular)\b[^0-9]{0,25}(?:₹|rs\.?|inr)?\s*(\d{1,3}(?:,\d{2,3})+|\d+(?:\.\d+)?)\s*(k|lakh|lakhs|lac|lacs|l|cr|crore|crores)?/gi;
+  let m;
+  while ((m = re.exec(s)) !== null) {
+    const amt = parseAmountToken(m[1], m[2]);
+    if (amt && amt > 0) out.push(amt);
+  }
+  return out;
+}
+
+// Compute upcoming dues in next N days from real data
+function upcomingDues(data, daysAhead) {
+  const today = startOfToday();
+  const cutoff = new Date(today); cutoff.setDate(cutoff.getDate() + daysAhead);
+  const out = { cards: [], loans: [], bills: [] };
+  data.cards.forEach(c => {
+    const due = nextDueDate(c.dueDay || 10, c.paidCycles);
+    if (due >= today && due <= cutoff && Number(c.outstanding) > 0) {
+      out.cards.push({ name: c.name, amount: Number(c.outstanding) || 0, due, rate: 40 });
+    }
+  });
+  data.loans.filter(l => !l.closed).forEach(l => {
+    const due = nextDueDate(l.dueDay || 5, l.paidCycles);
+    if (due >= today && due <= cutoff && Number(l.emi) > 0) {
+      out.loans.push({ name: l.name, amount: Number(l.emi) || 0, due, rate: Number(l.rate) || 0 });
+    }
+  });
+  data.bills.forEach(b => {
+    const due = nextDueDate(b.dueDay || 1, b.paidCycles);
+    if (due >= today && due <= cutoff && Number(b.amount) > 0) {
+      out.bills.push({ name: b.name, amount: Number(b.amount) || 0, due, rate: 0 });
+    }
+  });
+  return out;
+}
+
+// =============== MAIN AI ===============
+// context: { lastAmount, lastIntent, lastSubject }
+function aiAnswer(question, data, context) {
+  context = context || {};
+  const q = String(question || '').trim();
+  const ql = q.toLowerCase();
+  const s = dataSummary(data);
+
+  // -- Parse amounts
+  const allAmounts = extractAllAmounts(q);
+  let amt = allAmounts.length ? allAmounts[allAmounts.length - 1] : null;
+  // Context fallback: "this X" / "it" / "that" refers to previous
+  const refersToPrev = /\b(this|that|it|the same|same amount|that amount|that money)\b/.test(ql);
+  if (!amt && refersToPrev && context.lastAmount) amt = context.lastAmount;
+
+  // -- Parse constraints
+  const keepInBank = parseKeepInBank(q);
+  const mustPayList = parseMustPay(q);
+
+  const has = (...words) => words.some(w => ql.includes(w));
+  const score = (words) => words.reduce((n, w) => n + (ql.includes(w) ? 1 : 0), 0);
+
+  // -- Intent scoring
+  const intentScores = {
+    allocate: score([
+      'where should i put','where to put','where should i','where do i put','invest','allocate','put my','put this','put it','deploy',
+      'use my','use this','do with','what should i do with','receiv','get','got','incoming','extra money','spare','leftover',
+      'what to do with','how to use','what should i do','best use','optimal','split','distribute'
+    ]),
+    foreclose: score(['foreclose','close my loan','close the loan','close loan','pay off my loan','payoff my loan','settle','pay off','prepay','pre-pay','pre payment','prepayment']),
+    emergency: score(['emergency','buffer','cushion','rainy','safety fund','safety net']),
+    debtfree: score(['debt free','debtfree','how long','when will i be','clear all my debt','pay off all debt','debt-free']),
+    savings: score(['saving','savings rate','am i saving','save enough','how much am i saving','saving enough']),
+    order: score(['which loan','pay first','priority','payoff order','highest interest','pay first','attack first']),
+    summary: score(['summary','overview','how am i doing','status','net worth','where am i','finances','financial position']),
+    help: score(['help','what can you','what can i ask','what do you do','how do you work'])
+  };
+
+  let intent = 'help';
+  let best = 0;
+  for (const k in intentScores) { if (intentScores[k] > best) { best = intentScores[k]; intent = k; } }
+
+  // If no amount but "this/that/it" refers to previous intent, keep the same intent
+  if (best === 0 && refersToPrev && context.lastIntent) intent = context.lastIntent;
+
+  // If it's a question about money and we have an amount, prefer allocate
+  if (best === 0 && amt && has('where','how','put','invest','do','save','allocate','use','best')) intent = 'allocate';
+  // If amount + "save" → allocate
+  if (amt && has('save')) { if (intentScores.allocate >= intentScores.savings) intent = 'allocate'; }
+
+  // ================= ALLOCATE =================
+  if (intent === 'allocate') {
+    let cash = amt;
+    if (!cash || cash <= 0) cash = s.bankTotal;
+    if (!cash || cash <= 0) {
+      return `Tell me how much you have (e.g. "I'll get 1.3L this month") and I'll give you a full plan.`;
+    }
+
     const lines = [];
-    lines.push(`You have ${inr(cash)} to deploy. Here's the optimal order based on your real numbers:`);
+    lines.push(`Okay, you have ${inr(cash)} to deploy. Here's the exact plan based on your real numbers.`);
+    lines.push('');
+
     let remaining = cash;
     let step = 0;
-    // 1. Emergency fund check
-    const monthlyExpense = s.mOut > 0 ? s.mOut : 1;
+
+    // 1. Bank buffer
+    let buffer = keepInBank;
+    if (buffer === null || buffer === undefined) {
+      // Auto-suggest a buffer: 2 weeks of spending or 5% of the cash, capped at 10k
+      buffer = Math.min(10000, Math.max(2000, r2((s.mOut || 4000) * 0.5)));
+      if (buffer > cash * 0.5) buffer = r2(cash * 0.1);
+    }
+    if (buffer > cash) buffer = cash;
+    if (buffer > 0) {
+      step++;
+      lines.push(`${step}. Keep ${inr(buffer)} in the bank${keepInBank !== null ? ' (as you asked)' : ' as a small buffer for the next 2-3 weeks'}.`);
+      remaining = r2(remaining - buffer);
+    }
+
+    if (remaining <= 0.5) {
+      lines.push('');
+      lines.push(`That uses everything. Nothing further to allocate.`);
+      return { text: lines.join('\n'), context: { lastAmount: cash, lastIntent: 'allocate', lastSubject: 'cash' } };
+    }
+
+    // 2. Upcoming dues (next 30 days)
+    const dues = upcomingDues(data, 30);
+
+    // Card dues — highest priority (40% annualised)
+    if (dues.cards.length > 0 && remaining > 0.5) {
+      const totalCardDue = dues.cards.reduce((s2, c) => s2 + c.amount, 0);
+      const take = Math.min(remaining, totalCardDue);
+      step++;
+      lines.push(`${step}. Card dues in the next 30 days: ${inr(totalCardDue)} (${dues.cards.map(c => c.name).join(', ')}).`);
+      lines.push(`   Reserve ${inr(take)} for these. Card interest is ~40%/year — the worst kind of debt to carry.`);
+      remaining = r2(remaining - take);
+    }
+
+    // Loan EMIs
+    if (dues.loans.length > 0 && remaining > 0.5) {
+      const totalLoan = dues.loans.reduce((s2, c) => s2 + c.amount, 0);
+      const take = Math.min(remaining, totalLoan);
+      step++;
+      lines.push(`${step}. Loan EMIs in the next 30 days: ${inr(totalLoan)} across ${dues.loans.length} loan${dues.loans.length > 1 ? 's' : ''}.`);
+      lines.push(`   Reserve ${inr(take)} — missing an EMI hurts your CIBIL score.`);
+      remaining = r2(remaining - take);
+    }
+
+    // Bills
+    if (dues.bills.length > 0 && remaining > 0.5) {
+      const totalBills = dues.bills.reduce((s2, c) => s2 + c.amount, 0);
+      const take = Math.min(remaining, totalBills);
+      step++;
+      lines.push(`${step}. Recurring bills due: ${inr(totalBills)}.`);
+      lines.push(`   Reserve ${inr(take)}.`);
+      remaining = r2(remaining - take);
+    }
+
+    // 3. Emergency fund top-up
+    const monthlyExpense = s.mOut > 0 ? s.mOut : 5000;
     const ef3 = r2(monthlyExpense * 3);
-    const ef6 = r2(monthlyExpense * 6);
-    if (s.bankTotal < ef3 && s.cardDebt <= 0) {
+    const bankAfterAll = r2(s.bankTotal + buffer - (dues.cards.reduce((a,c)=>a+c.amount,0) > remaining ? remaining : dues.cards.reduce((a,c)=>a+c.amount,0)));
+    // simpler: if after reserving the buffers, bank+remaining < ef3, top up
+    const projectedBank = r2(s.bankTotal + buffer);
+    if (projectedBank < ef3 && remaining > 0.5 && dues.cards.length === 0) {
+      const gap = r2(ef3 - projectedBank);
+      const take = Math.min(remaining, gap);
       step++;
-      const need = r2(Math.min(remaining, ef3 - s.bankTotal));
-      lines.push(`\n${step}. Build your emergency fund first. Your monthly spend is ~${inr(monthlyExpense)}. A 3-month buffer is ${inr(ef3)}. You need ${inr(r2(ef3 - s.bankTotal))} more. Put ${inr(need)} here.`);
-      remaining = r2(remaining - need);
+      lines.push(`${step}. Emergency fund top-up. Your monthly spend is about ${inr(monthlyExpense)}, so 3 months of expenses = ${inr(ef3)}. You're at ${inr(projectedBank)} — that's ${inr(gap)} short.`);
+      lines.push(`   Put ${inr(take)} into a liquid fund and label it "emergency".`);
+      remaining = r2(remaining - take);
     }
-    // 2. Credit cards
-    if (s.cardDebt > 0 && remaining > 0) {
-      step++;
-      const topCard = [...data.cards].sort((a,b)=>(Number(b.outstanding)||0)-(Number(a.outstanding)||0))[0];
-      const pay = r2(Math.min(remaining, s.cardDebt));
-      lines.push(`\n${step}. Kill credit card debt. You owe ${inr(s.cardDebt)} on cards, charging ~36-42% a year. Put ${inr(pay)} toward ${topCard ? topCard.name : 'your top card'} today.`);
-      remaining = r2(remaining - pay);
+
+    // 4. Pre-pay the highest interest debt
+    if (remaining > 0.5) {
+      const allDebt = [];
+      s.activeLoans.forEach(l => {
+        const rem = r2((Number(l.emi) || 0) * (Number(l.monthsLeft) || 0));
+        allDebt.push({ type: 'loan', name: l.name, rate: Number(l.rate) || 0, rem, ref: l });
+      });
+      data.cards.forEach(c => {
+        allDebt.push({ type: 'card', name: c.name, rate: 40, rem: Number(c.outstanding) || 0, ref: c });
+      });
+      allDebt.sort((a, b) => b.rate - a.rate);
+
+      if (allDebt.length > 0) {
+        let idx = 0;
+        while (remaining > 0.5 && idx < allDebt.length) {
+          const target = allDebt[idx];
+          const put = Math.min(remaining, target.rem);
+          step++;
+          if (target.rate >= 30) {
+            lines.push(`${step}. Clear ${target.name} (${target.rate}% interest). Pre-pay ${inr(put)} — that's ~${inr(r2(put * target.rate / 100))} saved in a year.`);
+          } else if (target.rate >= 15) {
+            lines.push(`${step}. Pre-pay ${target.name} (${target.rate}%). Put ${inr(put)} here. Saves ~${inr(r2(put * target.rate / 100))}/year.`);
+          } else {
+            lines.push(`${step}. Pre-pay ${target.name} (${target.rate}%). Put ${inr(put)} here for guaranteed ~${target.rate}% return.`);
+          }
+          remaining = r2(remaining - put);
+          idx++;
+        }
+      } else {
+        // No debt → invest
+        step++;
+        lines.push(`${step}. You have zero debt. Invest the remaining ${inr(remaining)}.`);
+        lines.push(`   Suggested split for a moderate profile:`);
+        lines.push(`   • 60% — ${inr(r2(remaining * 0.6))} in a Nifty 50 index fund SIP`);
+        lines.push(`   • 25% — ${inr(r2(remaining * 0.25))} in a short-duration debt fund`);
+        lines.push(`   • 15% — ${inr(r2(remaining * 0.15))} in a liquid fund for flexibility`);
+        remaining = 0;
+      }
     }
-    // 3. High interest loan
-    if (s.activeLoans.length > 0 && remaining > 0) {
+
+    if (remaining > 0.5) {
       step++;
-      const topLoan = [...s.activeLoans].sort((a,b)=>(Number(b.rate)||0)-(Number(a.rate)||0))[0];
-      const pay = r2(Math.min(remaining, Number(topLoan.emi||0)*Number(topLoan.monthsLeft||0)));
-      lines.push(`\n${step}. Attack ${topLoan.name} (${topLoan.rate}% interest). Putting ${inr(pay)} here saves you real money. Even a partial prepayment cuts your interest significantly.`);
-      remaining = r2(remaining - pay);
+      lines.push(`${step}. Remaining ${inr(remaining)}: park in a liquid fund or high-yield savings. Don't let it sit idle.`);
     }
-    // 4. Invest the rest
-    if (remaining > 0 && s.cardDebt <= 0 && s.activeLoans.length === 0) {
-      step++;
-      lines.push(`\n${step}. With no high-interest debt, invest ${inr(remaining)}. A sensible split: 60% index funds (Nifty 50), 25% debt funds, 15% liquid for emergencies.`);
-      remaining = 0;
-    } else if (remaining > 0) {
-      step++;
-      lines.push(`\n${step}. Whatever's left (${inr(remaining)}) can go into an index fund SIP. Don't chase hot tips.`);
+
+    lines.push('');
+    lines.push(`— Summary —`);
+    lines.push(`• Total deployed: ${inr(cash)}`);
+    lines.push(`• Bank buffer kept: ${inr(buffer)}`);
+    lines.push(`• Debt clearing: ${inr(r2(cash - buffer - remaining))}`);
+
+    // Tail message for follow-up
+    if (dues.cards.length > 0 || dues.loans.length > 0) {
+      lines.push('');
+      lines.push(`If you have specific must-pay amounts (like "minimum 5k on my card"), tell me and I'll rework the plan.`);
     }
-    lines.push(`\nIn short: pay your highest-interest debt first, keep a 3-6 month cushion, then invest.`);
-    return lines.join('\n');
+
+    return {
+      text: lines.join('\n'),
+      context: { lastAmount: cash, lastIntent: 'allocate', lastSubject: 'cash' }
+    };
   }
 
-  // ----- Intent: foreclose loan
-  if (/foreclose|fore?close|close.*loan|pay.*off.*loan|settle.*loan/i.test(q)) {
-    if (s.activeLoans.length === 0) return `You have no active loans. Nothing to foreclose. 🎉`;
-    const f = s.activeLoans.filter(l => Number(l.foreclosureAmount) > 0);
-    if (!f.length) return `None of your loans have a foreclosure amount set. Add it on the loan's edit screen and I'll tell you whether to close it.`;
-    const best = [...f].sort((a, b) => (Number(b.rate) || 0) - (Number(a.rate) || 0))[0];
-    const remaining = r2((Number(best.emi)||0) * (Number(best.monthsLeft)||0));
-    const saved = r2(Math.max(0, remaining - Number(best.foreclosureAmount)));
+  // ================= FORECLOSE =================
+  if (intent === 'foreclose') {
+    if (s.activeLoans.length === 0) {
+      return { text: `You have no active loans — nothing to foreclose. 🎉`, context: { lastIntent: 'foreclose' } };
+    }
+    // Try to match a loan by name
+    const named = s.activeLoans.find(l => ql.includes(String(l.name).toLowerCase().split(/\s+/)[0].toLowerCase()));
+    const candidates = named ? [named] : s.activeLoans.filter(l => Number(l.foreclosureAmount) > 0);
+    if (!candidates.length) {
+      return { text: `None of your loans have a foreclosure amount set. Add it on the loan's edit screen and I'll tell you whether to close it.`, context: { lastIntent: 'foreclose' } };
+    }
+    const best = [...candidates].sort((a, b) => (Number(b.rate) || 0) - (Number(a.rate) || 0))[0];
+    const rem = r2((Number(best.emi) || 0) * (Number(best.monthsLeft) || 0));
+    const saved = r2(Math.max(0, rem - Number(best.foreclosureAmount || 0)));
     const lines = [];
-    lines.push(`Looking at your loans, the best candidate to foreclose is ${best.name}.`);
-    lines.push(`\n• You still owe ${inr(remaining)} over ${best.monthsLeft||0} months at ${best.rate}% interest.`);
-    lines.push(`• Foreclosure amount today: ${inr(best.foreclosureAmount)}.`);
-    lines.push(`• Future payments saved: ${inr(saved)}.`);
+    lines.push(`Looking at ${best.name} (${best.rate}% interest):`);
+    lines.push('');
+    lines.push(`• Remaining: ${inr(rem)} over ${best.monthsLeft || 0} months`);
+    lines.push(`• Foreclosure amount today: ${inr(best.foreclosureAmount || 0)}`);
+    lines.push(`• Future payments saved: ${inr(saved)}`);
+    lines.push('');
     if (s.bankTotal >= Number(best.foreclosureAmount)) {
-      lines.push(`\nYou have ${inr(s.bankTotal)} in the bank, which covers it. After paying, you'd have ${inr(r2(s.bankTotal - Number(best.foreclosureAmount)))} left.`);
+      lines.push(`You have ${inr(s.bankTotal)} in the bank — that covers it. After paying you'd keep ${inr(r2(s.bankTotal - Number(best.foreclosureAmount)))}.`);
       if (r2(s.bankTotal - Number(best.foreclosureAmount)) < s.mOut * 3) {
-        lines.push(`\nCaution: that leaves you with less than 3 months of expenses (${inr(r2(s.mOut*3))}). I'd rather you build a buffer first, then foreclose.`);
+        lines.push(`Caution: that's below your 3-month cushion (${inr(r2(s.mOut * 3))}). Build that first.`);
       } else {
-        lines.push(`\nVerdict: GO AHEAD. You save ${inr(saved)} and keep a healthy emergency fund.`);
+        lines.push(`Verdict: GO AHEAD. You save ${inr(saved)} and keep a healthy buffer.`);
       }
     } else {
-      lines.push(`\nYou have ${inr(s.bankTotal)} in the bank — that's ${inr(r2(Number(best.foreclosureAmount) - s.bankTotal))} short. Withdraw from demat (${inr(s.dematTotal)} available) or accumulate a bit more before closing.`);
+      lines.push(`You're short by ${inr(r2(Number(best.foreclosureAmount) - s.bankTotal))}. Withdraw from demat (${inr(s.dematTotal)} available) or accumulate more first.`);
     }
-    return lines.join('\n');
+    return { text: lines.join('\n'), context: { lastIntent: 'foreclose', lastSubject: best.name } };
   }
 
-  // ----- Intent: emergency fund
-  if (/emergency|buffer|cushion|rainy/i.test(q)) {
+  // ================= EMERGENCY =================
+  if (intent === 'emergency') {
     const monthly = s.mOut > 0 ? s.mOut : 0;
-    if (monthly === 0) return `I don't see any spending this month yet. Log some transactions and I'll tell you how much you need for a safe emergency fund.`;
+    if (monthly === 0) return { text: `I don't see any spending this month yet. Log some transactions and I'll tell you how much you need for a safe emergency fund.`, context: { lastIntent: 'emergency' } };
     const need3 = r2(monthly * 3);
     const need6 = r2(monthly * 6);
     const have = s.bankTotal;
@@ -758,80 +973,82 @@ function aiAnswer(question, data) {
     lines.push(`Your monthly spending this month: ${inr(monthly)}.`);
     lines.push(`• 3-month cushion: ${inr(need3)}`);
     lines.push(`• 6-month cushion: ${inr(need6)}`);
-    lines.push(`• You currently hold ${inr(have)} in cash.`);
-    lines.push(`\nThat's ${pct}% of a 6-month fund. ${pct >= 100 ? 'You are fully covered.' : pct >= 50 ? 'You are half-way there. Keep going.' : 'You are under-covered. Prioritise building this before investing.'}`);
-    if (s.dematTotal > 0) lines.push(`\nNote: you have ${inr(s.dematTotal)} in demat. Investments are not a substitute for emergency cash — keep at least the 3-month cushion liquid.`);
-    return lines.join('\n');
+    lines.push(`• Cash in bank: ${inr(have)}`);
+    lines.push('');
+    lines.push(`That's ${pct}% of a 6-month fund. ${pct >= 100 ? 'You are fully covered.' : pct >= 50 ? 'Halfway there. Keep going.' : 'Under-covered. Prioritise this before investing.'}`);
+    if (s.dematTotal > 0) lines.push(`Note: your ${inr(s.dematTotal)} in demat isn't a substitute for cash. Keep at least ${inr(need3)} liquid.`);
+    return { text: lines.join('\n'), context: { lastIntent: 'emergency' } };
   }
 
-  // ----- Intent: how long to be debt free
-  if (/debt.?free|when.*debt|how.*long.*debt|clear.*debt/i.test(q)) {
-    if (s.activeLoans.length === 0 && s.cardDebt === 0) return `You have zero loans and zero card debt. You're already debt-free. 🎉`;
+  // ================= DEBT FREE =================
+  if (intent === 'debtfree') {
+    if (s.activeLoans.length === 0 && s.cardDebt === 0) return { text: `You have zero loans and zero card debt. You're already debt-free. 🎉`, context: { lastIntent: 'debtfree' } };
     const base = simulateLoans(s.activeLoans, 0);
     const lines = [];
-    lines.push(`With your current EMIs and no extra payments, you'll be debt free in about ${base.months} months (${r2(base.months/12)} years).`);
-    if (s.cardDebt > 0) lines.push(`That assumes you also clear your ${inr(s.cardDebt)} credit card balance promptly.`);
+    lines.push(`At current EMIs and no extra payments: about ${base.months} months (${r2(base.months / 12)} years).`);
     const plan = simulateLoans(s.activeLoans, 5000);
-    lines.push(`\nIf you put an extra ${inr(5000)} every month, you'll be debt free in ${plan.months} months — saving ${base.months - plan.months} months and ${inr(Math.max(0, base.totalInterest - plan.totalInterest))} in interest.`);
-    lines.push(`\nTry the Extra Payment Planner above to test your own number.`);
-    return lines.join('\n');
+    lines.push(`With an extra ${inr(5000)} per month: ${plan.months} months — ${base.months - plan.months} months faster, ${inr(Math.max(0, base.totalInterest - plan.totalInterest))} interest saved.`);
+    lines.push(`Try the Extra Payment Planner above with your own number.`);
+    return { text: lines.join('\n'), context: { lastIntent: 'debtfree' } };
   }
 
-  // ----- Intent: savings rate
-  if (/saving|savings rate|how much.*sav/i.test(q)) {
-    if (s.mIn === 0) return `I don't see any income logged this month. Add your salary/income and I'll compute your savings rate.`;
+  // ================= SAVINGS =================
+  if (intent === 'savings') {
+    if (s.mIn === 0) return { text: `No income logged this month yet. Add your salary and I'll compute your savings rate.`, context: { lastIntent: 'savings' } };
     const rate = r2(((s.mIn - s.mOut) / s.mIn) * 100);
     const lines = [];
-    lines.push(`This month: income ${inr(s.mIn)}, expenses ${inr(s.mOut)}, so you saved ${inr(r2(s.mIn - s.mOut))}.`);
+    lines.push(`Income: ${inr(s.mIn)}   ·   Expenses: ${inr(s.mOut)}   ·   Saved: ${inr(r2(s.mIn - s.mOut))}`);
     lines.push(`Savings rate: ${rate}%.`);
-    if (rate >= 30) lines.push(`\nExcellent. You're well above the 20% benchmark. Consider bumping your SIP by ${inr(r2(s.mIn * 0.05))} while you can.`);
-    else if (rate >= 20) lines.push(`\nSolid. You're hitting the 20% benchmark. Keep it up.`);
-    else if (rate >= 0) lines.push(`\nBelow the 20% mark. Aim to cut discretionary categories (food delivery, shopping) by ${inr(r2(s.mIn * 0.2 - (s.mIn - s.mOut)))} to hit 20%.`);
-    else lines.push(`\nYou spent more than you earned by ${inr(Math.abs(s.mIn - s.mOut))}. Review the biggest categories on the Banks page.`);
-    return lines.join('\n');
+    lines.push('');
+    if (rate >= 30) lines.push(`Excellent — well above the 20% benchmark. Consider bumping your SIP by ${inr(r2(s.mIn * 0.05))}.`);
+    else if (rate >= 20) lines.push(`Solid. You're hitting the 20% benchmark.`);
+    else if (rate >= 0) lines.push(`Below 20%. To reach it, cut about ${inr(r2(s.mIn * 0.2 - (s.mIn - s.mOut)))} of discretionary spending.`);
+    else lines.push(`You spent more than you earned by ${inr(Math.abs(r2(s.mIn - s.mOut)))}. Review the largest categories on the Banks page.`);
+    return { text: lines.join('\n'), context: { lastIntent: 'savings' } };
   }
 
-  // ----- Intent: payoff order / highest interest
-  if (/first|priority|which.*loan|highest.*interest|payoff order/i.test(q)) {
+  // ================= ORDER =================
+  if (intent === 'order') {
     const items = [];
-    s.activeLoans.forEach(l => items.push({ name: l.name, rate: Number(l.rate) || 0, rem: r2((Number(l.emi)||0)*(Number(l.monthsLeft)||0)) }));
+    s.activeLoans.forEach(l => items.push({ name: l.name, rate: Number(l.rate) || 0, rem: r2((Number(l.emi) || 0) * (Number(l.monthsLeft) || 0)) }));
     data.cards.forEach(c => items.push({ name: c.name + ' (card)', rate: 40, rem: Number(c.outstanding) || 0 }));
-    if (!items.length) return `Nothing to prioritise — you have no active debt. 🎉`;
+    if (!items.length) return { text: `Nothing to prioritise — no active debt. 🎉`, context: { lastIntent: 'order' } };
     items.sort((a, b) => b.rate - a.rate);
     const lines = [`Pay in this order (highest interest first):`];
-    items.forEach((it, i) => lines.push(`${i+1}. ${it.name} — ${it.rate}% interest, ${inr(it.rem)} remaining`));
-    lines.push(`\nWhy: an extra ₹100 toward a 40% card saves ₹40/year. The same ₹100 toward a 9% loan saves only ₹9/year. Mathematically, always chase the highest rate.`);
-    return lines.join('\n');
+    items.forEach((it, i) => lines.push(`${i + 1}. ${it.name} — ${it.rate}% interest, ${inr(it.rem)} remaining`));
+    lines.push('');
+    lines.push(`Why: ₹100 toward a 40% card saves ₹40/year. Same ₹100 toward a 9% loan saves only ₹9/year. Always chase the highest rate.`);
+    return { text: lines.join('\n'), context: { lastIntent: 'order' } };
   }
 
-  // ----- Intent: net worth / how am I doing
-  if (/net.?worth|how.*doing|summary|overview|status/i.test(q)) {
+  // ================= SUMMARY =================
+  if (intent === 'summary') {
     const lines = [];
     lines.push(`Here's where you stand today:`);
     lines.push(`• Net worth: ${inr(s.netWorth)}`);
     lines.push(`• Assets: ${inr(s.assets)} (${inr(s.bankTotal)} bank + ${inr(s.dematTotal)} demat)`);
     lines.push(`• Debts: ${inr(s.liabilities)} (${inr(s.cardDebt)} cards + ${inr(s.loanDebt)} loans)`);
-    lines.push(`• This month: in ${inr(s.mIn)}, out ${inr(s.mOut)}`);
-    if (s.netWorth > 0) lines.push(`\nYou are net positive. Focus next on growing the demat side and keeping the debt at zero.`);
-    else lines.push(`\nYou are net negative. Prioritise: 1) cards, 2) emergency fund, 3) high-interest loans, then invest.`);
-    return lines.join('\n');
+    lines.push(`• This month: in ${inr(s.mIn)}, out ${inr(s.mOut)}, net ${inr(r2(s.mIn - s.mOut))}`);
+    lines.push('');
+    if (s.cardDebt > 0) lines.push(`Top priority: clear your ${inr(s.cardDebt)} card balance first.`);
+    else if (s.activeLoans.length > 0) lines.push(`Top priority: keep paying EMIs, and pre-pay ${s.activeLoans[0].name} when you have extra.`);
+    else lines.push(`You're debt-free. Focus on growing the demat side with regular SIPs.`);
+    return { text: lines.join('\n'), context: { lastIntent: 'summary' } };
   }
 
-  // ----- Intent: specific loan info
-  const loanName = s.activeLoans.find(l => q.includes(String(l.name).toLowerCase()));
-  if (loanName) {
-    const rem = r2((Number(loanName.emi)||0) * (Number(loanName.monthsLeft)||0));
-    const lines = [];
-    lines.push(`${loanName.name}:`);
-    lines.push(`• Remaining: ${inr(rem)} over ${loanName.monthsLeft} months`);
-    lines.push(`• EMI: ${inr(loanName.emi)} at ${loanName.rate}% interest`);
-    if (loanName.foreclosureAmount) lines.push(`• Foreclosure amount today: ${inr(loanName.foreclosureAmount)}`);
-    return lines.join('\n');
+  // ================= DEFAULT / HELP =================
+  // If we still have an amount and a "money" verb, force allocate
+  if (amt && has('where', 'how', 'put', 'invest', 'do', 'save', 'allocate', 'use', 'best')) {
+    return aiAnswer('where should I put ' + amt, data, { lastAmount: amt });
   }
 
-  // ----- Default
-  return `I couldn't tell what you're asking. Try one of these:\n• "Where should I put 20k?"\n• "Should I foreclose my loan?"\n• "How long until I'm debt free?"\n• "Am I saving enough this month?"\n• "How is my emergency fund?"\n• "Which loan should I pay first?"\n• "Give me a summary of my finances"`;
+  return {
+    text: `I'm not sure what you're asking — but I read your real numbers, so be specific and I'll give you a number-driven plan.\n\nTry one of these:\n• "I'll get 1.3L this month — where should I put it? Keep 5k in bank."\n• "Should I foreclose my Navi loan?"\n• "How long until I'm debt free?"\n• "Am I saving enough this month?"\n• "How is my emergency fund?"\n• "Which loan should I pay first?"\n• "Give me a summary of my finances"\n\nThe more specific you are (amounts, constraints like "minimum pay on card"), the sharper my plan.`,
+    context: context
+  };
 }
+
+/* ======================================================================== */
 
 function LightRaysBackground({ theme }) {
   const containerRef = useRef(null);
@@ -1078,8 +1295,7 @@ function DonutChart({ items, total }) {
       <circle cx={CX} cy={CY} r={R} fill="none" stroke="var(--glass-2)" strokeWidth={STROKE} />
       {segments.map((s, i) => (
         <circle key={i} cx={CX} cy={CY} r={R} fill="none"
-          stroke={s.color}
-          strokeWidth={STROKE}
+          stroke={s.color} strokeWidth={STROKE}
           strokeDasharray={`${s.dash} ${circ}`}
           strokeDashoffset={s.offset}
           transform={`rotate(-90 ${CX} ${CY})`}
@@ -1315,10 +1531,7 @@ function App() {
   const mut = useCallback((fn) => { setData(prev => { if (!prev) return prev; const next = JSON.parse(JSON.stringify(prev)); fn(next); return next; }); }, [setData]);
   const toggleTheme = () => setTheme(t => (t === 'dark' ? 'light' : 'dark'));
 
-  const openTx = (prefill = null) => {
-    setTxPrefill(prefill);
-    setTxOpen(true);
-  };
+  const openTx = (prefill = null) => { setTxPrefill(prefill); setTxOpen(true); };
 
   const saveTx = (payload, id) => {
     mut(d => {
@@ -1355,9 +1568,7 @@ function App() {
     setTxOpen(false);
     setTxPrefill(null);
     showToast(id ? 'Transaction updated' : 'Transaction added');
-    if (txPrefill && txPrefill._onSave) {
-      txPrefill._onSave(payload);
-    }
+    if (txPrefill && txPrefill._onSave) txPrefill._onSave(payload);
   };
 
   const currentNetWorth = useMemo(() => {
@@ -1471,10 +1682,8 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
 
   const feed = useMemo(() => [].concat(loanItems, cardItems, billItems, inflowItems).sort((a, b) => a.due - b.due), [loanItems, cardItems, billItems, inflowItems]);
 
-  // Grouping: only merge same base name (e.g. "Cred Cash 1", "Cred Cash 2"), never mix directions
   const groupedFeed = useMemo(() => {
-    const map = {};
-    const order = [];
+    const map = {}; const order = [];
     feed.forEach(item => {
       const base = stripTrailingNumber(item.name);
       const kindGroup = item.kind === 'inflow' ? 'in' : 'out';
@@ -1553,10 +1762,7 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
     mut(d => {
       skipped.forEach(({ kind, id, cycle }) => {
         let arr = null;
-        if (kind === 'loan') arr = d.loans;
-        else if (kind === 'card') arr = d.cards;
-        else if (kind === 'bill') arr = d.bills;
-        else if (kind === 'inflow') arr = d.inflows;
+        if (kind === 'loan') arr = d.loans; else if (kind === 'card') arr = d.cards; else if (kind === 'bill') arr = d.bills; else if (kind === 'inflow') arr = d.inflows;
         if (!arr) return;
         const t = arr.find(x => x.id === id);
         if (!t) return;
@@ -1565,15 +1771,11 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
       });
     });
   };
-
   const applySkips = (skipped) => {
     mut(d => {
       skipped.forEach(({ kind, id, cycle }) => {
         let arr = null;
-        if (kind === 'loan') arr = d.loans;
-        else if (kind === 'card') arr = d.cards;
-        else if (kind === 'bill') arr = d.bills;
-        else if (kind === 'inflow') arr = d.inflows;
+        if (kind === 'loan') arr = d.loans; else if (kind === 'card') arr = d.cards; else if (kind === 'bill') arr = d.bills; else if (kind === 'inflow') arr = d.inflows;
         if (!arr) return;
         const t = arr.find(x => x.id === id);
         if (!t) return;
@@ -1582,7 +1784,6 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
       });
     });
   };
-
   const markDone = (item) => {
     const cycle = cycleOf(item);
     mut(d => {
@@ -1593,7 +1794,6 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
     });
     showToast('Marked done for this month');
   };
-
   const skipItem = (item) => {
     if (item.kind === 'inflow') return;
     const cycle = cycleOf(item);
@@ -1601,7 +1801,6 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
     applySkips(skipped);
     showToast(item.name + ' skipped · moved to next month', () => { undoSkips(skipped); showToast('Skip undone'); });
   };
-
   const markGroupDone = (group) => { group.items.filter(i => i.kind !== 'inflow').forEach(item => markDone(item)); };
   const skipGroup = (group) => {
     const skipped = group.items.filter(i => i.kind !== 'inflow').map(item => ({ kind: item.kind, id: item.id, cycle: cycleOf(item) }));
@@ -1631,17 +1830,7 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
     mut(d => {
       const bank = d.banks.find(b => b.id === bankId);
       if (bank) bank.balance = r2(bank.balance + amt);
-      d.transactions.push({ 
-        id: uid(), 
-        bankId, 
-        amount: amt, 
-        dir: 'in', 
-        note: f.name + ' received', 
-        category: 'Salary', 
-        date: toISO(new Date()), 
-        affectsBalance: true, 
-        ts: Date.now() 
-      });
+      d.transactions.push({ id: uid(), bankId, amount: amt, dir: 'in', note: f.name + ' received', category: 'Salary', date: toISO(new Date()), affectsBalance: true, ts: Date.now() });
       const inf = d.inflows.find(x => x.id === f.id);
       if (inf) { inf.receivedCycles = (inf.receivedCycles || []).concat([cycle]); if (adjust) inf.amount = amt; }
     });
@@ -1665,18 +1854,7 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
       a.balance = r2(a.balance - amt);
       a.withdrawals = (a.withdrawals || []).concat([{ txId, date: toISO(new Date()), amount: amt }]);
       b.balance = r2(b.balance + amt);
-      d.transactions.push({ 
-        id: txId, 
-        bankId: withdrawHintBank, 
-        amount: amt, 
-        dir: 'in', 
-        note: 'Withdrawn from ' + a.name + ' for ' + a0.name, 
-        category: 'Upstox Withdrawal', 
-        date: toISO(new Date()), 
-        affectsBalance: true, 
-        ts: Date.now(),
-        link: { type: 'demat', id: a.id }
-      });
+      d.transactions.push({ id: txId, bankId: withdrawHintBank, amount: amt, dir: 'in', note: 'Withdrawn from ' + a.name + ' for ' + a0.name, category: 'Upstox Withdrawal', date: toISO(new Date()), affectsBalance: true, ts: Date.now(), link: { type: 'demat', id: a.id } });
     });
     setWithdrawHint(null);
     showToast('Money moved from Demat to your bank');
@@ -1948,8 +2126,7 @@ function Banks({ data, mut, showToast, sync, openTx }) {
   }, [data.transactions, chartRange]);
 
   const outCategories = useMemo(() => {
-    const totals = {};
-    let overall = 0;
+    const totals = {}; let overall = 0;
     scopedTx.forEach(t => {
       if (t.dir !== 'out') return;
       const c = t.category || 'Other';
@@ -1963,8 +2140,7 @@ function Banks({ data, mut, showToast, sync, openTx }) {
   }, [scopedTx]);
 
   const inCategories = useMemo(() => {
-    const totals = {};
-    let overall = 0;
+    const totals = {}; let overall = 0;
     scopedTx.forEach(t => {
       if (t.dir !== 'in') return;
       const c = t.category || 'Other';
@@ -1996,8 +2172,7 @@ function Banks({ data, mut, showToast, sync, openTx }) {
       if (c !== 0) return c;
       return (b.ts || 0) - (a.ts || 0);
     });
-    const years = [];
-    const yearMap = {};
+    const years = []; const yearMap = {};
     list.forEach(t => {
       const d = parseISO(t.date);
       const y = d.getFullYear();
@@ -2033,36 +2208,21 @@ function Banks({ data, mut, showToast, sync, openTx }) {
     mut(d => {
       if (id) {
         const old = d.transactions.find(t => t.id === id);
-        if (old && old.affectsBalance && old.bankId) { 
-          const ob = d.banks.find(b => b.id === old.bankId); 
-          if (ob) ob.balance = r2(ob.balance - (old.dir === 'in' ? old.amount : -old.amount)); 
-        }
-        if (old) {
-          reverseTxLink(d, old);
-          const newLink = payload.link !== undefined ? payload.link : old.link;
-          Object.assign(old, payload);
-          if (newLink) old.link = newLink;
-        }
+        if (old && old.affectsBalance && old.bankId) { const ob = d.banks.find(b => b.id === old.bankId); if (ob) ob.balance = r2(ob.balance - (old.dir === 'in' ? old.amount : -old.amount)); }
+        if (old) { reverseTxLink(d, old); const newLink = payload.link !== undefined ? payload.link : old.link; Object.assign(old, payload); if (newLink) old.link = newLink; }
         const t = d.transactions.find(x => x.id === id);
         if (t) {
-          if (t.affectsBalance && t.bankId) { 
-            const nb = d.banks.find(b => b.id === t.bankId); 
-            if (nb) nb.balance = r2(nb.balance + (t.dir === 'in' ? t.amount : -t.amount)); 
-          }
+          if (t.affectsBalance && t.bankId) { const nb = d.banks.find(b => b.id === t.bankId); if (nb) nb.balance = r2(nb.balance + (t.dir === 'in' ? t.amount : -t.amount)); }
           applyTxLink(d, t);
         }
       } else {
         const t = Object.assign({ id: uid(), ts: Date.now() }, payload);
         d.transactions.push(t);
-        if (t.affectsBalance && t.bankId) { 
-          const nb = d.banks.find(b => b.id === t.bankId); 
-          if (nb) nb.balance = r2(nb.balance + (t.dir === 'in' ? t.amount : -t.amount)); 
-        }
+        if (t.affectsBalance && t.bankId) { const nb = d.banks.find(b => b.id === t.bankId); if (nb) nb.balance = r2(nb.balance + (t.dir === 'in' ? t.amount : -t.amount)); }
         applyTxLink(d, t);
       }
     });
-    setTxOpen(false);
-    setEditTx(null);
+    setTxOpen(false); setEditTx(null);
     showToast(id ? 'Transaction updated' : 'Transaction added');
   };
 
@@ -2070,10 +2230,7 @@ function Banks({ data, mut, showToast, sync, openTx }) {
     mut(d => {
       const t = d.transactions.find(x => x.id === id);
       if (t) {
-        if (t.affectsBalance && t.bankId) { 
-          const b = d.banks.find(x => x.id === t.bankId); 
-          if (b) b.balance = r2(b.balance - (t.dir === 'in' ? t.amount : -t.amount)); 
-        }
+        if (t.affectsBalance && t.bankId) { const b = d.banks.find(x => x.id === t.bankId); if (b) b.balance = r2(b.balance - (t.dir === 'in' ? t.amount : -t.amount)); }
         reverseTxLink(d, t);
       }
       d.transactions = d.transactions.filter(x => x.id !== id);
@@ -2083,10 +2240,7 @@ function Banks({ data, mut, showToast, sync, openTx }) {
 
   const doTransfer = (from, to, amount) => {
     const amt = r2(amount);
-    if (!from || !to || from === to || !amt || amt <= 0) { 
-      showToast('Check the transfer details: ' + (!from ? 'no from ' : '') + (!to ? 'no to ' : '') + (from === to ? 'same bank ' : '') + (!amt || amt <= 0 ? 'bad amount' : '')); 
-      return false; 
-    }
+    if (!from || !to || from === to || !amt || amt <= 0) { showToast('Check the transfer details'); return false; }
     mut(d => {
       const fb = d.banks.find(b => b.id === from); const tb = d.banks.find(b => b.id === to);
       if (!fb || !tb) return;
@@ -2134,9 +2288,7 @@ function Banks({ data, mut, showToast, sync, openTx }) {
           <div className="pie-body">
             <div className="pie-visual"><DonutChart items={outCategories.items} total={outCategories.total} /></div>
             <div className="pie-legend">
-              {outCategories.items.length === 0 ? (
-                <div style={{ color: 'var(--muted)', fontSize: 12, padding: '10px 0' }}>No outflow yet.</div>
-              ) : outCategories.items.map((c, i) => (
+              {outCategories.items.length === 0 ? (<div style={{ color: 'var(--muted)', fontSize: 12, padding: '10px 0' }}>No outflow yet.</div>) : outCategories.items.map((c, i) => (
                 <div className="legend-row" key={c.name}>
                   <span className="legend-dot" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }}></span>
                   <span className="legend-name" title={c.name}>{c.name}</span>
@@ -2156,9 +2308,7 @@ function Banks({ data, mut, showToast, sync, openTx }) {
           <div className="pie-body">
             <div className="pie-visual"><DonutChart items={inCategories.items} total={inCategories.total} /></div>
             <div className="pie-legend">
-              {inCategories.items.length === 0 ? (
-                <div style={{ color: 'var(--muted)', fontSize: 12, padding: '10px 0' }}>No inflow yet.</div>
-              ) : inCategories.items.map((c, i) => (
+              {inCategories.items.length === 0 ? (<div style={{ color: 'var(--muted)', fontSize: 12, padding: '10px 0' }}>No inflow yet.</div>) : inCategories.items.map((c, i) => (
                 <div className="legend-row" key={c.name}>
                   <span className="legend-dot" style={{ background: PIE_COLORS[i % PIE_COLORS.length] }}></span>
                   <span className="legend-name" title={c.name}>{c.name}</span>
@@ -2188,9 +2338,7 @@ function Banks({ data, mut, showToast, sync, openTx }) {
       ) : (
         grouped.map(ydata => (
           <div className="log-year" key={ydata.year}>
-            <div className="log-year-head">
-              <span className="log-year-num">{ydata.year}</span>
-            </div>
+            <div className="log-year-head"><span className="log-year-num">{ydata.year}</span></div>
             {ydata.months.map(mdata => {
               const monthCount = mdata.days.reduce((s, d) => s + d.items.length, 0);
               const monthTotal = mdata.days.reduce((s, d) => s + d.items.reduce((ss, it) => ss + (it.dir === 'in' ? Number(it.amount) : -Number(it.amount)), 0), 0);
@@ -2248,69 +2396,46 @@ function TxModal({ open, onClose, banks, tx, prefill, onSave }) {
   const [date, setDate] = useState(toISO(new Date()));
   const [affects, setAffects] = useState(true);
 
-  const IN_CATEGORIES = ['Salary', 'Interest', 'Upstox Withdrawal', 'UPI', 'Cash', 'Transfer', 'Investment', 'Other'];
+  const IN_CATEGORIES = ['Salary', 'Interest', 'Cashback' ,'Upstox Withdrawal', 'UPI', 'Cash', 'Transfer', 'Investment', 'Other'];
   const OUT_CATEGORIES = ['Food', 'Transportation', 'Rent', 'Shopping', 'Bills', 'Credit Card', 'Loan EMI', 'Travel', 'Medical', 'Investment', 'Transfer', 'Cash', 'Other'];
 
   useEffect(() => {
     if (open) {
       if (tx) {
         setBankId(tx.bankId || defaultBankId(banks));
-        setDir(tx.dir); 
-        setAmount(String(tx.amount)); 
-        setNote(tx.note || '');
-        setCategory(tx.category || (tx.dir === 'in' ? 'Salary' : 'Food')); 
-        setDate(tx.date); 
-        setAffects(tx.affectsBalance !== false);
+        setDir(tx.dir); setAmount(String(tx.amount)); setNote(tx.note || '');
+        setCategory(tx.category || (tx.dir === 'in' ? 'Salary' : 'Food')); setDate(tx.date); setAffects(tx.affectsBalance !== false);
       } else if (prefill) {
         setBankId(prefill.bankId || defaultBankId(banks));
-        setDir(prefill.dir);
-        setAmount(prefill.amount);
-        setNote(prefill.note);
-        setCategory(prefill.category);
-        setDate(prefill.date);
-        setAffects(prefill.affectsBalance !== false);
+        setDir(prefill.dir); setAmount(prefill.amount); setNote(prefill.note); setCategory(prefill.category);
+        setDate(prefill.date); setAffects(prefill.affectsBalance !== false);
       } else {
-        setBankId(defaultBankId(banks)); 
-        setDir('out'); 
-        setAmount(''); 
-        setNote('');
-        setCategory('Food'); 
-        setDate(toISO(new Date())); 
-        setAffects(true);
+        setBankId(defaultBankId(banks)); setDir('out'); setAmount(''); setNote('');
+        setCategory('Food'); setDate(toISO(new Date())); setAffects(true);
       }
     }
   }, [open, tx, prefill]);
 
   if (!open) return null;
 
-  const submit = () => { 
-    const amt = r2(amount); 
-    if (!amt || amt <= 0) return; 
+  const submit = () => {
+    const amt = r2(amount);
+    if (!amt || amt <= 0) return;
     const payload = { bankId, dir, amount: amt, note, category, date, affectsBalance: affects };
     if (tx && tx.link) payload.link = tx.link;
     if (prefill && prefill.link) payload.link = prefill.link;
-    onSave(payload, tx ? tx.id : null); 
+    onSave(payload, tx ? tx.id : null);
   };
 
   let activeCategories = dir === 'in' ? IN_CATEGORIES : OUT_CATEGORIES;
-  if (category && !activeCategories.includes(category)) {
-    activeCategories = [...activeCategories, category];
-  }
+  if (category && !activeCategories.includes(category)) activeCategories = [...activeCategories, category];
 
   return (
     <Modal open={open} onClose={onClose} title={tx ? 'Edit Transaction' : 'Add Transaction'} onSubmit={submit}>
       <div className="field"><label className="label">Money going</label>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button type="button" className={'btn btn-sm'} 
-            style={{ flex: 1, justifyContent: 'center', background: dir === 'in' ? 'var(--green)' : 'var(--glass-2)', borderColor: dir === 'in' ? 'var(--green)' : 'var(--brd-2)', color: dir === 'in' ? '#fff' : 'var(--muted)', boxShadow: dir === 'in' ? '0 6px 16px -6px var(--green-soft)' : 'none' }}
-            onClick={() => { setDir('in'); setCategory('Salary'); }}>
-            In ↓
-          </button>
-          <button type="button" className={'btn btn-sm'} 
-            style={{ flex: 1, justifyContent: 'center', background: dir === 'out' ? 'var(--red)' : 'var(--glass-2)', borderColor: dir === 'out' ? 'var(--red)' : 'var(--brd-2)', color: dir === 'out' ? '#fff' : 'var(--muted)', boxShadow: dir === 'out' ? '0 6px 16px -6px var(--red-soft)' : 'none' }}
-            onClick={() => { setDir('out'); setCategory('Food'); }}>
-            Out ↑
-          </button>
+          <button type="button" className={'btn btn-sm'} style={{ flex: 1, justifyContent: 'center', background: dir === 'in' ? 'var(--green)' : 'var(--glass-2)', borderColor: dir === 'in' ? 'var(--green)' : 'var(--brd-2)', color: dir === 'in' ? '#fff' : 'var(--muted)', boxShadow: dir === 'in' ? '0 6px 16px -6px var(--green-soft)' : 'none' }} onClick={() => { setDir('in'); setCategory('Salary'); }}>In ↓</button>
+          <button type="button" className={'btn btn-sm'} style={{ flex: 1, justifyContent: 'center', background: dir === 'out' ? 'var(--red)' : 'var(--glass-2)', borderColor: dir === 'out' ? 'var(--red)' : 'var(--brd-2)', color: dir === 'out' ? '#fff' : 'var(--muted)', boxShadow: dir === 'out' ? '0 6px 16px -6px var(--red-soft)' : 'none' }} onClick={() => { setDir('out'); setCategory('Food'); }}>Out ↑</button>
         </div>
       </div>
       <div className="row2">
@@ -2426,12 +2551,9 @@ function Cards({ data, mut, showToast, sync, openTx }) {
     const cycle = monthKey(nextDueDate(card.dueDay || 10, card.paidCycles));
     openTx({
       bankId: defaultBankId(data.banks),
-      dir: 'out',
-      amount: String(card.outstanding),
-      note: card.name + ' Card Payment',
-      category: 'Credit Card',
-      date: toISO(new Date()),
-      affectsBalance: true,
+      dir: 'out', amount: String(card.outstanding),
+      note: card.name + ' Card Payment', category: 'Credit Card',
+      date: toISO(new Date()), affectsBalance: true,
       link: { type: 'card', id: card.id, cycle }
     });
   };
@@ -2547,11 +2669,7 @@ function Loans({ data, mut, showToast, sync, openTx }) {
     return arr;
   }, [activeLoans, sortBy]);
 
-  const sortedClosed = useMemo(() => {
-    const arr = closedLoans.slice();
-    arr.sort((a, b) => (b.closedDate || '').localeCompare(a.closedDate || ''));
-    return arr;
-  }, [closedLoans]);
+  const sortedClosed = useMemo(() => { const arr = closedLoans.slice(); arr.sort((a, b) => (b.closedDate || '').localeCompare(a.closedDate || '')); return arr; }, [closedLoans]);
 
   const save = (payload, id) => {
     mut(d => {
@@ -2582,12 +2700,9 @@ function Loans({ data, mut, showToast, sync, openTx }) {
     const cycle = monthKey(nextDueDate(loan.dueDay || 5, loan.paidCycles));
     openTx({
       bankId: defaultBankId(data.banks),
-      dir: 'out',
-      amount: String(loan.emi),
-      note: loan.name + ' EMI',
-      category: 'Loan EMI',
-      date: toISO(new Date()),
-      affectsBalance: true,
+      dir: 'out', amount: String(loan.emi),
+      note: loan.name + ' EMI', category: 'Loan EMI',
+      date: toISO(new Date()), affectsBalance: true,
       link: { type: 'loan', id: loan.id, cycle, monthsAdvanced: 1 }
     });
   };
@@ -2606,8 +2721,7 @@ function Loans({ data, mut, showToast, sync, openTx }) {
 
   const getPaidDuration = (l) => {
     if (!l.startDate || !l.closedDate) return '—';
-    const start = parseISO(l.startDate);
-    const end = parseISO(l.closedDate);
+    const start = parseISO(l.startDate); const end = parseISO(l.closedDate);
     const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
     return months + ' month' + (months !== 1 ? 's' : '');
   };
@@ -2741,18 +2855,13 @@ function LoanModal({ open, onClose, loan, onSave }) {
     const e = r2(emi);
     const n = Number(monthsLeft) || 0;
     const calculatedRemaining = r2(e * n);
-    onSave({ 
-      name: name.trim() || 'Loan', 
-      emi: e, 
-      remaining: calculatedRemaining, 
-      principal: r2(principal) || calculatedRemaining, 
-      rate: r2(rate), 
-      originalMonths: Number(originalMonths) || n,
-      monthsLeft: n, 
-      foreclosureAmount: r2(foreclosure), 
+    onSave({
+      name: name.trim() || 'Loan', emi: e, remaining: calculatedRemaining,
+      principal: r2(principal) || calculatedRemaining, rate: r2(rate),
+      originalMonths: Number(originalMonths) || n, monthsLeft: n,
+      foreclosureAmount: r2(foreclosure),
       dueDay: Math.min(31, Math.max(1, Number(dueDay) || 5)),
-      startDate,
-      closed,
+      startDate, closed,
       closedDate: closed && !loan?.closed ? toISO(new Date()) : (loan?.closedDate || null)
     }, loan ? loan.id : null);
   };
@@ -2843,12 +2952,9 @@ function Bills({ data, mut, showToast, sync, openTx }) {
     const cycle = monthKey(nextDueDate(bill.dueDay || 1, bill.paidCycles));
     openTx({
       bankId: defaultBankId(data.banks),
-      dir: 'out',
-      amount: String(bill.amount),
-      note: bill.name + ' Bill Payment',
-      category: 'Bills',
-      date: toISO(new Date()),
-      affectsBalance: true,
+      dir: 'out', amount: String(bill.amount),
+      note: bill.name + ' Bill Payment', category: 'Bills',
+      date: toISO(new Date()), affectsBalance: true,
       link: { type: 'bill', id: bill.id, cycle }
     });
   };
@@ -2965,7 +3071,7 @@ function InflowFormModal({ open, onClose, inflow, onSave }) {
   if (!open) return null;
 
   const submit = () => {
-    const base = { name: name.trim() || 'Income', amount: r2(amount), recurring: recurring };
+    const base = { name: name.trim() || 'Income', amount: r2(amount), recurring };
     if (recurring) {
       base.day = Math.min(31, Math.max(1, Number(day) || 1));
       if (inflow && inflow.date) base.date = null;
@@ -3010,17 +3116,8 @@ function DematCalendar({ account, onSetValue, onClearValue }) {
   const [editDate, setEditDate] = useState(null);
   const [editVal, setEditVal] = useState('');
 
-  const history = useMemo(() => {
-    const map = {};
-    (account.history || []).forEach(h => { map[h.date] = Number(h.value) || 0; });
-    return map;
-  }, [account.history]);
-
-  const withdrawalsByDate = useMemo(() => {
-    const map = {};
-    (account.withdrawals || []).forEach(w => { map[w.date] = r2((map[w.date] || 0) + (Number(w.amount) || 0)); });
-    return map;
-  }, [account.withdrawals]);
+  const history = useMemo(() => { const map = {}; (account.history || []).forEach(h => { map[h.date] = Number(h.value) || 0; }); return map; }, [account.history]);
+  const withdrawalsByDate = useMemo(() => { const map = {}; (account.withdrawals || []).forEach(w => { map[w.date] = r2((map[w.date] || 0) + (Number(w.amount) || 0)); }); return map; }, [account.withdrawals]);
 
   const firstDay = new Date(viewYear, viewMonth, 1);
   const startDow = firstDay.getDay();
@@ -3048,9 +3145,7 @@ function DematCalendar({ account, onSetValue, onClearValue }) {
     const sorted = monthEntries.slice().sort((a, b) => a.date.localeCompare(b.date));
     monthStart = Number(sorted[0].value); monthEnd = Number(sorted[sorted.length - 1].value);
   }
-  const monthWithdrawals = (account.withdrawals || [])
-    .filter(w => w.date.startsWith(viewYear + '-' + pad(viewMonth + 1)))
-    .reduce((s, w) => s + (Number(w.amount) || 0), 0);
+  const monthWithdrawals = (account.withdrawals || []).filter(w => w.date.startsWith(viewYear + '-' + pad(viewMonth + 1))).reduce((s, w) => s + (Number(w.amount) || 0), 0);
   const monthPnl = (monthStart !== null && monthEnd !== null) ? r2(monthEnd - monthStart + monthWithdrawals) : null;
 
   const prevMonth = () => { if (viewMonth === 0) { setViewMonth(11); setViewYear(y => y - 1); } else setViewMonth(m => m - 1); };
@@ -3173,13 +3268,9 @@ function Demat({ data, mut, showToast, sync, openTx }) {
 
   const openWithdraw = (item) => {
     openTx({
-      dir: 'in',
-      category: 'Upstox Withdrawal',
-      amount: '',
-      note: 'Withdrawn from ' + item.name,
-      date: toISO(new Date()),
-      affectsBalance: true,
-      bankId: defaultBankId(data.banks),
+      dir: 'in', category: 'Upstox Withdrawal', amount: '',
+      note: 'Withdrawn from ' + item.name, date: toISO(new Date()),
+      affectsBalance: true, bankId: defaultBankId(data.banks),
       link: { type: 'demat', id: item.id }
     });
   };
@@ -3188,14 +3279,9 @@ function Demat({ data, mut, showToast, sync, openTx }) {
     const tx = data.transactions.find(t => t.id === w.txId);
     if (tx) {
       openTx({
-        bankId: tx.bankId,
-        dir: tx.dir,
-        amount: String(tx.amount),
-        note: tx.note,
-        category: tx.category,
-        date: tx.date,
-        affectsBalance: tx.affectsBalance !== false,
-        link: tx.link
+        bankId: tx.bankId, dir: tx.dir, amount: String(tx.amount),
+        note: tx.note, category: tx.category, date: tx.date,
+        affectsBalance: tx.affectsBalance !== false, link: tx.link
       });
     }
   };
@@ -3223,11 +3309,7 @@ function Demat({ data, mut, showToast, sync, openTx }) {
 
   const allWithdrawals = useMemo(() => {
     const list = [];
-    data.demats.forEach(a => {
-      (a.withdrawals || []).forEach(w => {
-        list.push({ ...w, dematId: a.id, dematName: a.name });
-      });
-    });
+    data.demats.forEach(a => { (a.withdrawals || []).forEach(w => { list.push({ ...w, dematId: a.id, dematName: a.name }); }); });
     list.sort((a, b) => String(b.date).localeCompare(String(a.date)));
     return list;
   }, [data.demats]);
@@ -3342,6 +3424,7 @@ function AiBrain({ data, sync, openTx }) {
   const [extra, setExtra] = useState('5000');
   const [chatMessages, setChatMessages] = useState([]);
   const [chatInput, setChatInput] = useState('');
+  const [chatContext, setChatContext] = useState({});
   const chatEndRef = useRef(null);
 
   const bankTotal = data.banks.reduce((s, b) => s + (Number(b.balance) || 0), 0);
@@ -3399,13 +3482,22 @@ function AiBrain({ data, sync, openTx }) {
   const sendChat = (text) => {
     const q = String(text || chatInput).trim();
     if (!q) return;
-    const answer = aiAnswer(q, data);
+    const res = aiAnswer(q, data, chatContext);
+    const answer = typeof res === 'string' ? res : res.text;
+    const newCtx = (res && typeof res === 'object' && res.context) ? res.context : chatContext;
     setChatMessages(m => m.concat([{ role: 'user', text: q }, { role: 'bot', text: answer }]));
+    setChatContext(newCtx);
+    setChatInput('');
+  };
+
+  const clearChat = () => {
+    setChatMessages([]);
+    setChatContext({});
     setChatInput('');
   };
 
   const suggestions = [
-    'Where should I put 20k?',
+    'I will get 1.3L this month end. Where should I put it? Keep 5k in bank',
     'Should I foreclose my loan?',
     'How long until I am debt free?',
     'Am I saving enough this month?',
@@ -3423,34 +3515,37 @@ function AiBrain({ data, sync, openTx }) {
         <div className="kpi glass"><div className="kpi-head"><span className="kpi-dot amber"></span><span className="kpi-label">Net Worth</span></div><div className="kpi-val">{inr(netWorth)}</div><div className="kpi-note">{inr(assets)} − {inr(liabilities)}</div></div>
       </div>
 
-      {/* ===== CHAT ===== */}
-      <div className="section-head"><div className="section-title"><span className="dot"></span>Ask the AI</div><span className="pill blue">Powered by your real data</span></div>
+      <div className="section-head">
+        <div className="section-title"><span className="dot"></span>Ask the AI</div>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          <span className="pill blue">Powered by your real data</span>
+          {chatMessages.length > 0 ? (<button className="btn btn-sm btn-danger" onClick={clearChat}>{Ico.trash} Clear chat</button>) : null}
+        </div>
+      </div>
       <div className="glass" style={{ padding: '20px' }}>
         <div className="chat-wrap">
           {chatMessages.length === 0 ? (
             <div className="chat-msg">
               <div className="chat-avatar bot">AI</div>
               <div className="chat-bubble bot">
-                Hi! I'm your money brain. I read your real numbers — balances, EMIs, card dues, this month's spending — and give you a specific plan.{'\n\n'}Ask me anything. For example: <b>"Where should I put 20k?"</b> or <b>"Should I foreclose my Navi loan?"</b>
+                Hi! I'm your money brain. I read your real numbers — balances, EMIs, card dues, this month's spending — and give you a specific plan.{'\n\n'}Ask me anything. Examples:{'\n'}• "I'll get 1.3L this month — where should I put it? Keep 5k in bank"{'\n'}• "Should I foreclose my Navi loan?"{'\n'}• "Which loan should I pay first?"
               </div>
             </div>
           ) : (
             chatMessages.map((m, i) => (
               <div key={i} className={'chat-msg ' + m.role}>
                 <div className={'chat-avatar ' + m.role}>{m.role === 'user' ? 'You' : 'AI'}</div>
-                <div className={'chat-bubble ' + m.role} dangerouslySetInnerHTML={{ __html: m.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>') }} />
+                <div className={'chat-bubble ' + m.role} dangerouslySetInnerHTML={{ __html: String(m.text).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>') }} />
               </div>
             ))
           )}
           <div ref={chatEndRef} />
         </div>
         <div className="chat-suggestions">
-          {suggestions.map(s => (
-            <span key={s} className="pill" onClick={() => sendChat(s)}>{s}</span>
-          ))}
+          {suggestions.map(s => (<span key={s} className="pill" onClick={() => sendChat(s)}>{s}</span>))}
         </div>
         <div className="chat-input-row">
-          <input className="input" placeholder="Ask anything… e.g. where to invest 20k"
+          <input className="input" placeholder="Ask anything… e.g. I'll get 1.3L this month, where should I put it? Keep 2k in bank"
             value={chatInput}
             onChange={(e) => setChatInput(e.target.value)}
             onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); } }} />
