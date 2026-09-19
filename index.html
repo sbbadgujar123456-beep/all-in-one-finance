@@ -4,6 +4,7 @@
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <title>ShubhVault — Money Tracker</title>
+<!-- ShubhVault v3: contextual AI, safe cloud persistence, verified net-worth calculations, backup/restore -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
@@ -281,7 +282,9 @@ html[data-theme="light"] .toast-action{color:#4f6dff}
 .spotlight.red::before{background:radial-gradient(circle,rgba(248,113,113,.12),transparent 70%)}
 .spotlight.green::before{background:radial-gradient(circle,rgba(52,211,153,.12),transparent 70%)}
 .spotlight.amber::before{background:radial-gradient(circle,rgba(251,191,36,.12),transparent 70%)}
-.nw-chart-wrap{width:100%;height:220px;position:relative}
+.nw-chart-wrap{width:100%;height:250px;position:relative;overflow:hidden}
+.nw-chart-wrap svg{width:100%;height:100%;display:block;overflow:visible}
+@media(max-width:640px){.nw-chart-wrap{height:220px}.chat-bubble{max-width:88%}.chat-input-row{align-items:stretch}.chat-input-row .btn{padding-left:11px;padding-right:11px}}
 .nw-chart-wrap svg{width:100%;height:100%;display:block;overflow:visible}
 .cal-wrap{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-top:12px}
 .cal-dow{font-size:10px;font-weight:700;color:var(--muted);text-align:center;padding:6px 0;text-transform:uppercase;letter-spacing:.8px}
@@ -382,6 +385,48 @@ const MONTHS_FULL = ['January','February','March','April','May','June','July','A
 const DOW = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
 const pad = (n) => String(n).padStart(2, '0');
 const r2 = (n) => Math.round((Number(n) || 0) * 100) / 100;
+
+/* Financial calculation helpers. Loan debt is treated as outstanding principal,
+   not EMI x months (which includes future interest and therefore understates net worth). */
+function loanScheduledPayments(l) {
+  return r2((Number(l && l.emi) || 0) * (Number(l && l.monthsLeft) || 0));
+}
+
+function loanOutstandingPrincipal(l) {
+  const emi = Number(l && l.emi) || 0;
+  const months = Math.max(0, Number(l && l.monthsLeft) || 0);
+  const annualRate = Math.max(0, Number(l && l.rate) || 0);
+  if (months <= 0 || emi <= 0) return 0;
+  if (annualRate <= 0) return loanScheduledPayments(l);
+  const monthlyRate = annualRate / 100 / 12;
+  const pv = emi * (1 - Math.pow(1 + monthlyRate, -months)) / monthlyRate;
+  return r2(Math.max(0, pv));
+}
+
+function loanMetrics(l) {
+  const principal = loanOutstandingPrincipal(l);
+  const scheduled = loanScheduledPayments(l);
+  const monthlyInterest = r2(principal * (Math.max(0, Number(l && l.rate) || 0) / 100) / 12);
+  const original = Number(l && l.principal) || 0;
+  const paidPct = original > 0 ? r2(Math.min(100, Math.max(0, ((original - principal) / original) * 100))) : null;
+  return { principal, scheduled, monthlyInterest, paidPct };
+}
+
+function financialSnapshot(data) {
+  const banks = Array.isArray(data && data.banks) ? data.banks : [];
+  const demats = Array.isArray(data && data.demats) ? data.demats : [];
+  const cards = Array.isArray(data && data.cards) ? data.cards : [];
+  const loans = Array.isArray(data && data.loans) ? data.loans : [];
+  const bankTotal = r2(banks.reduce((s, b) => s + (Number(b.balance) || 0), 0));
+  const dematTotal = r2(demats.reduce((s, d) => s + (Number(d.balance) || 0), 0));
+  const cardDebt = r2(cards.reduce((s, c) => s + (Number(c.outstanding) || 0), 0));
+  const activeLoans = loans.filter(l => !l.closed);
+  const loanDebt = r2(activeLoans.reduce((s, l) => s + loanOutstandingPrincipal(l), 0));
+  const scheduledLoanPayments = r2(activeLoans.reduce((s, l) => s + loanScheduledPayments(l), 0));
+  const assets = r2(bankTotal + dematTotal);
+  const liabilities = r2(cardDebt + loanDebt);
+  return { bankTotal, dematTotal, cardDebt, activeLoans, loanDebt, scheduledLoanPayments, assets, liabilities, netWorth: r2(assets - liabilities) };
+}
 const uid = () => Math.random().toString(36).slice(2, 10) + Date.now().toString(36).slice(-4);
 
 function money(n) { return (Number(n) || 0).toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
@@ -426,12 +471,17 @@ const DEFAULT_DATA = {
   demats: [{ id: 'd1', name: 'My Demat', balance: 0, history: [], withdrawals: [] }],
   cards: [], loans: [], bills: [], inflows: [],
   netWorthHistory: [],
-  meta: { version: 1 }
+  netWorthHistoryVersion: 2,
+  meta: { version: 2 }
 };
 
 function normalize(d) {
   const out = Object.assign({}, DEFAULT_DATA, d || {});
   ['banks','transactions','demats','cards','loans','bills','inflows','netWorthHistory'].forEach(k => { if (!Array.isArray(out[k])) out[k] = []; });
+  // Older versions stored loan future payments as debt and produced misleading
+  // net-worth history. Do not display or propagate those legacy snapshots.
+  if (Number(out.netWorthHistoryVersion) < 2) { out.netWorthHistory = []; out.netWorthHistoryVersion = 2; }
+  if (!Number(out.netWorthHistoryVersion)) out.netWorthHistoryVersion = 2;
   out.demats = out.demats.map(x => Object.assign({ history: [], withdrawals: [] }, x, { history: Array.isArray(x.history) ? x.history : [], withdrawals: Array.isArray(x.withdrawals) ? x.withdrawals : [] }));
   out.cards = out.cards.map(x => Object.assign({ paidCycles: [] }, x));
   out.loans = out.loans.map(x => Object.assign({ paidCycles: [], startDate: toISO(new Date()), originalMonths: x.monthsLeft || 0, closed: false, closedDate: null }, x));
@@ -447,6 +497,15 @@ function useStore() {
   const [sync, setSync] = useState({ state: db ? 'connecting' : 'local', lastSync: null, fromCache: false, error: null });
   const lastRef = useRef('');
   const timerRef = useRef(null);
+  const cloudWriteEnabledRef = useRef(!db);
+
+  // Public setter marks the state as intentionally changed by the user. This is
+  // important: a missing Firestore document or a temporary read error must never
+  // turn an empty DEFAULT_DATA object into an accidental cloud overwrite.
+  const safeSetData = useCallback((updater) => {
+    cloudWriteEnabledRef.current = true;
+    setData(updater);
+  }, []);
 
   useEffect(() => {
     if (!db) {
@@ -455,17 +514,20 @@ function useStore() {
       const n = normalize(d);
       lastRef.current = JSON.stringify(n);
       setData(n);
+      cloudWriteEnabledRef.current = true;
       setSync({ state: 'local', lastSync: Date.now(), fromCache: false, error: null });
       return;
     }
+
     let mounted = true;
     const ref = db.collection('finvault').doc('main');
     const unsub = ref.onSnapshot({ includeMetadataChanges: true }, (snap) => {
       if (!mounted) return;
       const meta = snap.metadata || {};
+
       if (snap.exists) {
         const n = normalize(snap.data());
-        // Keep a browser recovery copy of the last confirmed cloud state.
+        cloudWriteEnabledRef.current = true;
         try { localStorage.setItem('finvault_data', JSON.stringify(n)); } catch (e) {}
         if (meta.hasPendingWrites) setSync(s => ({ ...s, state: 'syncing', fromCache: !!meta.fromCache }));
         else if (meta.fromCache) setSync(s => ({ ...s, state: navigator.onLine ? 'syncing' : 'offline', fromCache: true }));
@@ -474,29 +536,35 @@ function useStore() {
           const str = JSON.stringify(n);
           if (str !== lastRef.current) { lastRef.current = str; setData(n); }
         }
-      } else {
-        // IMPORTANT: Never write DEFAULT_DATA into Firestore merely because the
-        // document is temporarily missing/unavailable. Doing so can overwrite
-        // a user's existing vault. Prefer a local backup if one exists.
-        let fallback = null;
-        try {
-          const raw = localStorage.getItem('finvault_data');
-          if (raw) fallback = normalize(JSON.parse(raw));
-        } catch (e) {}
-        const n = fallback || normalize(DEFAULT_DATA);
-        try { localStorage.setItem('finvault_data', JSON.stringify(n)); } catch (e) {}
-        lastRef.current = JSON.stringify(n);
-        setData(n);
-        setSync(s => ({ ...s, state: fallback ? 'local' : (navigator.onLine ? 'error' : 'offline'), lastSync: fallback ? Date.now() : s.lastSync, fromCache: !!fallback, error: fallback ? null : 'Cloud data document was not found. No data was overwritten.' }));
-        // Do NOT call ref.set here. A new document is created only after an
-        // explicit user data change through the normal mutation flow.
+        return;
       }
+
+      // Missing document is a safe state, not permission to create/overwrite it.
+      // Use the browser recovery copy for display, but keep cloud writes disabled
+      // until the user explicitly changes data through safeSetData.
+      cloudWriteEnabledRef.current = false;
+      let fallback = null;
+      try {
+        const raw = localStorage.getItem('finvault_data');
+        if (raw) fallback = normalize(JSON.parse(raw));
+      } catch (e) {}
+      const n = fallback || normalize(DEFAULT_DATA);
+      lastRef.current = JSON.stringify(n);
+      setData(n);
+      setSync(s => ({ ...s, state: fallback ? 'local' : (navigator.onLine ? 'error' : 'offline'), lastSync: fallback ? Date.now() : s.lastSync, fromCache: !!fallback, error: fallback ? null : 'Cloud vault was not found. No cloud data was changed.' }));
     }, (err) => {
       if (!mounted) return;
+      cloudWriteEnabledRef.current = false;
       setSync(s => ({ ...s, state: 'error', error: err && err.message ? err.message : 'Sync error' }));
-      if (!lastRef.current) { const n = normalize(DEFAULT_DATA); lastRef.current = JSON.stringify(n); setData(n); }
+      // Never inject DEFAULT_DATA into state on a cloud read error. Keep any
+      // existing in-memory data, or use the browser recovery copy if available.
+      if (!lastRef.current) {
+        let fallback = null;
+        try { const raw = localStorage.getItem('finvault_data'); if (raw) fallback = normalize(JSON.parse(raw)); } catch (e) {}
+        if (fallback) { lastRef.current = JSON.stringify(fallback); setData(fallback); }
+      }
     });
-    return () => { mounted = false; unsub(); };
+    return () => { mounted = false; unsub(); if (timerRef.current) clearTimeout(timerRef.current); };
   }, []);
 
   useEffect(() => {
@@ -504,10 +572,13 @@ function useStore() {
     const str = JSON.stringify(data);
     if (str === lastRef.current) return;
     lastRef.current = str;
-    // Keep a local recovery copy in addition to Firebase. This is intentionally
-    // separate from the downloadable backup so accidental cloud issues still
-    // have a recovery path on the same browser.
     try { localStorage.setItem('finvault_data', str); } catch (e) {}
+
+    if (!cloudWriteEnabledRef.current) {
+      setSync(prev => ({ ...prev, state: 'error', error: 'Cloud save is paused until you make an explicit data change or restore a backup.' }));
+      return;
+    }
+
     if (timerRef.current) clearTimeout(timerRef.current);
     setSync(prev => prev.state === 'local' ? prev : ({ ...prev, state: 'syncing' }));
     timerRef.current = setTimeout(() => {
@@ -531,7 +602,7 @@ function useStore() {
     return () => { window.removeEventListener('online', goOnline); window.removeEventListener('offline', goOffline); };
   }, []);
 
-  return [data, setData, sync];
+  return [data, safeSetData, sync];
 }
 
 function reverseTxLink(d, tx) {
@@ -665,38 +736,45 @@ function extractAmount(q) {
 }
 
 function dataSummary(data) {
-  const bankTotal = data.banks.reduce((s, b) => s + (Number(b.balance) || 0), 0);
-  const dematTotal = data.demats.reduce((s, d) => s + (Number(d.balance) || 0), 0);
-  const cardDebt = data.cards.reduce((s, c) => s + (Number(c.outstanding) || 0), 0);
-  const activeLoans = data.loans.filter(l => !l.closed);
-  const loanDebt = activeLoans.reduce((s, l) => s + (Number(l.emi || 0) * Number(l.monthsLeft || 0)), 0);
-  const assets = bankTotal + dematTotal;
-  const liabilities = cardDebt + loanDebt;
-  const netWorth = assets - liabilities;
+  const f = financialSnapshot(data);
   const mk = monthKey(new Date());
   const monthTx = data.transactions.filter(t => String(t.date).startsWith(mk));
-  const mIn = monthTx.filter(t => t.dir === 'in').reduce((s, t) => s + (Number(t.amount) || 0), 0);
-  const mOut = monthTx.filter(t => t.dir === 'out').reduce((s, t) => s + (Number(t.amount) || 0), 0);
-  return { bankTotal, dematTotal, cardDebt, activeLoans, loanDebt, assets, liabilities, netWorth, mIn, mOut };
+  const mIn = r2(monthTx.filter(t => t.dir === 'in').reduce((s, t) => s + (Number(t.amount) || 0), 0));
+  const mOut = r2(monthTx.filter(t => t.dir === 'out').reduce((s, t) => s + (Number(t.amount) || 0), 0));
+  return { ...f, mIn, mOut };
 }
 
 function simulateLoans(loans, extra) {
-  const ls = loans.map(l => ({ name: l.name, rem: r2((Number(l.emi) || 0) * (Number(l.monthsLeft) || 0)), rate: r2(l.rate), emi: r2(l.emi) }));
-  let months = 0; let totalInterest = 0;
+  const ls = loans.map(l => ({
+    name: l.name,
+    rem: loanOutstandingPrincipal(l),
+    rate: Math.max(0, Number(l.rate) || 0),
+    emi: Math.max(0, Number(l.emi) || 0)
+  })).filter(l => l.rem > 0.5);
+  let months = 0;
+  let totalInterest = 0;
+  const extraMonthly = Math.max(0, Number(extra) || 0);
+
   while (ls.some(l => l.rem > 0.5) && months < 720) {
     months++;
+    // Highest-rate-first avalanche for any extra payment.
     ls.sort((a, b) => b.rate - a.rate);
-    let pool = extra;
+    let pool = extraMonthly;
+
     for (let i = 0; i < ls.length; i++) {
       const l = ls[i];
       if (l.rem <= 0) continue;
-      const interest = l.rem * (l.rate / 100) / 12;
-      let pay = l.emi;
-      if (pool > 0) { const room = Math.max(0, l.rem + interest - pay); const add = Math.min(pool, room); pay += add; pool -= add; }
-      if (pay > l.rem + interest) pay = l.rem + interest;
+      const monthlyRate = l.rate / 100 / 12;
+      const interest = monthlyRate > 0 ? l.rem * monthlyRate : 0;
+      let pay = Math.min(l.emi, l.rem + interest);
+      if (pool > 0) {
+        const room = Math.max(0, l.rem + interest - pay);
+        const add = Math.min(pool, room);
+        pay += add;
+        pool -= add;
+      }
       totalInterest += interest;
-      l.rem = r2(l.rem + interest - pay);
-      if (l.rem < 0) l.rem = 0;
+      l.rem = r2(Math.max(0, l.rem + interest - pay));
     }
   }
   return { months, totalInterest: r2(totalInterest) };
@@ -782,9 +860,9 @@ function aiAnswer(question, data, context) {
   })).filter(c => c.outstanding > 0);
 
   const loans = s.activeLoans.map(l => {
-    const emi = n(l.emi), months = n(l.monthsLeft), balance = r2(emi * months), rate = n(l.rate);
+    const emi = n(l.emi), months = n(l.monthsLeft), balance = loanOutstandingPrincipal(l), scheduled = loanScheduledPayments(l), rate = n(l.rate);
     return {
-      name: l.name || 'Loan', emi, months, balance, rate,
+      name: l.name || 'Loan', emi, months, balance, scheduled, rate,
       foreclosure: n(l.foreclosureAmount),
       monthlyInterest: r2(balance * rate / 100 / 12)
     };
@@ -915,7 +993,7 @@ function aiAnswer(question, data, context) {
   if (intent === 'debt') {
     if (!allDebts.length) return {text:`You currently have no card or active-loan debt recorded.`,context:{...context,lastIntent:'debt'}};
     const lines=[`Debt picture: ${inr(totalDebt)} total recorded debt.`];
-    allDebts.forEach((d,i)=>lines.push(`${i+1}. ${d.name}: ${inr(d.balance)} at ${r2(d.rate)}% ≈ ${inr(r2(d.balance*d.rate/100))}/year at the current balance, before amortisation.`));
+    allDebts.forEach((d,i)=>lines.push(`${i+1}. ${d.name}: ${inr(d.balance)} outstanding at ${r2(d.rate)}% ≈ ${inr(r2(d.balance*d.rate/100))}/year at the current balance, before amortisation.`));
     const highest=allDebts[0];
     lines.push('',`For extra repayments, compare each debt’s effective cost with the alternative use of cash. Your highest recorded rate is ${r2(highest.rate)}% on ${highest.name}.`);
     if (amount && amount > 0 && loans.length) {
@@ -1235,68 +1313,91 @@ function DonutChart({ items, total }) {
 }
 
 function NetWorthChart({ points, onReset }) {
-  if (!points || points.length === 0) {
-    return <div className="empty"><div className="empty-icon">{Ico.trend}</div><div className="empty-title">Net worth history is starting</div><div className="empty-sub">Come back tomorrow and your progress will start showing here.</div></div>;
+  const [hover, setHover] = useState(null);
+  const clean = useMemo(() => {
+    const map = {};
+    (points || []).forEach(p => {
+      const date = String(p && p.date || '');
+      const value = Number(p && p.value);
+      if (/^\d{4}-\d{2}-\d{2}$/.test(date) && Number.isFinite(value)) map[date] = r2(value);
+    });
+    return Object.keys(map).sort().map(date => ({ date, value: map[date] }));
+  }, [points]);
+
+  if (!clean.length) {
+    return <div className="empty"><div className="empty-icon">{Ico.trend}</div><div className="empty-title">Net worth history is starting</div><div className="empty-sub">Your first verified snapshot will appear here. The chart records one clean snapshot per day.</div></div>;
   }
-  if (points.length === 1) {
-    const p = points[0];
-    const isPos = p.value >= 0;
+
+  const first = clean[0];
+  const last = clean[clean.length - 1];
+  const change = r2(last.value - first.value);
+  const changePct = Math.abs(first.value) > 0.5 ? r2(change / Math.abs(first.value) * 100) : null;
+  const lineColor = last.value >= 0 ? 'var(--green)' : 'var(--red)';
+
+  if (clean.length === 1) {
     return (
       <div>
-        <div style={{ display: 'flex', gap: '12px', alignItems: 'baseline', flexWrap: 'wrap', marginBottom: '12px' }}>
-          <div style={{ fontSize: '26px', fontWeight: 800, letterSpacing: '-.9px', color: isPos ? 'var(--green)' : 'var(--red)' }} className="mono">{inr(p.value)}</div>
-          <div className={'pill ' + (isPos ? 'green' : 'red')}><span className="pdot"></span>today</div>
+        <div style={{ display: 'flex', gap: '12px', alignItems: 'baseline', flexWrap: 'wrap', marginBottom: '14px' }}>
+          <div style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-.9px', color: lineColor }} className="mono">{inr(last.value)}</div>
+          <span className={'pill ' + (last.value >= 0 ? 'green' : 'red')}><span className="pdot"></span>First snapshot</span>
         </div>
         <div className="glass-soft" style={{ padding: '16px', fontSize: '12.5px', color: 'var(--muted)', lineHeight: 1.55 }}>
-          This is your net worth as of {fmtDate(p.date)}. Keep updating your balances and a beautiful trend line will appear in the coming days.
+          Verified on {fmtDate(last.date)}. A second daily snapshot will create the trend line. Net worth now uses outstanding loan principal rather than adding future loan interest.
         </div>
       </div>
     );
   }
-  const W = 800, H = 200, P = 22;
-  const vals = points.map(p => p.value);
-  let min = Math.min.apply(null, vals);
-  let max = Math.max.apply(null, vals);
-  if (min === max) { min = min - Math.max(1, Math.abs(min) * 0.1); max = max + Math.max(1, Math.abs(max) * 0.1); }
-  const padY = (max - min) * 0.12;
-  min -= padY; max += padY;
-  const n = points.length;
-  const x = (i) => P + (i * (W - 2 * P)) / Math.max(1, n - 1);
-  const y = (v) => H - P - ((v - min) / (max - min)) * (H - 2 * P);
-  const last = points[n - 1];
-  const first = points[0];
-  const isPositive = last.value >= 0;
-  const lineColor = isPositive ? 'var(--green)' : 'var(--red)';
-  const gradId = isPositive ? 'nwgradGreen' : 'nwgradRed';
-  let d = '';
-  points.forEach((p, i) => { d += (i ? ' L' : 'M') + x(i).toFixed(1) + ',' + y(p.value).toFixed(1); });
-  const area = d + ' L' + x(n - 1).toFixed(1) + ',' + (H - P) + ' L' + x(0).toFixed(1) + ',' + (H - P) + ' Z';
-  const change = r2(last.value - first.value);
-  const base = Math.abs(first.value);
-  const changePct = base > 0.5 ? r2((change / base) * 100) : null;
-  const zeroY = (0 >= min && 0 <= max) ? y(0) : null;
+
+  const W = 900, H = 270, PX = 46, PY = 24;
+  const vals = clean.map(p => p.value);
+  let min = Math.min(...vals), max = Math.max(...vals);
+  if (min === max) {
+    const spread = Math.max(100, Math.abs(min) * 0.08);
+    min -= spread; max += spread;
+  } else {
+    const spread = Math.max(100, (max - min) * 0.12);
+    min -= spread; max += spread;
+  }
+  const x = i => PX + (i * (W - PX * 2)) / Math.max(1, clean.length - 1);
+  const y = v => H - PY - ((v - min) / (max - min)) * (H - PY * 2);
+  const path = clean.map((p, i) => (i ? 'L' : 'M') + x(i).toFixed(2) + ',' + y(p.value).toFixed(2)).join(' ');
+  const area = path + ' L' + x(clean.length - 1).toFixed(2) + ',' + (H - PY) + ' L' + x(0).toFixed(2) + ',' + (H - PY) + ' Z';
+  const zeroY = 0 >= min && 0 <= max ? y(0) : null;
+  const ticks = [0, 1, 2, 3, 4].map(i => max - (max - min) * i / 4);
+  const hovered = hover !== null ? clean[hover] : null;
+
+  const onMove = e => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const ratio = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    const idx = Math.round(ratio * (clean.length - 1));
+    setHover(idx);
+  };
+
   return (
     <div>
-      <div style={{ display: 'flex', gap: '14px', alignItems: 'baseline', flexWrap: 'wrap', marginBottom: '10px' }}>
+      <div style={{ display: 'flex', gap: '14px', alignItems: 'baseline', flexWrap: 'wrap', marginBottom: '8px' }}>
         <div style={{ fontSize: '28px', fontWeight: 800, letterSpacing: '-.9px', color: lineColor }} className="mono">{inr(last.value)}</div>
         <div className={'pill ' + (change >= 0 ? 'green' : 'red')}><span className="pdot"></span>{change >= 0 ? '▲' : '▼'} {inr(Math.abs(change))}{changePct !== null ? ' (' + (changePct >= 0 ? '+' : '') + changePct + '%)' : ''}</div>
-        <div className="pill blue">Since {fmtDate(first.date)}</div>
-        {onReset ? (<button className="btn btn-sm" onClick={onReset} style={{ marginLeft: 'auto' }}>{Ico.reset} Reset</button>) : null}
+        <div className="pill blue">{clean.length} daily snapshots · since {fmtDate(first.date)}</div>
+        {onReset ? <button className="btn btn-sm" onClick={onReset} style={{ marginLeft: 'auto' }}>{Ico.reset} Reset chart</button> : null}
       </div>
-      <div className="nw-chart-wrap">
-        <svg viewBox={'0 0 ' + W + ' ' + H} preserveAspectRatio="none">
+      <div style={{ fontSize: '11.5px', color: 'var(--muted)', marginBottom: '10px' }}>Hover the chart to inspect each daily snapshot.</div>
+      <div className="nw-chart-wrap" onMouseMove={onMove} onMouseLeave={() => setHover(null)} style={{ cursor: 'crosshair' }}>
+        <svg viewBox={'0 0 ' + W + ' ' + H} preserveAspectRatio="none" aria-label="Net worth history chart">
           <defs>
-            <linearGradient id="nwgradGreen" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--green)" stopOpacity="0.35" /><stop offset="100%" stopColor="var(--green)" stopOpacity="0" /></linearGradient>
-            <linearGradient id="nwgradRed" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--red)" stopOpacity="0.32" /><stop offset="100%" stopColor="var(--red)" stopOpacity="0" /></linearGradient>
+            <linearGradient id="nwgradGreenV3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--green)" stopOpacity="0.30" /><stop offset="100%" stopColor="var(--green)" stopOpacity="0" /></linearGradient>
+            <linearGradient id="nwgradRedV3" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stopColor="var(--red)" stopOpacity="0.28" /><stop offset="100%" stopColor="var(--red)" stopOpacity="0" /></linearGradient>
           </defs>
-          {[0, 1, 2, 3].map(i => (<line key={i} x1={P} x2={W - P} y1={P + (i * (H - 2 * P)) / 3} y2={P + (i * (H - 2 * P)) / 3} stroke="var(--brd)" strokeWidth="1" vectorEffect="non-scaling-stroke" />))}
-          {zeroY !== null && (<line x1={P} x2={W - P} y1={zeroY} y2={zeroY} stroke="var(--muted-2)" strokeWidth="1" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" opacity="0.55" />)}
-          <path d={area} fill={'url(#' + gradId + ')'} />
-          <path d={d} fill="none" stroke={lineColor} strokeWidth="2.5" vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
-          {points.map((p, i) => (<circle key={i} cx={x(i)} cy={y(p.value)} r="2.5" fill={lineColor} stroke="var(--bg)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />))}
+          {ticks.map((v, i) => (<React.Fragment key={i}><line x1={PX} x2={W-PX} y1={y(v)} y2={y(v)} stroke="var(--brd)" strokeWidth="1" vectorEffect="non-scaling-stroke" /><text x="4" y={y(v)+4} fill="var(--muted)" fontSize="10" fontFamily="Inter, sans-serif">{money(v).replace('.00','')}</text></React.Fragment>))}
+          {zeroY !== null ? <line x1={PX} x2={W-PX} y1={zeroY} y2={zeroY} stroke="var(--muted-2)" strokeWidth="1" strokeDasharray="4 4" vectorEffect="non-scaling-stroke" opacity=".65" /> : null}
+          <path d={area} fill={'url(#' + (last.value >= 0 ? 'nwgradGreenV3' : 'nwgradRedV3') + ')'} />
+          <path d={path} fill="none" stroke={lineColor} strokeWidth="2.7" vectorEffect="non-scaling-stroke" strokeLinejoin="round" strokeLinecap="round" />
+          {clean.map((p, i) => <circle key={i} cx={x(i)} cy={y(p.value)} r={hover === i ? 5 : 3} fill={lineColor} stroke="var(--bg)" strokeWidth="1.5" vectorEffect="non-scaling-stroke" />)}
+          {hover !== null ? <line x1={x(hover)} x2={x(hover)} y1={PY} y2={H-PY} stroke="var(--muted-2)" strokeWidth="1" strokeDasharray="3 4" vectorEffect="non-scaling-stroke" opacity=".7" /> : null}
         </svg>
+        {hovered ? <div className="glass-soft" style={{ position:'absolute', left: Math.min(82, Math.max(2, (hover/(clean.length-1))*100)) + '%', top:'8px', transform:'translateX(-50%)', padding:'8px 10px', fontSize:'11px', pointerEvents:'none', whiteSpace:'nowrap', boxShadow:'var(--shadow-md)', zIndex:3 }}><b style={{ color:'var(--txt)' }}>{fmtDate(hovered.date)}</b><br/><span className="mono" style={{ color: lineColor }}>{inr(hovered.value)}</span></div> : null}
       </div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: 'var(--muted)', marginTop: '8px' }}><span>{fmtDate(first.date)}</span><span>{fmtDate(last.date)}</span></div>
+      <div style={{ display:'flex', justifyContent:'space-between', fontSize:'11px', color:'var(--muted)', marginTop:'8px' }}><span>{fmtDate(first.date)}</span><span>{fmtDate(last.date)}</span></div>
     </div>
   );
 }
@@ -1440,7 +1541,7 @@ function BackupRestore({ data, setData, showToast, sync, theme, toggleTheme }) {
     try {
       const payload = {
         app: 'ShubhVault',
-        backupVersion: 2,
+        backupVersion: 3,
         createdAt: new Date().toISOString(),
         theme: theme,
         data: data
@@ -1466,9 +1567,11 @@ function BackupRestore({ data, setData, showToast, sync, theme, toggleTheme }) {
   const validateBackup = (raw) => {
     if (!raw || typeof raw !== 'object') throw new Error('Invalid backup file.');
     const source = raw.data && typeof raw.data === 'object' ? raw.data : raw;
-    const required = ['banks','transactions','demats','cards','loans','bills','inflows','netWorthHistory'];
+    const required = ['banks','transactions','demats','cards','loans','bills','inflows'];
     const missing = required.filter(k => !Array.isArray(source[k]));
     if (missing.length) throw new Error('This does not look like a valid ShubhVault backup. Missing: ' + missing.join(', ') + '.');
+    if (!Array.isArray(source.netWorthHistory)) source.netWorthHistory = [];
+    source.netWorthHistoryVersion = 2;
     return { source: normalize(source), theme: raw.theme === 'light' ? 'light' : 'dark', createdAt: raw.createdAt || null };
   };
 
@@ -1485,7 +1588,7 @@ function BackupRestore({ data, setData, showToast, sync, theme, toggleTheme }) {
           : 'Restore this ShubhVault backup?\\n\\nThis will replace the current data in this vault. Make sure you have downloaded your current backup first.';
         if (!window.confirm(confirmText)) { setRestoring(false); return; }
         // Keep a safety copy of the current state in localStorage before restore.
-        try { localStorage.setItem('finvault_pre_restore_backup', JSON.stringify({ app:'ShubhVault', backupVersion:2, createdAt:new Date().toISOString(), theme, data })); } catch (e) {}
+        try { localStorage.setItem('finvault_pre_restore_backup', JSON.stringify({ app:'ShubhVault', backupVersion:3, createdAt:new Date().toISOString(), theme, data })); } catch (e) {}
         const restored = parsed.source;
         setData(restored);
         try { localStorage.setItem('finvault_data', JSON.stringify(restored)); } catch (e) {}
@@ -1539,7 +1642,7 @@ function BackupRestore({ data, setData, showToast, sync, theme, toggleTheme }) {
             {lastBackup ? <div className="backup-success" style={{ marginTop: '12px' }}>Backup created at {lastBackup.toLocaleTimeString()}.</div> : null}
           </div>
           <div className="backup-meta">
-            <span className="pill blue">{count} records</span>
+            <span className="pill blue">{count} records · schema v3</span>
             <span className="pill">JSON backup</span>
             <span className="pill green">Local safety copy enabled</span>
           </div>
@@ -1555,14 +1658,14 @@ function BackupRestore({ data, setData, showToast, sync, theme, toggleTheme }) {
             <button className="btn btn-primary" onClick={() => fileRef.current && fileRef.current.click()} disabled={restoring} style={{ marginTop: '16px' }}>{Ico.up}<span style={{ marginLeft: 4 }}>{restoring ? 'Restoring…' : 'Choose Backup File'}</span></button>
           </div>
           <div className="backup-warning" style={{ marginTop: '12px' }}>Restore replaces the current vault data. Always download a backup of your current data before restoring an older file.</div>
-          <button className="btn btn-sm" onClick={restoreLocalSafety} style={{ marginTop: '12px' }}>Restore automatic pre-restore safety copy</button>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginTop: '12px' }}><button className="btn btn-sm" onClick={restoreLocalSafety}>Restore automatic pre-restore safety copy</button><button className="btn btn-sm" onClick={() => { try { const raw = localStorage.getItem('finvault_data'); if (!raw) { showToast('No browser recovery copy available'); return; } const payload = { app:'ShubhVault', backupVersion:3, createdAt:new Date().toISOString(), source:'browser-recovery', theme:localStorage.getItem('fv_theme') || theme, data:normalize(JSON.parse(raw)) }; const blob = new Blob([JSON.stringify(payload,null,2)],{type:'application/json'}); const url=URL.createObjectURL(blob); const a=document.createElement('a'); a.href=url; a.download='ShubhVault-browser-recovery.json'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(url),1000); showToast('Browser recovery backup downloaded'); } catch(e){ showToast('Could not export recovery copy'); } }}>Export browser recovery</button></div>
         </div>
       </div>
 
       <div className="section-head"><div className="section-title"><span className="dot"></span>Backup status</div></div>
       <div className="list">
         <div className="item"><div className="item-ico" style={{ color: 'var(--green)' }}>{Ico.check}</div><div className="item-body"><div className="item-name">Your browser keeps a recovery copy</div><div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '5px' }}>ShubhVault stores a local copy of the current data whenever the vault changes. This is separate from the downloadable backup file.</div></div></div>
-        <div className="item"><div className="item-ico" style={{ color: 'var(--accent)' }}>{Ico.cloud}</div><div className="item-body"><div className="item-name">Firebase remains the cloud source</div><div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '5px' }}>The backup feature does not delete or clear Firebase data. Restoring a file intentionally replaces the current in-app dataset and then lets the normal sync process save it.</div></div></div>
+        <div className="item"><div className="item-ico" style={{ color: 'var(--accent)' }}>{Ico.cloud}</div><div className="item-body"><div className="item-name">Firebase remains the cloud source</div><div style={{ fontSize: '12px', color: 'var(--muted)', marginTop: '5px' }}>The backup feature does not clear Firebase data by itself. Restoring a file intentionally replaces the current in-app dataset; the change is then synced to the same vault. If cloud sync is unavailable, the browser recovery copy remains available.</div></div></div>
       </div>
     </div>
   );
@@ -1634,31 +1737,22 @@ function App() {
     if (txPrefill && txPrefill._onSave) txPrefill._onSave(payload);
   };
 
-  const currentNetWorth = useMemo(() => {
-    if (!data) return 0;
-    const bankTotal = data.banks.reduce((s, b) => s + (Number(b.balance) || 0), 0);
-    const dematTotal = data.demats.reduce((s, d) => s + (Number(d.balance) || 0), 0);
-    const cardDebt = data.cards.reduce((s, c) => s + (Number(c.outstanding) || 0), 0);
-    const loanDebt = data.loans.filter(l => !l.closed).reduce((s, l) => s + (Number(l.emi || 0) * Number(l.monthsLeft || 0)), 0);
-    return r2(bankTotal + dematTotal - cardDebt - loanDebt);
-  }, [data]);
+  const currentSnapshot = useMemo(() => data ? financialSnapshot(data) : null, [data]);
+  const currentNetWorth = currentSnapshot ? currentSnapshot.netWorth : 0;
 
   const meaningful = useMemo(() => {
-    if (!data) return false;
-    const total = data.banks.reduce((s, b) => s + (Number(b.balance) || 0), 0) +
-      data.demats.reduce((s, d) => s + (Number(d.balance) || 0), 0) +
-      data.cards.reduce((s, c) => s + (Number(c.outstanding) || 0), 0) +
-      data.loans.filter(l => !l.closed).reduce((s, l) => s + (Number(l.emi || 0) * Number(l.monthsLeft || 0)), 0) +
-      data.bills.reduce((s, b) => s + (Number(b.amount) || 0), 0) +
-      data.inflows.reduce((s, f) => s + (Number(f.amount) || 0), 0);
-    return total > 0.5;
-  }, [data]);
+    if (!currentSnapshot) return false;
+    return currentSnapshot.assets > 0.5 || currentSnapshot.liabilities > 0.5 ||
+      data.transactions.length > 0 || data.bills.length > 0 || data.inflows.length > 0;
+  }, [currentSnapshot, data]);
 
   const nwRecordRef = useRef({ date: null, value: null });
 
   useEffect(() => {
     if (!data) return;
     if (!meaningful) return;
+    // Never let automatic chart bookkeeping create a missing cloud document.
+    if (db && sync.state !== 'synced' && sync.state !== 'syncing') return;
     const today = toISO(new Date());
     const hist = data.netWorthHistory || [];
     const todayEntry = hist.find(h => h.date === today);
@@ -1668,13 +1762,21 @@ function App() {
     mut(d => {
       d.netWorthHistory = (d.netWorthHistory || []).filter(h => h.date !== today);
       d.netWorthHistory.push({ date: today, value: currentNetWorth });
+      d.netWorthHistoryVersion = 2;
       d.netWorthHistory.sort((a, b) => a.date.localeCompare(b.date));
       if (d.netWorthHistory.length > 180) d.netWorthHistory = d.netWorthHistory.slice(-180);
     });
-  }, [currentNetWorth, data, mut, meaningful]);
+  }, [currentNetWorth, data, mut, meaningful, sync.state]);
 
   if (!authed) return <Login onOk={() => setAuthed(true)} theme={theme} toggleTheme={toggleTheme} />;
-  if (!data) return <div className="boot"><div className="boot-inner"><div className="boot-logo">SV</div><div>Loading your vault…</div></div></div>;
+  if (!data) return (
+    <div className="boot">
+      <div className="boot-inner" style={{ maxWidth:'440px', padding:'24px', textAlign:'center' }}>
+        <div className="boot-logo">SV</div>
+        {sync.state === 'error' ? <React.Fragment><div style={{ color:'var(--red)', fontWeight:700 }}>Your vault could not be loaded safely</div><div style={{ color:'var(--muted)', fontSize:'12px', lineHeight:1.6 }}>{sync.error || 'The cloud database returned an error. No empty data was written.'}</div><button className="btn btn-primary" onClick={() => window.location.reload()}>Try Again</button></React.Fragment> : <div>Loading your vault…</div>}
+      </div>
+    </div>
+  );
 
   const props = { data, setData, mut, showToast, go: setPage, theme, toggleTheme, sync, openTx };
   const NAV = [
@@ -1722,13 +1824,15 @@ function App() {
 }
 
 function Home({ data, mut, showToast, go, sync, openTx }) {
-  const bankTotal = data.banks.reduce((s, b) => s + (Number(b.balance) || 0), 0);
-  const dematTotal = data.demats.reduce((s, d) => s + (Number(d.balance) || 0), 0);
-  const cardDebt = data.cards.reduce((s, c) => s + (Number(c.outstanding) || 0), 0);
-  const loanDebt = data.loans.filter(l => !l.closed).reduce((s, l) => s + (Number(l.emi || 0) * Number(l.monthsLeft || 0)), 0);
-  const assets = r2(bankTotal + dematTotal);
-  const liabilities = r2(cardDebt + loanDebt);
-  const netWorth = r2(assets - liabilities);
+  const snapshot = useMemo(() => financialSnapshot(data), [data]);
+  const bankTotal = snapshot.bankTotal;
+  const dematTotal = snapshot.dematTotal;
+  const cardDebt = snapshot.cardDebt;
+  const loanDebt = snapshot.loanDebt;
+  const scheduledLoanPayments = snapshot.scheduledLoanPayments;
+  const assets = snapshot.assets;
+  const liabilities = snapshot.liabilities;
+  const netWorth = snapshot.netWorth;
 
   const [inflowTarget, setInflowTarget] = useState(null);
   const [withdrawHint, setWithdrawHint] = useState(null);
@@ -1767,13 +1871,13 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
   }, [feed]);
 
   const nwPoints = useMemo(() => {
-    const hist = (data.netWorthHistory || []).slice().sort((a, b) => a.date.localeCompare(b.date));
-    if (hist.length === 0) return [{ date: toISO(new Date()), value: netWorth }];
-    const last = hist[hist.length - 1];
+    const map = {};
+    (data.netWorthHistory || []).forEach(h => {
+      if (/^\d{4}-\d{2}-\d{2}$/.test(String(h.date || '')) && Number.isFinite(Number(h.value))) map[h.date] = r2(h.value);
+    });
     const today = toISO(new Date());
-    if (last.date !== today) hist.push({ date: today, value: netWorth });
-    else hist[hist.length - 1] = { date: today, value: netWorth };
-    return hist;
+    map[today] = netWorth;
+    return Object.keys(map).sort().map(date => ({ date, value: map[date] }));
   }, [data.netWorthHistory, netWorth]);
 
   const resetNwHistory = () => { mut(d => { d.netWorthHistory = []; }); showToast('Net worth history cleared'); };
@@ -2036,7 +2140,7 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
       <div className="grid g4">
         <div className="kpi glass"><div className="kpi-head"><span className="kpi-dot accent"></span><span className="kpi-label">Total Bank Balance</span></div><div className="kpi-val">{inr(bankTotal)}</div><div className="kpi-note">{data.banks.length} bank account{data.banks.length > 1 ? 's' : ''}</div></div>
         <div className="kpi glass"><div className="kpi-head"><span className="kpi-dot green"></span><span className="kpi-label">Demat Value</span></div><div className="kpi-val">{inr(dematTotal)}</div><div className="kpi-note">{data.demats.length} demat account{data.demats.length > 1 ? 's' : ''}</div></div>
-        <div className="kpi glass"><div className="kpi-head"><span className="kpi-dot red"></span><span className="kpi-label">Total Money Owed</span></div><div className="kpi-val">{inr(liabilities)}</div><div className="kpi-note">Loans {inr(loanDebt)} · Cards {inr(cardDebt)}</div></div>
+        <div className="kpi glass"><div className="kpi-head"><span className="kpi-dot red"></span><span className="kpi-label">Total Money Owed</span></div><div className="kpi-val">{inr(liabilities)}</div><div className="kpi-note">Loan principal {inr(loanDebt)} · Cards {inr(cardDebt)}</div></div>
         <div className="kpi glass"><div className="kpi-head"><span className="kpi-dot amber"></span><span className="kpi-label">Net Worth</span></div><div className="kpi-val" style={{ color: netWorth >= 0 ? 'var(--green)' : 'var(--red)' }}>{inr(netWorth)}</div><div className="kpi-note">Assets {inr(assets)} − Debts {inr(liabilities)}</div></div>
       </div>
 
@@ -2090,7 +2194,7 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
         {feed.length === 0 ? (<EmptyState icon={Ico.inbox} title="Nothing coming up" sub="Add loans, credit cards or bills and they will show up here sorted by due date." />) : (<div className="list">{groupedFeed.map(renderGroup)}</div>)}
       </div>
 
-      <div className="section-head"><div className="section-title"><span className="dot"></span>Loans — total <b>{inr(loanDebt)}</b></div><button className="btn btn-sm" onClick={() => go('loans')}>Manage</button></div>
+      <div className="section-head"><div className="section-title"><span className="dot"></span>Loans — principal <b>{inr(loanDebt)}</b></div><button className="btn btn-sm" onClick={() => go('loans')}>Manage</button></div>
       <div className="glass" style={{ padding: '14px' }}>
         {loanItems.length === 0 ? (<EmptyState icon={Ico.loan} title="No loans added yet" sub="Track EMIs, remaining months and payoff progress." action={<button className="btn btn-sm btn-primary" onClick={() => go('loans')}>Add your first loan</button>} />) : (<div className="list">{loanItems.map(renderItem)}</div>)}
       </div>
@@ -2724,7 +2828,8 @@ function Loans({ data, mut, showToast, sync, openTx }) {
   const activeLoans = useMemo(() => data.loans.filter(l => !l.closed), [data.loans]);
   const closedLoans = useMemo(() => data.loans.filter(l => l.closed), [data.loans]);
 
-  const total = activeLoans.reduce((s, l) => s + (Number(l.emi || 0) * Number(l.monthsLeft || 0)), 0);
+  const total = activeLoans.reduce((s, l) => s + loanOutstandingPrincipal(l), 0);
+  const scheduledTotal = activeLoans.reduce((s, l) => s + loanScheduledPayments(l), 0);
   const totalEmi = activeLoans.reduce((s, l) => s + (Number(l.emi) || 0), 0);
 
   const sortedActive = useMemo(() => {
@@ -2793,7 +2898,7 @@ function Loans({ data, mut, showToast, sync, openTx }) {
 
   return (
     <div>
-      <PageHead title="Loans" sub={'Total remaining ' + inr(total) + ' · Monthly EMI ' + inr(totalEmi)} sync={sync} openTx={openTx}>
+      <PageHead title="Loans" sub={'Principal outstanding ' + inr(total) + ' · Future scheduled payments ' + inr(scheduledTotal) + ' · Monthly EMI ' + inr(totalEmi)} sync={sync} openTx={openTx}>
         <div className="seg">
           <button className={'seg-btn' + (sortBy === 'name' ? ' active' : '')} onClick={() => setSortBy('name')}>By name</button>
           <button className={'seg-btn' + (sortBy === 'due' ? ' active' : '')} onClick={() => setSortBy('due')}>By due date</button>
@@ -2808,8 +2913,9 @@ function Loans({ data, mut, showToast, sync, openTx }) {
           {sortedActive.map(l => {
             const due = nextDueDate(l.dueDay || 5, l.paidCycles);
             const dd = daysUntil(due);
-            const computedRemaining = r2((Number(l.emi) || 0) * (Number(l.monthsLeft) || 0));
-            const paidPct = l.principal ? Math.min(100, r2(((l.principal - computedRemaining) / l.principal) * 100)) : 0;
+            const metrics = loanMetrics(l);
+            const computedRemaining = metrics.principal;
+            const paidPct = metrics.paidPct === null ? 0 : metrics.paidPct;
             const status = getLoanStatus(l);
             return (
               <div className="item" key={l.id} style={{ flexWrap: 'wrap' }}>
@@ -2826,7 +2932,7 @@ function Loans({ data, mut, showToast, sync, openTx }) {
                 </div>
                 <div style={{ textAlign: 'right' }}>
                   <div className="item-amt">{inr(computedRemaining)}</div>
-                  <div style={{ fontSize: '11.5px', color: 'var(--muted)', marginTop: '3px' }}>EMI {inr(l.emi)}</div>
+                  <div style={{ fontSize: '11.5px', color: 'var(--muted)', marginTop: '3px' }}>Principal outstanding · EMI {inr(l.emi)}</div>
                   {l.foreclosureAmount ? (<div style={{ fontSize: '11.5px', color: 'var(--amber)', marginTop: '3px' }}>Foreclose at {inr(l.foreclosureAmount)}</div>) : null}
                 </div>
                 <div className="item-actions">
@@ -2922,7 +3028,7 @@ function LoanModal({ open, onClose, loan, onSave }) {
     const calculatedRemaining = r2(e * n);
     onSave({
       name: name.trim() || 'Loan', emi: e, remaining: calculatedRemaining,
-      principal: r2(principal) || calculatedRemaining, rate: r2(rate),
+      principal: r2(principal) || (loan ? (Number(loan.principal) || loanOutstandingPrincipal({ emi: e, rate: r2(rate), monthsLeft: n })) : loanOutstandingPrincipal({ emi: e, rate: r2(rate), monthsLeft: n })), rate: r2(rate),
       originalMonths: Number(originalMonths) || n, monthsLeft: n,
       foreclosureAmount: r2(foreclosure),
       dueDay: Math.min(31, Math.max(1, Number(dueDay) || 5)),
@@ -3492,14 +3598,16 @@ function AiBrain({ data, sync, openTx }) {
   const [chatContext, setChatContext] = useState({});
   const chatEndRef = useRef(null);
 
-  const bankTotal = data.banks.reduce((s, b) => s + (Number(b.balance) || 0), 0);
-  const dematTotal = data.demats.reduce((s, d) => s + (Number(d.balance) || 0), 0);
-  const cardDebt = data.cards.reduce((s, c) => s + (Number(c.outstanding) || 0), 0);
-  const activeLoans = data.loans.filter(l => !l.closed);
-  const loanDebt = activeLoans.reduce((s, l) => s + (Number(l.emi || 0) * Number(l.monthsLeft || 0)), 0);
-  const assets = r2(bankTotal + dematTotal);
-  const liabilities = r2(cardDebt + loanDebt);
-  const netWorth = r2(assets - liabilities);
+  const snapshot = useMemo(() => financialSnapshot(data), [data]);
+  const bankTotal = snapshot.bankTotal;
+  const dematTotal = snapshot.dematTotal;
+  const cardDebt = snapshot.cardDebt;
+  const activeLoans = snapshot.activeLoans;
+  const loanDebt = snapshot.loanDebt;
+  const scheduledLoanPayments = snapshot.scheduledLoanPayments;
+  const assets = snapshot.assets;
+  const liabilities = snapshot.liabilities;
+  const netWorth = snapshot.netWorth;
 
   const mk = monthKey(new Date());
   const monthTx = data.transactions.filter(t => String(t.date).startsWith(mk));
@@ -3507,7 +3615,7 @@ function AiBrain({ data, sync, openTx }) {
   const mOut = r2(monthTx.filter(t => t.dir === 'out').reduce((s, t) => s + (Number(t.amount) || 0), 0));
 
   const sortedLoans = activeLoans.slice().sort((a, b) => (Number(b.rate) || 0) - (Number(a.rate) || 0));
-  const smallest = activeLoans.slice().sort((a, b) => (Number(a.emi || 0) * Number(a.monthsLeft || 0)) - (Number(b.emi || 0) * Number(b.monthsLeft || 0)));
+  const smallest = activeLoans.slice().sort((a, b) => loanOutstandingPrincipal(a) - loanOutstandingPrincipal(b));
   const sortedCards = data.cards.slice().sort((a, b) => (Number(b.outstanding) || 0) - (Number(a.outstanding) || 0));
 
   const base = useMemo(() => simulateLoans(activeLoans, 0), [activeLoans]);
@@ -3523,7 +3631,7 @@ function AiBrain({ data, sync, openTx }) {
     insights.push({ icon: Ico.loan, title: 'Attack this loan first', text: top.name + ' has the highest interest at ' + top.rate + '% a year. Put any extra money here first.' });
     const small = smallest[0];
     if (small !== top) {
-      const smallRemaining = r2((Number(small.emi) || 0) * (Number(small.monthsLeft) || 0));
+      const smallRemaining = loanOutstandingPrincipal(small);
       insights.push({ icon: Ico.sparkle, title: 'Or try the quick win', text: 'If you need motivation, close ' + small.name + ' first. Only ' + inr(smallRemaining) + ' left.' });
     }
   }
@@ -3566,7 +3674,7 @@ function AiBrain({ data, sync, openTx }) {
       <PageHead title="AI Brain" sub="Smart money analysis based on your real data" sync={sync} openTx={openTx} />
       <div className="grid g3" style={{ marginBottom: '18px' }}>
         <div className="kpi glass"><div className="kpi-head"><span className="kpi-dot green"></span><span className="kpi-label">Assets</span></div><div className="kpi-val" style={{ color: 'var(--green)' }}>{inr(assets)}</div><div className="kpi-note">Banks {inr(bankTotal)} + Demat {inr(dematTotal)}</div></div>
-        <div className="kpi glass"><div className="kpi-head"><span className="kpi-dot red"></span><span className="kpi-label">Debts</span></div><div className="kpi-val" style={{ color: 'var(--red)' }}>{inr(liabilities)}</div><div className="kpi-note">Loans {inr(loanDebt)} + Cards {inr(cardDebt)}</div></div>
+        <div className="kpi glass"><div className="kpi-head"><span className="kpi-dot red"></span><span className="kpi-label">Debts</span></div><div className="kpi-val" style={{ color: 'var(--red)' }}>{inr(liabilities)}</div><div className="kpi-note">Loan principal {inr(loanDebt)} + Cards {inr(cardDebt)}</div></div>
         <div className="kpi glass"><div className="kpi-head"><span className="kpi-dot amber"></span><span className="kpi-label">Net Worth</span></div><div className="kpi-val">{inr(netWorth)}</div><div className="kpi-note">{inr(assets)} − {inr(liabilities)}</div></div>
       </div>
 
@@ -3627,7 +3735,7 @@ function AiBrain({ data, sync, openTx }) {
         <React.Fragment>
           <div className="section-head"><div className="section-title"><span className="dot"></span>Foreclosure Advice</div></div>
           <div className="glass" style={{ padding: '20px', fontSize: '13px', lineHeight: 1.7 }}>
-            <b>{bestForeclose.name}</b> can be closed today for <b>{inr(bestForeclose.foreclosureAmount)}</b>. You still owe <b>{inr(r2((Number(bestForeclose.emi) || 0) * (Number(bestForeclose.monthsLeft) || 0)))}</b> and have <b>{bestForeclose.monthsLeft || 0} months</b> left at <b>{bestForeclose.rate}%</b>. Closing now saves you roughly <b>{inr(r2(Math.max(0, (Number(bestForeclose.emi) || 0) * (Number(bestForeclose.monthsLeft) || 0) - Number(bestForeclose.foreclosureAmount))))}</b> in future payments. {Number(bankTotal) >= Number(bestForeclose.foreclosureAmount) ? ' You have enough in the bank to do this right now.' : ' You need ' + inr(r2(Number(bestForeclose.foreclosureAmount) - bankTotal)) + ' more in the bank to do this today.'}
+            <b>{bestForeclose.name}</b> has an estimated principal outstanding of <b>{inr(loanOutstandingPrincipal(bestForeclose))}</b> and <b>{bestForeclose.monthsLeft || 0} months</b> left at <b>{bestForeclose.rate}%</b>. The lender's foreclosure quote is <b>{inr(bestForeclose.foreclosureAmount)}</b>. Future scheduled EMI payments total about <b>{inr(loanScheduledPayments(bestForeclose))}</b>, so paying the quote instead of those scheduled payments would reduce future cash outflow by roughly <b>{inr(r2(Math.max(0, loanScheduledPayments(bestForeclose) - Number(bestForeclose.foreclosureAmount))))}</b> before any fees, taxes or other contractual charges. {Number(bankTotal) >= Number(bestForeclose.foreclosureAmount) ? ' You have enough in the bank to do this right now.' : ' You need ' + inr(r2(Number(bestForeclose.foreclosureAmount) - bankTotal)) + ' more in the bank to do this today.'}
           </div>
         </React.Fragment>
       ) : null}
@@ -3639,7 +3747,7 @@ function AiBrain({ data, sync, openTx }) {
           <div className="item" key={l.id}>
             <div className="item-ico" style={{ fontWeight: 700, fontSize: '14px' }}>{i + 1}</div>
             <div className="item-body"><div className="item-name">{l.name}</div><div className="item-meta"><span className="pill amber">{l.rate}% interest</span><span className="pill">{l.monthsLeft || 0} months left</span><span className="pill blue">EMI {inr(l.emi)}</span></div></div>
-            <div className="item-amt">{inr(r2((Number(l.emi) || 0) * (Number(l.monthsLeft) || 0)))}</div>
+            <div className="item-amt">{inr(loanOutstandingPrincipal(l))}</div>
           </div>
         ))}
         {sortedCards.map((c) => (
