@@ -303,16 +303,33 @@ html[data-theme="light"] .toast-action{color:#4f6dff}
 .cal-stat{flex:1;min-width:100px}
 .cal-stat-label{font-size:10.5px;font-weight:600;color:var(--muted);letter-spacing:.6px;text-transform:uppercase}
 .cal-stat-val{font-size:16px;font-weight:700;margin-top:5px;letter-spacing:-.4px;font-variant-numeric:tabular-nums}
-.group-item{cursor:pointer}
+.group-item{cursor:pointer;flex-wrap:wrap}
 .group-item .expand-chev{transition:transform .22s ease;display:inline-block}
 .group-item.expanded .expand-chev{transform:rotate(90deg)}
-.group-children{margin-top:8px;padding-left:8px;border-left:2px solid var(--brd);display:flex;flex-direction:column;gap:6px;animation:fadeIn .2s ease}
+.group-item .item-body{min-width:0;flex:1 1 auto}
+.group-children{margin-top:8px;padding-left:8px;border-left:2px solid var(--brd);display:flex;flex-direction:column;gap:6px;animation:fadeIn .2s ease;width:100%}
 .group-child{background:var(--glass-2);border:1px solid var(--brd);border-radius:10px;padding:10px 12px;display:flex;align-items:center;gap:12px}
 .plan-box{background:linear-gradient(135deg, rgba(251,191,36,.06), rgba(124,146,255,.04)); border:1px solid rgba(251,191,36,.18)}
 .plan-item{background:var(--glass-2);border:1px solid var(--brd);border-radius:12px;padding:14px 16px;margin-bottom:8px;display:flex;align-items:flex-start;gap:14px}
 .plan-item:last-child{margin-bottom:0}
 .plan-amt{font-size:20px;font-weight:800;color:var(--amber);letter-spacing:-.6px;font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
 .plan-action{font-size:11.5px;color:var(--muted);margin-top:6px;line-height:1.5}
+/* AI Chat */
+.chat-wrap{display:flex;flex-direction:column;gap:12px;max-height:520px;overflow-y:auto;padding:16px;border-radius:12px;background:var(--glass-2);border:1px solid var(--brd)}
+.chat-msg{display:flex;gap:10px;align-items:flex-start}
+.chat-msg.user{flex-direction:row-reverse}
+.chat-avatar{width:32px;height:32px;border-radius:50%;flex-shrink:0;display:grid;place-items:center;font-size:12px;font-weight:800;color:#fff}
+.chat-avatar.user{background:linear-gradient(135deg,#34d399,#059669)}
+.chat-avatar.bot{background:linear-gradient(135deg,var(--accent),var(--accent-2))}
+.chat-bubble{padding:11px 14px;border-radius:14px;font-size:13px;line-height:1.6;max-width:78%;word-wrap:break-word;white-space:pre-wrap}
+.chat-bubble.user{background:linear-gradient(135deg,var(--green),#059669);color:#fff;border-bottom-right-radius:4px}
+.chat-bubble.bot{background:var(--glass-3);border:1px solid var(--brd);color:var(--txt-2);border-bottom-left-radius:4px}
+.chat-bubble.bot b{color:var(--txt);font-weight:700}
+.chat-input-row{display:flex;gap:8px;margin-top:12px}
+.chat-input-row .input{flex:1}
+.chat-suggestions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.chat-suggestions .pill{cursor:pointer;transition:all .15s ease}
+.chat-suggestions .pill:hover{background:var(--accent-soft);color:var(--accent);border-color:rgba(124,146,255,.4)}
 </style>
 </head>
 <body>
@@ -371,6 +388,12 @@ function timeAgo(ts) { const s = Math.round((Date.now() - ts) / 1000); if (s < 5
 
 function naturalCompare(a, b) { return String(a || '').localeCompare(String(b || ''), undefined, { numeric: true, sensitivity: 'base' }); }
 
+function stripTrailingNumber(name) {
+  const s = String(name || '').trim();
+  const m = s.match(/^(.*?)\s+\d+$/);
+  return m ? m[1].trim() : null;
+}
+
 function defaultBankId(banks) {
   if (!banks || !banks.length) return '';
   const kotak = banks.find(b => /kotak/i.test(b.name || ''));
@@ -414,7 +437,6 @@ function normalize(d) {
   out.loans = out.loans.map(x => Object.assign({ paidCycles: [], startDate: toISO(new Date()), originalMonths: x.monthsLeft || 0, closed: false, closedDate: null }, x));
   out.bills = out.bills.map(x => Object.assign({ paidCycles: [] }, x));
   out.inflows = out.inflows.map(x => Object.assign({ receivedCycles: [], recurring: x.recurring !== false }, x));
-  // Ensure every withdrawal has a txId where possible (backwards compat) — leave as-is otherwise
   if (!out.banks.length) out.banks = [{ id: 'b1', name: 'Main Bank', balance: 0 }];
   if (!out.demats.length) out.demats = [{ id: 'd1', name: 'My Demat', balance: 0, history: [], withdrawals: [] }];
   return out;
@@ -495,7 +517,6 @@ function useStore() {
   return [data, setData, sync];
 }
 
-// Reverse the effect of a linked transaction on its entity (used when deleting or before editing)
 function reverseTxLink(d, tx) {
   if (!tx || !tx.link) return;
   const { type, id } = tx.link;
@@ -525,7 +546,6 @@ function reverseTxLink(d, tx) {
   }
 }
 
-// Apply the effect of a linked transaction on its entity (after creating or editing)
 function applyTxLink(d, tx) {
   if (!tx || !tx.link) return;
   const { type, id } = tx.link;
@@ -583,6 +603,7 @@ const Ico = {
   trend: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round"><path d="M3 17l6-6 4 4 8-8"/><path d="M15 7h6v6"/></svg>,
   repeat: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:13,height:13}}><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg>,
   onetime: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{width:13,height:13}}><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h18"/></svg>,
+  send: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 2 11 13"/><path d="M22 2l-7 20-4-9-9-4z"/></svg>,
   search: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
 };
 
@@ -592,6 +613,225 @@ function CategoryIcon({ kind }) {
 }
 
 const PIE_COLORS = ['#7c92ff', '#34d399', '#fbbf24', '#f87171', '#a78bfa', '#22d3ee', '#fb923c', '#ec4899', '#10b981', '#f472b6', '#64748b', '#94a3b8', '#facc15', '#60a5fa', '#84cc16'];
+
+/* ============================================================
+   AI CHAT ENGINE — rule-based analyzer that uses real data
+   ============================================================ */
+function extractAmount(q) {
+  const s = String(q || '').toLowerCase();
+  // 1L / 1 lakh / 1.5lakh
+  let m = s.match(/(\d+(?:\.\d+)?)\s*(?:lakh|lac|l\b)/i);
+  if (m) return Math.round(Number(m[1]) * 100000);
+  // 20k / 500k
+  m = s.match(/(\d+(?:\.\d+)?)\s*k\b/i);
+  if (m) return Math.round(Number(m[1]) * 1000);
+  // Plain number with optional commas
+  m = s.match(/(\d[\d,]{1,})/);
+  if (m) return Number(m[1].replace(/,/g, ''));
+  return null;
+}
+
+function dataSummary(data) {
+  const bankTotal = data.banks.reduce((s, b) => s + (Number(b.balance) || 0), 0);
+  const dematTotal = data.demats.reduce((s, d) => s + (Number(d.balance) || 0), 0);
+  const cardDebt = data.cards.reduce((s, c) => s + (Number(c.outstanding) || 0), 0);
+  const activeLoans = data.loans.filter(l => !l.closed);
+  const loanDebt = activeLoans.reduce((s, l) => s + (Number(l.emi || 0) * Number(l.monthsLeft || 0)), 0);
+  const assets = bankTotal + dematTotal;
+  const liabilities = cardDebt + loanDebt;
+  const netWorth = assets - liabilities;
+  const mk = monthKey(new Date());
+  const monthTx = data.transactions.filter(t => String(t.date).startsWith(mk));
+  const mIn = monthTx.filter(t => t.dir === 'in').reduce((s, t) => s + (Number(t.amount) || 0), 0);
+  const mOut = monthTx.filter(t => t.dir === 'out').reduce((s, t) => s + (Number(t.amount) || 0), 0);
+  return { bankTotal, dematTotal, cardDebt, activeLoans, loanDebt, assets, liabilities, netWorth, mIn, mOut };
+}
+
+function simulateLoans(loans, extra) {
+  const ls = loans.map(l => ({ name: l.name, rem: r2((Number(l.emi) || 0) * (Number(l.monthsLeft) || 0)), rate: r2(l.rate), emi: r2(l.emi) }));
+  let months = 0; let totalInterest = 0;
+  while (ls.some(l => l.rem > 0.5) && months < 720) {
+    months++;
+    ls.sort((a, b) => b.rate - a.rate);
+    let pool = extra;
+    for (let i = 0; i < ls.length; i++) {
+      const l = ls[i];
+      if (l.rem <= 0) continue;
+      const interest = l.rem * (l.rate / 100) / 12;
+      let pay = l.emi;
+      if (pool > 0) { const room = Math.max(0, l.rem + interest - pay); const add = Math.min(pool, room); pay += add; pool -= add; }
+      if (pay > l.rem + interest) pay = l.rem + interest;
+      totalInterest += interest;
+      l.rem = r2(l.rem + interest - pay);
+      if (l.rem < 0) l.rem = 0;
+    }
+  }
+  return { months, totalInterest: r2(totalInterest) };
+}
+
+function aiAnswer(question, data) {
+  const q = String(question || '').trim().toLowerCase();
+  const s = dataSummary(data);
+  const amt = extractAmount(q);
+
+  // ----- Intent: where to put money / allocate / invest
+  if (/\b(where|what|how)\b.*\b(put|invest|do|allocate|use|place)\b/i.test(q) || /\b(allocate|invest)\b/i.test(q) || (amt && /(spare|extra|left|sitting)/.test(q))) {
+    const cash = amt || s.bankTotal;
+    const lines = [];
+    lines.push(`You have ${inr(cash)} to deploy. Here's the optimal order based on your real numbers:`);
+    let remaining = cash;
+    let step = 0;
+    // 1. Emergency fund check
+    const monthlyExpense = s.mOut > 0 ? s.mOut : 1;
+    const ef3 = r2(monthlyExpense * 3);
+    const ef6 = r2(monthlyExpense * 6);
+    if (s.bankTotal < ef3 && s.cardDebt <= 0) {
+      step++;
+      const need = r2(Math.min(remaining, ef3 - s.bankTotal));
+      lines.push(`\n${step}. Build your emergency fund first. Your monthly spend is ~${inr(monthlyExpense)}. A 3-month buffer is ${inr(ef3)}. You need ${inr(r2(ef3 - s.bankTotal))} more. Put ${inr(need)} here.`);
+      remaining = r2(remaining - need);
+    }
+    // 2. Credit cards
+    if (s.cardDebt > 0 && remaining > 0) {
+      step++;
+      const topCard = [...data.cards].sort((a,b)=>(Number(b.outstanding)||0)-(Number(a.outstanding)||0))[0];
+      const pay = r2(Math.min(remaining, s.cardDebt));
+      lines.push(`\n${step}. Kill credit card debt. You owe ${inr(s.cardDebt)} on cards, charging ~36-42% a year. Put ${inr(pay)} toward ${topCard ? topCard.name : 'your top card'} today.`);
+      remaining = r2(remaining - pay);
+    }
+    // 3. High interest loan
+    if (s.activeLoans.length > 0 && remaining > 0) {
+      step++;
+      const topLoan = [...s.activeLoans].sort((a,b)=>(Number(b.rate)||0)-(Number(a.rate)||0))[0];
+      const pay = r2(Math.min(remaining, Number(topLoan.emi||0)*Number(topLoan.monthsLeft||0)));
+      lines.push(`\n${step}. Attack ${topLoan.name} (${topLoan.rate}% interest). Putting ${inr(pay)} here saves you real money. Even a partial prepayment cuts your interest significantly.`);
+      remaining = r2(remaining - pay);
+    }
+    // 4. Invest the rest
+    if (remaining > 0 && s.cardDebt <= 0 && s.activeLoans.length === 0) {
+      step++;
+      lines.push(`\n${step}. With no high-interest debt, invest ${inr(remaining)}. A sensible split: 60% index funds (Nifty 50), 25% debt funds, 15% liquid for emergencies.`);
+      remaining = 0;
+    } else if (remaining > 0) {
+      step++;
+      lines.push(`\n${step}. Whatever's left (${inr(remaining)}) can go into an index fund SIP. Don't chase hot tips.`);
+    }
+    lines.push(`\nIn short: pay your highest-interest debt first, keep a 3-6 month cushion, then invest.`);
+    return lines.join('\n');
+  }
+
+  // ----- Intent: foreclose loan
+  if (/foreclose|fore?close|close.*loan|pay.*off.*loan|settle.*loan/i.test(q)) {
+    if (s.activeLoans.length === 0) return `You have no active loans. Nothing to foreclose. 🎉`;
+    const f = s.activeLoans.filter(l => Number(l.foreclosureAmount) > 0);
+    if (!f.length) return `None of your loans have a foreclosure amount set. Add it on the loan's edit screen and I'll tell you whether to close it.`;
+    const best = [...f].sort((a, b) => (Number(b.rate) || 0) - (Number(a.rate) || 0))[0];
+    const remaining = r2((Number(best.emi)||0) * (Number(best.monthsLeft)||0));
+    const saved = r2(Math.max(0, remaining - Number(best.foreclosureAmount)));
+    const lines = [];
+    lines.push(`Looking at your loans, the best candidate to foreclose is ${best.name}.`);
+    lines.push(`\n• You still owe ${inr(remaining)} over ${best.monthsLeft||0} months at ${best.rate}% interest.`);
+    lines.push(`• Foreclosure amount today: ${inr(best.foreclosureAmount)}.`);
+    lines.push(`• Future payments saved: ${inr(saved)}.`);
+    if (s.bankTotal >= Number(best.foreclosureAmount)) {
+      lines.push(`\nYou have ${inr(s.bankTotal)} in the bank, which covers it. After paying, you'd have ${inr(r2(s.bankTotal - Number(best.foreclosureAmount)))} left.`);
+      if (r2(s.bankTotal - Number(best.foreclosureAmount)) < s.mOut * 3) {
+        lines.push(`\nCaution: that leaves you with less than 3 months of expenses (${inr(r2(s.mOut*3))}). I'd rather you build a buffer first, then foreclose.`);
+      } else {
+        lines.push(`\nVerdict: GO AHEAD. You save ${inr(saved)} and keep a healthy emergency fund.`);
+      }
+    } else {
+      lines.push(`\nYou have ${inr(s.bankTotal)} in the bank — that's ${inr(r2(Number(best.foreclosureAmount) - s.bankTotal))} short. Withdraw from demat (${inr(s.dematTotal)} available) or accumulate a bit more before closing.`);
+    }
+    return lines.join('\n');
+  }
+
+  // ----- Intent: emergency fund
+  if (/emergency|buffer|cushion|rainy/i.test(q)) {
+    const monthly = s.mOut > 0 ? s.mOut : 0;
+    if (monthly === 0) return `I don't see any spending this month yet. Log some transactions and I'll tell you how much you need for a safe emergency fund.`;
+    const need3 = r2(monthly * 3);
+    const need6 = r2(monthly * 6);
+    const have = s.bankTotal;
+    const pct = r2((have / need6) * 100);
+    const lines = [];
+    lines.push(`Your monthly spending this month: ${inr(monthly)}.`);
+    lines.push(`• 3-month cushion: ${inr(need3)}`);
+    lines.push(`• 6-month cushion: ${inr(need6)}`);
+    lines.push(`• You currently hold ${inr(have)} in cash.`);
+    lines.push(`\nThat's ${pct}% of a 6-month fund. ${pct >= 100 ? 'You are fully covered.' : pct >= 50 ? 'You are half-way there. Keep going.' : 'You are under-covered. Prioritise building this before investing.'}`);
+    if (s.dematTotal > 0) lines.push(`\nNote: you have ${inr(s.dematTotal)} in demat. Investments are not a substitute for emergency cash — keep at least the 3-month cushion liquid.`);
+    return lines.join('\n');
+  }
+
+  // ----- Intent: how long to be debt free
+  if (/debt.?free|when.*debt|how.*long.*debt|clear.*debt/i.test(q)) {
+    if (s.activeLoans.length === 0 && s.cardDebt === 0) return `You have zero loans and zero card debt. You're already debt-free. 🎉`;
+    const base = simulateLoans(s.activeLoans, 0);
+    const lines = [];
+    lines.push(`With your current EMIs and no extra payments, you'll be debt free in about ${base.months} months (${r2(base.months/12)} years).`);
+    if (s.cardDebt > 0) lines.push(`That assumes you also clear your ${inr(s.cardDebt)} credit card balance promptly.`);
+    const plan = simulateLoans(s.activeLoans, 5000);
+    lines.push(`\nIf you put an extra ${inr(5000)} every month, you'll be debt free in ${plan.months} months — saving ${base.months - plan.months} months and ${inr(Math.max(0, base.totalInterest - plan.totalInterest))} in interest.`);
+    lines.push(`\nTry the Extra Payment Planner above to test your own number.`);
+    return lines.join('\n');
+  }
+
+  // ----- Intent: savings rate
+  if (/saving|savings rate|how much.*sav/i.test(q)) {
+    if (s.mIn === 0) return `I don't see any income logged this month. Add your salary/income and I'll compute your savings rate.`;
+    const rate = r2(((s.mIn - s.mOut) / s.mIn) * 100);
+    const lines = [];
+    lines.push(`This month: income ${inr(s.mIn)}, expenses ${inr(s.mOut)}, so you saved ${inr(r2(s.mIn - s.mOut))}.`);
+    lines.push(`Savings rate: ${rate}%.`);
+    if (rate >= 30) lines.push(`\nExcellent. You're well above the 20% benchmark. Consider bumping your SIP by ${inr(r2(s.mIn * 0.05))} while you can.`);
+    else if (rate >= 20) lines.push(`\nSolid. You're hitting the 20% benchmark. Keep it up.`);
+    else if (rate >= 0) lines.push(`\nBelow the 20% mark. Aim to cut discretionary categories (food delivery, shopping) by ${inr(r2(s.mIn * 0.2 - (s.mIn - s.mOut)))} to hit 20%.`);
+    else lines.push(`\nYou spent more than you earned by ${inr(Math.abs(s.mIn - s.mOut))}. Review the biggest categories on the Banks page.`);
+    return lines.join('\n');
+  }
+
+  // ----- Intent: payoff order / highest interest
+  if (/first|priority|which.*loan|highest.*interest|payoff order/i.test(q)) {
+    const items = [];
+    s.activeLoans.forEach(l => items.push({ name: l.name, rate: Number(l.rate) || 0, rem: r2((Number(l.emi)||0)*(Number(l.monthsLeft)||0)) }));
+    data.cards.forEach(c => items.push({ name: c.name + ' (card)', rate: 40, rem: Number(c.outstanding) || 0 }));
+    if (!items.length) return `Nothing to prioritise — you have no active debt. 🎉`;
+    items.sort((a, b) => b.rate - a.rate);
+    const lines = [`Pay in this order (highest interest first):`];
+    items.forEach((it, i) => lines.push(`${i+1}. ${it.name} — ${it.rate}% interest, ${inr(it.rem)} remaining`));
+    lines.push(`\nWhy: an extra ₹100 toward a 40% card saves ₹40/year. The same ₹100 toward a 9% loan saves only ₹9/year. Mathematically, always chase the highest rate.`);
+    return lines.join('\n');
+  }
+
+  // ----- Intent: net worth / how am I doing
+  if (/net.?worth|how.*doing|summary|overview|status/i.test(q)) {
+    const lines = [];
+    lines.push(`Here's where you stand today:`);
+    lines.push(`• Net worth: ${inr(s.netWorth)}`);
+    lines.push(`• Assets: ${inr(s.assets)} (${inr(s.bankTotal)} bank + ${inr(s.dematTotal)} demat)`);
+    lines.push(`• Debts: ${inr(s.liabilities)} (${inr(s.cardDebt)} cards + ${inr(s.loanDebt)} loans)`);
+    lines.push(`• This month: in ${inr(s.mIn)}, out ${inr(s.mOut)}`);
+    if (s.netWorth > 0) lines.push(`\nYou are net positive. Focus next on growing the demat side and keeping the debt at zero.`);
+    else lines.push(`\nYou are net negative. Prioritise: 1) cards, 2) emergency fund, 3) high-interest loans, then invest.`);
+    return lines.join('\n');
+  }
+
+  // ----- Intent: specific loan info
+  const loanName = s.activeLoans.find(l => q.includes(String(l.name).toLowerCase()));
+  if (loanName) {
+    const rem = r2((Number(loanName.emi)||0) * (Number(loanName.monthsLeft)||0));
+    const lines = [];
+    lines.push(`${loanName.name}:`);
+    lines.push(`• Remaining: ${inr(rem)} over ${loanName.monthsLeft} months`);
+    lines.push(`• EMI: ${inr(loanName.emi)} at ${loanName.rate}% interest`);
+    if (loanName.foreclosureAmount) lines.push(`• Foreclosure amount today: ${inr(loanName.foreclosureAmount)}`);
+    return lines.join('\n');
+  }
+
+  // ----- Default
+  return `I couldn't tell what you're asking. Try one of these:\n• "Where should I put 20k?"\n• "Should I foreclose my loan?"\n• "How long until I'm debt free?"\n• "Am I saving enough this month?"\n• "How is my emergency fund?"\n• "Which loan should I pay first?"\n• "Give me a summary of my finances"`;
+}
 
 function LightRaysBackground({ theme }) {
   const containerRef = useRef(null);
@@ -734,11 +974,17 @@ function SyncBadge({ sync }) {
   return <span className={'sync-badge ' + cls} title={title}><span className="sync-ico">{icon}</span><span className="sync-dot"></span><span>{label}</span></span>;
 }
 
-function Modal({ open, onClose, title, children }) {
+function Modal({ open, onClose, title, children, onSubmit }) {
   if (!open) return null;
   return (
     <div className="modal-bg">
-      <div className="modal glass" onClick={(e) => e.stopPropagation()}>
+      <div className="modal glass" onClick={(e) => e.stopPropagation()}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' && onSubmit && e.target.tagName !== 'TEXTAREA' && e.target.tagName !== 'BUTTON') {
+            e.preventDefault();
+            onSubmit();
+          }
+        }}>
         <div className="modal-head"><h3>{title}</h3><button className="icon-btn" onClick={onClose}>{Ico.close}</button></div>
         <div>{children}</div>
       </div>
@@ -1003,7 +1249,7 @@ function Login({ onOk, theme, toggleTheme }) {
   const [err, setErr] = useState('');
   const [shake, setShake] = useState(false);
   const submit = (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     if (u.trim() === CRED.u && p === CRED.p) { sessionStorage.setItem('fv_auth', '1'); onOk(); }
     else { setErr('Wrong username or password'); setShake(true); setTimeout(() => setShake(false), 450); }
   };
@@ -1083,9 +1329,7 @@ function App() {
           if (ob) ob.balance = r2(ob.balance - (old.dir === 'in' ? old.amount : -old.amount)); 
         }
         if (old) {
-          // Reverse the previous link effect before re-applying
           reverseTxLink(d, old);
-          // Preserve link if new payload doesn't have one
           const newLink = payload.link !== undefined ? payload.link : old.link;
           Object.assign(old, payload);
           if (newLink) old.link = newLink;
@@ -1227,14 +1471,25 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
 
   const feed = useMemo(() => [].concat(loanItems, cardItems, billItems, inflowItems).sort((a, b) => a.due - b.due), [loanItems, cardItems, billItems, inflowItems]);
 
+  // Grouping: only merge same base name (e.g. "Cred Cash 1", "Cred Cash 2"), never mix directions
   const groupedFeed = useMemo(() => {
     const map = {};
+    const order = [];
     feed.forEach(item => {
-      const key = toISO(item.due);
-      if (!map[key]) map[key] = { key, due: item.due, days: item.days, items: [] };
-      map[key].items.push(item);
+      const base = stripTrailingNumber(item.name);
+      const kindGroup = item.kind === 'inflow' ? 'in' : 'out';
+      const key = base ? (kindGroup + '|' + base.toLowerCase()) : null;
+      if (key && map[key]) {
+        map[key].items.push(item);
+        if (item.due < map[key].due) map[key].due = item.due;
+        if (item.days < map[key].days) map[key].days = item.days;
+      } else {
+        const newKey = key || ('single|' + item.kind + '|' + item.id);
+        map[newKey] = { key: newKey, due: item.due, days: item.days, items: [item], baseName: base || item.name };
+        order.push(newKey);
+      }
     });
-    return Object.values(map).sort((a, b) => a.due - b.due);
+    return order.map(k => map[k]).sort((a, b) => a.due - b.due);
   }, [feed]);
 
   const nwPoints = useMemo(() => {
@@ -1468,39 +1723,50 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
     const kinds = Array.from(new Set(group.items.map(i => i.kind)));
     const firstIco = allInflows ? Ico.down : (kinds.includes('loan') ? Ico.loan : kinds.includes('card') ? Ico.card : Ico.bill);
     const colorClass = allInflows ? 'green' : group.days <= 3 ? 'red' : group.days <= 7 ? 'amber' : 'blue';
+    const baseName = group.baseName || group.items[0].name;
     return (
-      <div key={group.key} className={'item group-item' + (isExpanded ? ' expanded' : '')} onClick={() => setExpandedGroups(e => ({ ...e, [group.key]: !e[group.key] }))}>
-        <div className="item-ico" style={{ color: allInflows ? 'var(--green)' : 'inherit' }}>{firstIco}</div>
-        <div className="item-body">
-          <div className="item-name" style={{ display: 'flex', alignItems: 'center', gap: '7px' }}><span className="expand-chev" style={{ color: 'var(--muted)' }}>{Ico.chev}</span><span>{group.items.length} items due {fmtDate(group.due)}</span></div>
-          <div className="item-meta">
-            <span className={'pill ' + colorClass}><span className="pdot"></span>{allInflows ? 'receiving ' + relDays(group.days) : 'due ' + relDays(group.days)}</span>
-            <span className="pill">Click to {isExpanded ? 'collapse' : 'expand'}</span>
+      <div key={group.key} className={'item group-item' + (isExpanded ? ' expanded' : '')}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, width: '100%', flexWrap: 'wrap' }} onClick={() => setExpandedGroups(e => ({ ...e, [group.key]: !e[group.key] }))}>
+          <div className="item-ico" style={{ color: allInflows ? 'var(--green)' : 'inherit', cursor: 'pointer' }}>{firstIco}</div>
+          <div className="item-body" style={{ minWidth: 0, flex: '1 1 260px' }}>
+            <div className="item-name" style={{ display: 'flex', alignItems: 'center', gap: '7px' }}>
+              <span className="expand-chev" style={{ color: 'var(--muted)' }}>{Ico.chev}</span>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{baseName} · {group.items.length} items</span>
+            </div>
+            <div className="item-meta" style={{ flexWrap: 'wrap' }}>
+              <span className={'pill ' + colorClass}><span className="pdot"></span>{allInflows ? 'next receiving ' + relDays(group.days) : 'next due ' + relDays(group.days)}</span>
+              <span style={{ whiteSpace: 'nowrap' }}>{fmtDate(group.due)}</span>
+              <span className="pill">Click to {isExpanded ? 'collapse' : 'expand'}</span>
+            </div>
           </div>
-        </div>
-        <div style={{ textAlign: 'right' }} onClick={e => e.stopPropagation()}>
-          <div className="item-amt" style={{ color: allInflows ? 'var(--green)' : 'inherit' }}>{allInflows ? '+' : ''}{inr(total)}</div>
-          <div className="item-actions" style={{ marginTop: '7px', justifyContent: 'flex-end' }}>
-            {!allInflows && (<React.Fragment><button className="btn btn-sm" onClick={(e) => { e.stopPropagation(); markGroupDone(group); }}>Mark all done</button><button className="btn btn-sm btn-warn" onClick={(e) => { e.stopPropagation(); skipGroup(group); }}>Skip all</button></React.Fragment>)}
+          <div style={{ textAlign: 'right', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+            <div className="item-amt" style={{ color: allInflows ? 'var(--green)' : 'inherit', whiteSpace: 'nowrap' }}>{allInflows ? '+' : ''}{inr(total)}</div>
+            <div className="item-actions" style={{ marginTop: '7px', justifyContent: 'flex-end', flexWrap: 'nowrap' }}>
+              {!allInflows && (<React.Fragment>
+                <button className="btn btn-sm" style={{ whiteSpace: 'nowrap' }} onClick={() => markGroupDone(group)}>Mark all done</button>
+                <button className="btn btn-sm btn-warn" style={{ whiteSpace: 'nowrap' }} onClick={() => skipGroup(group)}>Skip all</button>
+              </React.Fragment>)}
+            </div>
           </div>
         </div>
         {isExpanded && (
-          <div className="group-children" style={{ flexBasis: '100%' }} onClick={e => e.stopPropagation()}>
+          <div className="group-children" onClick={e => e.stopPropagation()}>
             {group.items.map(item => {
               const isIn = item.kind === 'inflow';
               const I = CategoryIcon({ kind: item.kind });
               const isOneTime = isIn && item.recurring === false;
               return (
-                <div className="group-child" key={item.kind + item.id}>
-                  <div className="item-ico" style={{ width: 30, height: 30, color: isIn ? 'var(--green)' : 'inherit' }}>{I}</div>
-                  <div style={{ flex: 1, minWidth: 0 }}>
-                    <div className="item-name">{item.name}</div>
-                    <div className="item-meta" style={{ marginTop: 3 }}>
+                <div className="group-child" key={item.kind + item.id} style={{ flexWrap: 'wrap' }}>
+                  <div className="item-ico" style={{ width: 30, height: 30, color: isIn ? 'var(--green)' : 'inherit', flexShrink: 0 }}>{I}</div>
+                  <div style={{ flex: '1 1 160px', minWidth: 0 }}>
+                    <div className="item-name" style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.name}</div>
+                    <div className="item-meta" style={{ marginTop: 3, flexWrap: 'wrap' }}>
                       <span className="pill" style={{ fontSize: '10px' }}>{item.kind === 'loan' ? 'Loan EMI' : item.kind === 'card' ? 'Credit Card' : item.kind === 'bill' ? 'Bill' : (isOneTime ? 'One-time' : 'Inflow')}</span>
+                      <span style={{ whiteSpace: 'nowrap', fontSize: 11, color: 'var(--muted)' }}>due {fmtDate(item.due)}</span>
                     </div>
                   </div>
-                  <div className="item-amt" style={{ fontSize: '13px', color: isIn ? 'var(--green)' : 'inherit' }}>{isIn ? '+' : ''}{inr(item.amount)}</div>
-                  <div className="item-actions">
+                  <div className="item-amt" style={{ fontSize: '13px', color: isIn ? 'var(--green)' : 'inherit', flexShrink: 0 }}>{isIn ? '+' : ''}{inr(item.amount)}</div>
+                  <div className="item-actions" style={{ flexShrink: 0, flexWrap: 'nowrap' }}>
                     {isIn ? (<button className="btn btn-sm btn-primary" onClick={() => setInflowTarget(item)}>Received?</button>) : (
                       <React.Fragment>
                         <button className="btn btn-sm btn-primary" onClick={() => openPay(item)}>Pay</button>
@@ -1615,7 +1881,7 @@ function Home({ data, mut, showToast, go, sync, openTx }) {
 
       <InflowModal target={inflowTarget} data={data} onClose={() => setInflowTarget(null)} onConfirm={confirmInflow} />
 
-      <Modal open={!!withdrawHint} onClose={() => setWithdrawHint(null)} title={withdrawHint ? 'Withdraw for ' + withdrawHint.name : ''}>
+      <Modal open={!!withdrawHint} onClose={() => setWithdrawHint(null)} title={withdrawHint ? 'Withdraw for ' + withdrawHint.name : ''} onSubmit={executeWithdraw}>
         {withdrawHint && (
           <div>
             <div className="glass-soft" style={{ padding: '13px 15px', marginBottom: '16px' }}>
@@ -1641,8 +1907,9 @@ function InflowModal({ target, data, onClose, onConfirm }) {
   const [adjust, setAdjust] = useState(false);
   useEffect(() => { if (target) { setAmt(String(target.amount)); setAdjust(false); setBank(defaultBankId(data.banks)); } }, [target]);
   if (!target) return null;
+  const submit = () => onConfirm(amt, bank, adjust);
   return (
-    <Modal open={!!target} onClose={onClose} title={'Did you receive ' + target.name + '?'}>
+    <Modal open={!!target} onClose={onClose} title={'Did you receive ' + target.name + '?'} onSubmit={submit}>
       <div className="glass-soft" style={{ padding: '13px 15px', marginBottom: '16px' }}>
         <div className="kpi-label">Expected Amount</div>
         <div style={{ fontSize: '20px', fontWeight: 700, marginTop: '5px', letterSpacing: '-.4px' }} className="mono">{inr(target.amount)}</div>
@@ -1657,7 +1924,7 @@ function InflowModal({ target, data, onClose, onConfirm }) {
         <label className="label">Add to which bank?</label>
         <select className="select" value={bank} onChange={(e) => setBank(e.target.value)}>{data.banks.map(b => <option key={b.id} value={b.id}>{b.name} — {inr(b.balance)}</option>)}</select>
       </div>
-      <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={() => onConfirm(amt, bank, adjust)}>Yes, I received it</button>
+      <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={submit}>Yes, I received it</button>
     </Modal>
   );
 }
@@ -1816,7 +2083,10 @@ function Banks({ data, mut, showToast, sync, openTx }) {
 
   const doTransfer = (from, to, amount) => {
     const amt = r2(amount);
-    if (!from || !to || from === to || !amt || amt <= 0) { showToast('Check the transfer details'); return; }
+    if (!from || !to || from === to || !amt || amt <= 0) { 
+      showToast('Check the transfer details: ' + (!from ? 'no from ' : '') + (!to ? 'no to ' : '') + (from === to ? 'same bank ' : '') + (!amt || amt <= 0 ? 'bad amount' : '')); 
+      return false; 
+    }
     mut(d => {
       const fb = d.banks.find(b => b.id === from); const tb = d.banks.find(b => b.id === to);
       if (!fb || !tb) return;
@@ -1825,6 +2095,7 @@ function Banks({ data, mut, showToast, sync, openTx }) {
       d.transactions.push({ id: uid(), bankId: to, amount: amt, dir: 'in', note: 'Transfer from ' + fb.name, category: 'Transfer', date: toISO(new Date()), affectsBalance: true, ts: Date.now() + 1 });
     });
     setTransferOpen(false); showToast('Transfer done');
+    return true;
   };
 
   return (
@@ -1977,7 +2248,7 @@ function TxModal({ open, onClose, banks, tx, prefill, onSave }) {
   const [date, setDate] = useState(toISO(new Date()));
   const [affects, setAffects] = useState(true);
 
-  const IN_CATEGORIES = ['Salary', 'Interest', 'Cashback' ,'Upstox Withdrawal', 'UPI', 'Cash', 'Transfer', 'Investment', 'Other'];
+  const IN_CATEGORIES = ['Salary', 'Interest', 'Upstox Withdrawal', 'UPI', 'Cash', 'Transfer', 'Investment', 'Other'];
   const OUT_CATEGORIES = ['Food', 'Transportation', 'Rent', 'Shopping', 'Bills', 'Credit Card', 'Loan EMI', 'Travel', 'Medical', 'Investment', 'Transfer', 'Cash', 'Other'];
 
   useEffect(() => {
@@ -2016,7 +2287,6 @@ function TxModal({ open, onClose, banks, tx, prefill, onSave }) {
     const amt = r2(amount); 
     if (!amt || amt <= 0) return; 
     const payload = { bankId, dir, amount: amt, note, category, date, affectsBalance: affects };
-    // Preserve link if we're editing a linked transaction
     if (tx && tx.link) payload.link = tx.link;
     if (prefill && prefill.link) payload.link = prefill.link;
     onSave(payload, tx ? tx.id : null); 
@@ -2028,33 +2298,17 @@ function TxModal({ open, onClose, banks, tx, prefill, onSave }) {
   }
 
   return (
-    <Modal open={open} onClose={onClose} title={tx ? 'Edit Transaction' : 'Add Transaction'}>
+    <Modal open={open} onClose={onClose} title={tx ? 'Edit Transaction' : 'Add Transaction'} onSubmit={submit}>
       <div className="field"><label className="label">Money going</label>
         <div style={{ display: 'flex', gap: '8px' }}>
-          <button 
-            className={'btn btn-sm'} 
-            style={{
-              flex: 1, justifyContent: 'center',
-              background: dir === 'in' ? 'var(--green)' : 'var(--glass-2)',
-              borderColor: dir === 'in' ? 'var(--green)' : 'var(--brd-2)',
-              color: dir === 'in' ? '#fff' : 'var(--muted)',
-              boxShadow: dir === 'in' ? '0 6px 16px -6px var(--green-soft)' : 'none'
-            }}
-            onClick={() => { setDir('in'); setCategory('Salary'); }}
-          >
+          <button type="button" className={'btn btn-sm'} 
+            style={{ flex: 1, justifyContent: 'center', background: dir === 'in' ? 'var(--green)' : 'var(--glass-2)', borderColor: dir === 'in' ? 'var(--green)' : 'var(--brd-2)', color: dir === 'in' ? '#fff' : 'var(--muted)', boxShadow: dir === 'in' ? '0 6px 16px -6px var(--green-soft)' : 'none' }}
+            onClick={() => { setDir('in'); setCategory('Salary'); }}>
             In ↓
           </button>
-          <button 
-            className={'btn btn-sm'} 
-            style={{
-              flex: 1, justifyContent: 'center',
-              background: dir === 'out' ? 'var(--red)' : 'var(--glass-2)',
-              borderColor: dir === 'out' ? 'var(--red)' : 'var(--brd-2)',
-              color: dir === 'out' ? '#fff' : 'var(--muted)',
-              boxShadow: dir === 'out' ? '0 6px 16px -6px var(--red-soft)' : 'none'
-            }}
-            onClick={() => { setDir('out'); setCategory('Food'); }}
-          >
+          <button type="button" className={'btn btn-sm'} 
+            style={{ flex: 1, justifyContent: 'center', background: dir === 'out' ? 'var(--red)' : 'var(--glass-2)', borderColor: dir === 'out' ? 'var(--red)' : 'var(--brd-2)', color: dir === 'out' ? '#fff' : 'var(--muted)', boxShadow: dir === 'out' ? '0 6px 16px -6px var(--red-soft)' : 'none' }}
+            onClick={() => { setDir('out'); setCategory('Food'); }}>
             Out ↑
           </button>
         </div>
@@ -2081,11 +2335,12 @@ function BankModal({ open, onClose, bank, onSave }) {
   const [balance, setBalance] = useState('');
   useEffect(() => { if (open) { setName(bank ? bank.name : ''); setBalance(bank ? String(bank.balance) : ''); } }, [open, bank]);
   if (!open) return null;
+  const submit = () => { if (name.trim()) onSave(name.trim(), balance, bank ? bank.id : null); };
   return (
-    <Modal open={open} onClose={onClose} title={bank ? 'Edit Bank' : 'Add Bank'}>
+    <Modal open={open} onClose={onClose} title={bank ? 'Edit Bank' : 'Add Bank'} onSubmit={submit}>
       <div className="field"><label className="label">Bank Name</label><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. HDFC Bank" /></div>
       <div className="field"><label className="label">Balance</label><MoneyInput value={balance} onChange={setBalance} /></div>
-      <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={() => { if (name.trim()) onSave(name.trim(), balance, bank ? bank.id : null); }}>{bank ? 'Save' : 'Add Bank'}</button>
+      <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={submit}>{bank ? 'Save' : 'Add Bank'}</button>
     </Modal>
   );
 }
@@ -2094,11 +2349,23 @@ function TransferModal({ open, onClose, banks, onTransfer }) {
   const [from, setFrom] = useState('');
   const [to, setTo] = useState('');
   const [amount, setAmount] = useState('');
-  useEffect(() => { if (open) { setFrom(defaultBankId(banks)); setTo(banks[1] ? banks[1].id : ''); setAmount(''); } }, [open]);
+  useEffect(() => {
+    if (open) {
+      const f = defaultBankId(banks);
+      const firstOther = banks.find(b => b.id !== f);
+      setFrom(f);
+      setTo(firstOther ? firstOther.id : '');
+      setAmount('');
+    }
+  }, [open, banks]);
   if (!open) return null;
   const receivers = banks.filter(b => b.id !== from);
+  const submit = () => {
+    const ok = onTransfer(from, to, amount);
+    if (ok) onClose();
+  };
   return (
-    <Modal open={open} onClose={onClose} title="Transfer Between Banks">
+    <Modal open={open} onClose={onClose} title="Transfer Between Banks" onSubmit={submit}>
       <div className="field"><label className="label">From</label>
         <select className="select" value={from} onChange={(e) => { const v = e.target.value; setFrom(v); if (v === to) { const alt = banks.find(b => b.id !== v); setTo(alt ? alt.id : ''); } }}>{banks.map(b => <option key={b.id} value={b.id}>{b.name} — {inr(b.balance)}</option>)}</select>
       </div>
@@ -2106,7 +2373,7 @@ function TransferModal({ open, onClose, banks, onTransfer }) {
         <select className="select" value={to} onChange={(e) => setTo(e.target.value)}>{receivers.length === 0 ? <option value="">Add another bank first</option> : receivers.map(b => <option key={b.id} value={b.id}>{b.name}</option>)}</select>
       </div>
       <div className="field"><label className="label">Amount</label><MoneyInput value={amount} onChange={setAmount} /></div>
-      <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={() => onTransfer(from, to, amount)}>Transfer Now</button>
+      <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={submit}>Transfer Now</button>
     </Modal>
   );
 }
@@ -2208,7 +2475,7 @@ function Cards({ data, mut, showToast, sync, openTx }) {
 
       <CardModal open={formOpen} onClose={() => { setFormOpen(false); setEdit(null); }} card={edit} onSave={save} />
 
-      <Modal open={!!adjustTarget} onClose={() => setAdjustTarget(null)} title="Adjust Outstanding">
+      <Modal open={!!adjustTarget} onClose={() => setAdjustTarget(null)} title="Adjust Outstanding" onSubmit={saveAdjust}>
         <div className="field"><label className="label">Correct outstanding amount</label><MoneyInput value={adjustVal} onChange={setAdjustVal} /></div>
         <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={saveAdjust}>Save</button>
       </Modal>
@@ -2241,8 +2508,9 @@ function CardModal({ open, onClose, card, onSave }) {
     }
   }, [open, card]);
   if (!open) return null;
+  const submit = () => onSave({ name: name.trim() || 'Credit Card', number: number.replace(/\D/g, ''), cvv, expiry, limit: r2(limit), outstanding: r2(outstanding), dueDay: Math.min(31, Math.max(1, Number(dueDay) || 10)) }, card ? card.id : null);
   return (
-    <Modal open={open} onClose={onClose} title={card ? 'Edit Card' : 'Add Credit Card'}>
+    <Modal open={open} onClose={onClose} title={card ? 'Edit Card' : 'Add Credit Card'} onSubmit={submit}>
       <div className="field"><label className="label">Card Name</label><input className="input" value={name} onChange={(e) => { setName(e.target.value); setNumber(formatCardNumber(number, e.target.value)); }} placeholder="e.g. Amazon ICICI, HDFC Millenia" /></div>
       <div className="field"><label className="label">Card Number</label><input className="input" inputMode="numeric" value={number} onChange={(e) => setNumber(formatCardNumber(e.target.value, name))} placeholder="1234 5678 9012 3456" /></div>
       <div className="row2">
@@ -2254,10 +2522,7 @@ function CardModal({ open, onClose, card, onSave }) {
         <div className="field"><label className="label">Outstanding</label><MoneyInput value={outstanding} onChange={setOutstanding} /></div>
       </div>
       <div className="field"><label className="label">Bill Due Day (1-31)</label><DayInput value={dueDay} onChange={setDueDay} /></div>
-      <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }}
-        onClick={() => onSave({ name: name.trim() || 'Credit Card', number: number.replace(/\D/g, ''), cvv, expiry, limit: r2(limit), outstanding: r2(outstanding), dueDay: Math.min(31, Math.max(1, Number(dueDay) || 10)) }, card ? card.id : null)}>
-        {card ? 'Save Changes' : 'Add Card'}
-      </button>
+      <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={submit}>{card ? 'Save Changes' : 'Add Card'}</button>
     </Modal>
   );
 }
@@ -2493,7 +2758,7 @@ function LoanModal({ open, onClose, loan, onSave }) {
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={loan ? 'Edit Loan' : 'Add Loan'}>
+    <Modal open={open} onClose={onClose} title={loan ? 'Edit Loan' : 'Add Loan'} onSubmit={submit}>
       <div className="field"><label className="label">Loan Name</label><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Home Loan, Car Loan" /></div>
       <div className="row2">
         <div className="field"><label className="label">EMI Amount</label><MoneyInput value={emi} onChange={setEmi} /></div>
@@ -2668,14 +2933,15 @@ function BillModal({ open, onClose, bill, onSave }) {
   const [dueDay, setDueDay] = useState('');
   useEffect(() => { if (open) { setName(bill ? bill.name : ''); setAmount(bill ? String(bill.amount || '') : ''); setDueDay(bill ? String(bill.dueDay || '') : ''); } }, [open, bill]);
   if (!open) return null;
+  const submit = () => onSave({ name: name.trim() || 'Bill', amount: r2(amount), dueDay: Math.min(31, Math.max(1, Number(dueDay) || 1)) }, bill ? bill.id : null);
   return (
-    <Modal open={open} onClose={onClose} title={bill ? 'Edit Bill' : 'Add Bill'}>
+    <Modal open={open} onClose={onClose} title={bill ? 'Edit Bill' : 'Add Bill'} onSubmit={submit}>
       <div className="field"><label className="label">Bill Name</label><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Netflix, Rent, Wifi" /></div>
       <div className="row2">
         <div className="field"><label className="label">Amount</label><MoneyInput value={amount} onChange={setAmount} /></div>
         <div className="field"><label className="label">Due Day (1-31)</label><DayInput value={dueDay} onChange={setDueDay} /></div>
       </div>
-      <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={() => onSave({ name: name.trim() || 'Bill', amount: r2(amount), dueDay: Math.min(31, Math.max(1, Number(dueDay) || 1)) }, bill ? bill.id : null)}>{bill ? 'Save Changes' : 'Add Bill'}</button>
+      <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={submit}>{bill ? 'Save Changes' : 'Add Bill'}</button>
     </Modal>
   );
 }
@@ -2711,7 +2977,7 @@ function InflowFormModal({ open, onClose, inflow, onSave }) {
   };
 
   return (
-    <Modal open={open} onClose={onClose} title={inflow ? 'Edit Incoming Payment' : 'Add Incoming Payment'}>
+    <Modal open={open} onClose={onClose} title={inflow ? 'Edit Incoming Payment' : 'Add Incoming Payment'} onSubmit={submit}>
       <div className="field"><label className="label">Name</label><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Salary, Rent from tenant" /></div>
       <div className="field"><label className="label">Expected Amount</label><MoneyInput value={amount} onChange={setAmount} /></div>
 
@@ -2815,7 +3081,7 @@ function DematCalendar({ account, onSetValue, onClearValue }) {
         <div className="cal-stat"><div className="cal-stat-label">Month end</div><div className="cal-stat-val" style={{ color: monthEnd !== null ? 'var(--txt)' : 'var(--muted)' }}>{monthEnd !== null ? inr(monthEnd) : '—'}</div></div>
         <div className="cal-stat"><div className="cal-stat-label">Month P&L</div><div className="cal-stat-val" style={{ color: monthPnl === null ? 'var(--muted)' : (monthPnl >= 0 ? 'var(--green)' : 'var(--red)') }}>{monthPnl !== null ? (monthPnl >= 0 ? '+' : '') + money(monthPnl) : '—'}</div></div>
       </div>
-      <Modal open={!!editDate} onClose={() => setEditDate(null)} title={editDate ? 'Demat value on ' + fmtDate(editDate) : ''}>
+      <Modal open={!!editDate} onClose={() => setEditDate(null)} title={editDate ? 'Demat value on ' + fmtDate(editDate) : ''} onSubmit={saveEdit}>
         <div className="field"><label className="label">Capital / Value (₹)</label><MoneyInput value={editVal} onChange={setEditVal} autoFocus /></div>
         <div style={{ fontSize: '11.5px', color: 'var(--muted)', marginBottom: '14px', lineHeight: 1.5 }}>Enter the total demat value on this date. P&L for the day will be calculated from the previous entry.</div>
         <div style={{ display: 'flex', gap: '10px' }}>
@@ -2852,7 +3118,6 @@ function Demat({ data, mut, showToast, sync, openTx }) {
       accounts.forEach(a => {
         const hs = (a.history || []).filter(h => h.date <= dt).sort((x, y) => x.date.localeCompare(y.date));
         let base = hs.length ? Number(hs[hs.length - 1].value) || 0 : Number(a.balance) || 0;
-        // Add back cumulative withdrawals up to this date to reflect "true" portfolio value
         const cumWith = (a.withdrawals || []).filter(w => w.date <= dt).reduce((s, w) => s + (Number(w.amount) || 0), 0);
         sum += base + cumWith;
       });
@@ -2919,28 +3184,31 @@ function Demat({ data, mut, showToast, sync, openTx }) {
     });
   };
 
-  // Edit a withdrawal from the log — opens the linked bank transaction
   const editWithdrawal = (w) => {
     const tx = data.transactions.find(t => t.id === w.txId);
     if (tx) {
       openTx({
-        ...tx,
-        _existingTxId: tx.id
+        bankId: tx.bankId,
+        dir: tx.dir,
+        amount: String(tx.amount),
+        note: tx.note,
+        category: tx.category,
+        date: tx.date,
+        affectsBalance: tx.affectsBalance !== false,
+        link: tx.link
       });
     }
   };
 
-  // Delete a withdrawal from the log — also removes the linked bank transaction
-  const deleteWithdrawal = (w, dematId) => {
+  const deleteWithdrawal = (w) => {
     mut(d => {
-      const a = d.demats.find(x => x.id === dematId);
+      const a = d.demats.find(x => x.id === w.dematId);
       if (!a) return;
       const entry = (a.withdrawals || []).find(x => x.txId === w.txId);
       if (entry) {
         a.balance = r2(a.balance + (Number(entry.amount) || 0));
         a.withdrawals = (a.withdrawals || []).filter(x => x.txId !== w.txId);
       }
-      // Remove matching bank transaction
       const tx = d.transactions.find(t => t.id === w.txId);
       if (tx) {
         if (tx.affectsBalance && tx.bankId) {
@@ -2953,7 +3221,6 @@ function Demat({ data, mut, showToast, sync, openTx }) {
     showToast('Withdrawal deleted');
   };
 
-  // Flatten all withdrawals across all demats for the log
   const allWithdrawals = useMemo(() => {
     const list = [];
     data.demats.forEach(a => {
@@ -3033,7 +3300,7 @@ function Demat({ data, mut, showToast, sync, openTx }) {
                 <div className="item-amt" style={{ color: 'var(--green)' }}>+{inr(w.amount)}</div>
                 <div className="item-actions">
                   {w.txId ? (<button className="btn btn-sm" onClick={() => editWithdrawal(w)}>Edit</button>) : null}
-                  <button className="btn btn-sm btn-danger" onClick={() => deleteWithdrawal(w, w.dematId)}>Delete</button>
+                  <button className="btn btn-sm btn-danger" onClick={() => deleteWithdrawal(w)}>Delete</button>
                 </div>
               </div>
             ))}
@@ -3041,7 +3308,7 @@ function Demat({ data, mut, showToast, sync, openTx }) {
         )}
       </div>
 
-      <Modal open={!!updateTarget} onClose={() => setUpdateTarget(null)} title="Update Today's Balance">
+      <Modal open={!!updateTarget} onClose={() => setUpdateTarget(null)} title="Update Today's Balance" onSubmit={saveUpdate}>
         <div className="field"><label className="label">Current value of {updateTarget ? updateTarget.name : ''}</label><MoneyInput value={updateVal} onChange={setUpdateVal} /></div>
         <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={saveUpdate}>Save Today's Value</button>
       </Modal>
@@ -3061,39 +3328,22 @@ function DematModal({ open, onClose, account, onSave }) {
   const [balance, setBalance] = useState('');
   useEffect(() => { if (open) { setName(account ? account.name : ''); setBalance(account ? String(account.balance || '') : ''); } }, [open, account]);
   if (!open) return null;
+  const submit = () => onSave(name.trim() || 'Demat', balance, account ? account.id : null);
   return (
-    <Modal open={open} onClose={onClose} title={account ? 'Edit Demat Account' : 'Add Demat Account'}>
+    <Modal open={open} onClose={onClose} title={account ? 'Edit Demat Account' : 'Add Demat Account'} onSubmit={submit}>
       <div className="field"><label className="label">Account Name</label><input className="input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Zerodha, Groww" /></div>
       <div className="field"><label className="label">Current Value</label><MoneyInput value={balance} onChange={setBalance} /></div>
-      <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={() => onSave(name.trim() || 'Demat', balance, account ? account.id : null)}>{account ? 'Save' : 'Add Account'}</button>
+      <button className="btn btn-primary" style={{ width: '100%', justifyContent: 'center', padding: '11px' }} onClick={submit}>{account ? 'Save' : 'Add Account'}</button>
     </Modal>
   );
 }
 
-function simulate(loans, extra) {
-  const ls = loans.map(l => ({ name: l.name, rem: r2((Number(l.emi) || 0) * (Number(l.monthsLeft) || 0)), rate: r2(l.rate), emi: r2(l.emi) }));
-  let months = 0; let totalInterest = 0;
-  while (ls.some(l => l.rem > 0.5) && months < 720) {
-    months++;
-    ls.sort((a, b) => b.rate - a.rate);
-    let pool = extra;
-    for (let i = 0; i < ls.length; i++) {
-      const l = ls[i];
-      if (l.rem <= 0) continue;
-      const interest = l.rem * (l.rate / 100) / 12;
-      let pay = l.emi;
-      if (pool > 0) { const room = Math.max(0, l.rem + interest - pay); const add = Math.min(pool, room); pay += add; pool -= add; }
-      if (pay > l.rem + interest) pay = l.rem + interest;
-      totalInterest += interest;
-      l.rem = r2(l.rem + interest - pay);
-      if (l.rem < 0) l.rem = 0;
-    }
-  }
-  return { months, totalInterest: r2(totalInterest) };
-}
-
 function AiBrain({ data, sync, openTx }) {
   const [extra, setExtra] = useState('5000');
+  const [chatMessages, setChatMessages] = useState([]);
+  const [chatInput, setChatInput] = useState('');
+  const chatEndRef = useRef(null);
+
   const bankTotal = data.banks.reduce((s, b) => s + (Number(b.balance) || 0), 0);
   const dematTotal = data.demats.reduce((s, d) => s + (Number(d.balance) || 0), 0);
   const cardDebt = data.cards.reduce((s, c) => s + (Number(c.outstanding) || 0), 0);
@@ -3112,8 +3362,8 @@ function AiBrain({ data, sync, openTx }) {
   const smallest = activeLoans.slice().sort((a, b) => (Number(a.emi || 0) * Number(a.monthsLeft || 0)) - (Number(b.emi || 0) * Number(b.monthsLeft || 0)));
   const sortedCards = data.cards.slice().sort((a, b) => (Number(b.outstanding) || 0) - (Number(a.outstanding) || 0));
 
-  const base = useMemo(() => simulate(activeLoans, 0), [activeLoans]);
-  const withExtra = useMemo(() => simulate(activeLoans, r2(extra) || 0), [activeLoans, extra]);
+  const base = useMemo(() => simulateLoans(activeLoans, 0), [activeLoans]);
+  const withExtra = useMemo(() => simulateLoans(activeLoans, r2(extra) || 0), [activeLoans, extra]);
   const monthsSaved = Math.max(0, base.months - withExtra.months);
   const interestSaved = r2(Math.max(0, base.totalInterest - withExtra.totalInterest));
 
@@ -3144,6 +3394,26 @@ function AiBrain({ data, sync, openTx }) {
   const foreclosable = activeLoans.filter(l => Number(l.foreclosureAmount) > 0);
   const bestForeclose = foreclosable.slice().sort((a, b) => (Number(b.rate) || 0) - (Number(a.rate) || 0))[0];
 
+  useEffect(() => { if (chatEndRef.current) chatEndRef.current.scrollIntoView({ behavior: 'smooth' }); }, [chatMessages]);
+
+  const sendChat = (text) => {
+    const q = String(text || chatInput).trim();
+    if (!q) return;
+    const answer = aiAnswer(q, data);
+    setChatMessages(m => m.concat([{ role: 'user', text: q }, { role: 'bot', text: answer }]));
+    setChatInput('');
+  };
+
+  const suggestions = [
+    'Where should I put 20k?',
+    'Should I foreclose my loan?',
+    'How long until I am debt free?',
+    'Am I saving enough this month?',
+    'How is my emergency fund?',
+    'Which loan should I pay first?',
+    'Give me a summary of my finances'
+  ];
+
   return (
     <div>
       <PageHead title="AI Brain" sub="Smart money analysis based on your real data" sync={sync} openTx={openTx} />
@@ -3151,6 +3421,41 @@ function AiBrain({ data, sync, openTx }) {
         <div className="kpi glass"><div className="kpi-head"><span className="kpi-dot green"></span><span className="kpi-label">Assets</span></div><div className="kpi-val" style={{ color: 'var(--green)' }}>{inr(assets)}</div><div className="kpi-note">Banks {inr(bankTotal)} + Demat {inr(dematTotal)}</div></div>
         <div className="kpi glass"><div className="kpi-head"><span className="kpi-dot red"></span><span className="kpi-label">Debts</span></div><div className="kpi-val" style={{ color: 'var(--red)' }}>{inr(liabilities)}</div><div className="kpi-note">Loans {inr(loanDebt)} + Cards {inr(cardDebt)}</div></div>
         <div className="kpi glass"><div className="kpi-head"><span className="kpi-dot amber"></span><span className="kpi-label">Net Worth</span></div><div className="kpi-val">{inr(netWorth)}</div><div className="kpi-note">{inr(assets)} − {inr(liabilities)}</div></div>
+      </div>
+
+      {/* ===== CHAT ===== */}
+      <div className="section-head"><div className="section-title"><span className="dot"></span>Ask the AI</div><span className="pill blue">Powered by your real data</span></div>
+      <div className="glass" style={{ padding: '20px' }}>
+        <div className="chat-wrap">
+          {chatMessages.length === 0 ? (
+            <div className="chat-msg">
+              <div className="chat-avatar bot">AI</div>
+              <div className="chat-bubble bot">
+                Hi! I'm your money brain. I read your real numbers — balances, EMIs, card dues, this month's spending — and give you a specific plan.{'\n\n'}Ask me anything. For example: <b>"Where should I put 20k?"</b> or <b>"Should I foreclose my Navi loan?"</b>
+              </div>
+            </div>
+          ) : (
+            chatMessages.map((m, i) => (
+              <div key={i} className={'chat-msg ' + m.role}>
+                <div className={'chat-avatar ' + m.role}>{m.role === 'user' ? 'You' : 'AI'}</div>
+                <div className={'chat-bubble ' + m.role} dangerouslySetInnerHTML={{ __html: m.text.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\*\*(.+?)\*\*/g, '<b>$1</b>') }} />
+              </div>
+            ))
+          )}
+          <div ref={chatEndRef} />
+        </div>
+        <div className="chat-suggestions">
+          {suggestions.map(s => (
+            <span key={s} className="pill" onClick={() => sendChat(s)}>{s}</span>
+          ))}
+        </div>
+        <div className="chat-input-row">
+          <input className="input" placeholder="Ask anything… e.g. where to invest 20k"
+            value={chatInput}
+            onChange={(e) => setChatInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendChat(); } }} />
+          <button className="btn btn-primary" onClick={() => sendChat()} style={{ padding: '10px 14px' }}>{Ico.send}<span style={{ marginLeft: 4 }}>Send</span></button>
+        </div>
       </div>
 
       <div className="section-head"><div className="section-title"><span className="dot"></span>What the AI sees</div></div>
