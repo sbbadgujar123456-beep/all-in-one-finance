@@ -2550,7 +2550,7 @@ function Banks({ data, mut, showToast, sync, openTx }) {
   const outCategories = useMemo(() => {
     const totals = {}; let overall = 0;
     scopedTx.forEach(t => {
-      if (t.dir !== 'out') return;
+      if (t.dir !== 'out' || t.category === 'Transfer') return;
       const c = t.category || 'Other';
       const amt = Number(t.amount) || 0;
       totals[c] = r2((totals[c] || 0) + amt);
@@ -2820,7 +2820,7 @@ function TxModal({ open, onClose, banks, cards, tx, prefill, onSave }) {
   const [date, setDate] = useState(toISO(new Date()));
   const [affects, setAffects] = useState(true);
   const IN_CATEGORIES=['Salary','Interest','Cashback','Upstox Withdrawal','UPI','Cash','Transfer','Investment','Other'];
-  const OUT_CATEGORIES=['Food','Transportation','Rent','Shopping','Bills','Credit Card','Loan EMI','Travel','Medical','Investment','Transfer','Cash','Other'];
+  const OUT_CATEGORIES=['Food','Transportation','Rent','Shopping','Bills','Credit Card','Loan EMI','Travel','Medical','Investment','Cash','Other'];
 
   useEffect(() => {
     if (!open) return;
